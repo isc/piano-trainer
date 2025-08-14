@@ -9,7 +9,17 @@
       href="https://unpkg.com/@picocss/pico@latest/css/pico.min.css"
     />
     <link rel="stylesheet" href="styles.css" />
-    <script src="https://unpkg.com/vexflow@4.2.2/build/cjs/vexflow.js"></script>
+    <script>
+      const originalStructuredClone = globalThis.structuredClone
+      globalThis.structuredClone = function (obj) {
+        try {
+          return originalStructuredClone(obj)
+        } catch (e) {
+          return JSON.parse(JSON.stringify(obj))
+        }
+      }
+    </script>
+    <script src="https://unpkg.com/vexflow@5.0.0/build/cjs/vexflow.js"></script>
     <script src="app.js"></script>
     <script
       defer

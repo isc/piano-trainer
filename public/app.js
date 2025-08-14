@@ -21,17 +21,16 @@ function midiApp() {
       })
     },
     initStaff() {
-      const VF = Vex.Flow
       const div = document.getElementById('staff')
       div.innerHTML = '' // Clear previous staff
-      const renderer = new VF.Renderer(div, VF.Renderer.Backends.SVG)
+      const renderer = new VexFlow.Renderer(div, VexFlow.Renderer.Backends.SVG)
       renderer.resize(600, 200)
       const context = renderer.getContext()
 
       this.staff = {
         renderer,
         context,
-        stave: new VF.Stave(10, 40, 580),
+        stave: new VexFlow.Stave(10, 40, 580),
         notes: []
       }
 
@@ -70,51 +69,64 @@ function midiApp() {
     },
     redrawStaff() {
       console.log('Redrawing staff...')
-      // Sauvegarder les notes avant de réinitialiser
       const savedNotes = [...this.staff.notes]
       console.log('Saved notes before redraw:', savedNotes)
 
-      // Clear and redraw staff
-      this.initStaff()
-
       if (savedNotes.length > 0) {
         console.log('Drawing notes on staff:', savedNotes)
-        const VF = Vex.Flow
         try {
-          const notes = savedNotes.map(noteData => {
-            const staveNote = new VF.StaveNote({
-              clef: 'treble',
-              keys: noteData.keys,
-              duration: 'q'
-            })
-
-            // Add accidental if needed
-            if (noteData.accidental) {
-              staveNote.addModifier(new VF.Accidental(noteData.accidental), 0)
-            }
-
-            return staveNote
-          })
-
-          const voice = new VF.Voice({
-            num_beats: savedNotes.length,
-            beat_value: 4
-          })
-          voice.addTickables(notes)
-
-          const formatter = new VF.Formatter()
-            .joinVoices([voice])
-            .format([voice], 550)
-          voice.draw(this.staff.context, this.staff.stave)
-
-          // Restaurer les notes après le redraw
-          this.staff.notes = savedNotes
-          console.log('Staff redrawn with notes:', savedNotes)
+          this.drawNotesWithVexFlow5(savedNotes)
         } catch (error) {
           console.error('Error drawing notes:', error)
         }
       } else {
         console.log('No notes to draw')
+      }
+    },
+
+    drawNotesWithVexFlow5(savedNotes) {
+      try {
+        this.initStaff()
+
+        const vfNotes = savedNotes.map(noteData => {
+          const note = new VexFlow.StaveNote({
+            clef: 'treble',
+            keys: noteData.keys,
+            duration: 'q'
+          })
+
+          if (noteData.accidental) {
+            note.addModifier(new VexFlow.Accidental(noteData.accidental), 0)
+          }
+
+          return note
+        })
+
+        if (vfNotes.length > 0) {
+          const voice = new VexFlow.Voice({ num_beats: 4, beat_value: 4 })
+
+          voice.setStrict(false)
+
+          vfNotes.forEach(note => {
+            note.setStave(this.staff.stave)
+            voice.addTickable(note)
+          })
+
+          const formatter = new VexFlow.Formatter()
+          formatter.joinVoices([voice])
+          formatter.formatToStave([voice], this.staff.stave)
+
+          voice.draw(this.staff.context, this.staff.stave)
+
+          console.log(`${vfNotes.length} notes affichées`)
+        }
+
+        // Restaurer les notes dans l'état
+        this.staff.notes = savedNotes
+      } catch (error) {
+        console.error('VexFlow 5.0 drawing error:', error)
+        // Fallback : juste sauvegarder les notes sans les afficher
+        this.staff.notes = savedNotes
       }
     },
     async scanBluetooth() {
