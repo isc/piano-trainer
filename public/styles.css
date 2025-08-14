@@ -1,0 +1,36 @@
+.controls-row {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  margin: 1rem 0;
+}
+
+.recording-status {
+  color: var(--del-color);
+  font-weight: bold;
+}
+
+.replay-status {
+  color: var(--primary-color);
+  font-weight: bold;
+}
+
+.staff-container {
+  margin: 1.5rem 0;
+  background-color: white;
+  padding: 1rem;
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius);
+}
+
+.btn-record {
+  background-color: var(--del-color);
+}
+
+.btn-stop {
+  background-color: var(--ins-color);
+}
+
+.btn-replay {
+  background-color: var(--primary-color);
+}
