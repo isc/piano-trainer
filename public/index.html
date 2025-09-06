@@ -4,10 +4,8 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Piano Trainer</title>
-    <link
-      rel="stylesheet"
-      href="https://unpkg.com/@picocss/pico@latest/css/pico.min.css"
-    />
+    <!-- https://unpkg.com/@picocss/pico@latest/css/pico.min.css -->
+    <link rel="stylesheet" href="vendor/pico.2.1.1min.css" />
     <link rel="stylesheet" href="styles.css" />
     <script>
       const originalStructuredClone = globalThis.structuredClone
@@ -19,12 +17,13 @@
         }
       }
     </script>
-    <script src="https://unpkg.com/vexflow@5.0.0/build/cjs/vexflow.js"></script>
+    <!-- https://unpkg.com/vexflow@5.0.0/build/cjs/vexflow.js -->
+    <script src="vendor/vexflow.5.0.0.js"></script>
+    <!-- https://cdn.jsdelivr.net/npm/opensheetmusicdisplay@1.8.5/build/opensheetmusicdisplay.min.js -->
+    <script src="vendor/opensheetmusicdisplay.1.8.5.min.js"></script>
     <script src="app.js"></script>
-    <script
-      defer
-      src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"
-    ></script>
+    <!-- https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js -->
+    <script defer src="vendor/alpinejs.3.14.9.min.js"></script>
   </head>
   <body>
     <main class="container">
@@ -78,6 +77,22 @@
           </span>
         </div>
 
+        <!-- Upload et affichage de partition MusicXML -->
+        <div class="controls-row">
+          <label for="musicxml-upload">📄 Charger partition MusicXML</label>
+          <input
+            type="file"
+            accept=".xml,.musicxml,.mxl"
+            @change="loadMusicXML($event)"
+            id="musicxml-upload"
+          />
+
+          <button @click="clearScore" x-show="hasScore">
+            🗑️ Effacer partition
+          </button>
+        </div>
+
+        <div id="score" class="score-container" x-show="hasScore"></div>
         <div id="staff" class="staff-container"></div>
       </div>
     </main>
