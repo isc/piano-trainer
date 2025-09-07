@@ -1,3 +1,7 @@
+const NOTE_ON = 144
+const NOTE_OFF = 128
+const MIDI_BLE_UUID = '03b80e5a-ede8-4b33-a751-6ce34ec4c700'
+const NOTE_NAMES = 'C C# D D# E F F# G G# A A# B'.split(' ')
 function midiApp() {
   return {
     bluetoothConnected: false,
@@ -58,31 +62,11 @@ function midiApp() {
       let note = noteName.replace('#', '').slice(0, -1).toLowerCase() // Remove # and get note letter
       const octave = parseInt(noteName.slice(-1))
 
-      console.log(
-        `Converting ${noteName} to ${note}/${octave} ${
-          isSharp ? 'with sharp' : ''
-        }`
-      )
-      return {
-        keys: [`${note}/${octave}`],
-        accidental: isSharp ? '#' : null
-      }
+      return { keys: [`${note}/${octave}`], accidental: isSharp ? '#' : null }
     },
     redrawStaff() {
-      console.log('Redrawing staff...')
       const savedNotes = [...this.staff.notes]
-      console.log('Saved notes before redraw:', savedNotes)
-
-      if (savedNotes.length > 0) {
-        console.log('Drawing notes on staff:', savedNotes)
-        try {
-          this.drawNotesWithVexFlow5(savedNotes)
-        } catch (error) {
-          console.error('Error drawing notes:', error)
-        }
-      } else {
-        console.log('No notes to draw')
-      }
+      if (savedNotes.length > 0) this.drawNotesWithVexFlow5(savedNotes)
     },
 
     drawNotesWithVexFlow5(savedNotes) {
@@ -104,28 +88,19 @@ function midiApp() {
 
         if (vfNotes.length > 0) {
           const voice = new VexFlow.Voice({ num_beats: 4, beat_value: 4 })
-
           voice.setStrict(false)
-
           vfNotes.forEach(note => {
             note.setStave(this.staff.stave)
             voice.addTickable(note)
           })
-
           const formatter = new VexFlow.Formatter()
           formatter.joinVoices([voice])
           formatter.formatToStave([voice], this.staff.stave)
-
           voice.draw(this.staff.context, this.staff.stave)
-
-          console.log(`${vfNotes.length} notes affichées`)
         }
-
-        // Restaurer les notes dans l'état
         this.staff.notes = savedNotes
       } catch (error) {
         console.error('VexFlow 5.0 drawing error:', error)
-        // Fallback : juste sauvegarder les notes sans les afficher
         this.staff.notes = savedNotes
       }
     },
@@ -136,7 +111,6 @@ function midiApp() {
 
       try {
         const xmlContent = await file.text()
-        console.log('MusicXML chargé:', file.name)
 
         if (
           !xmlContent.includes('score-partwise') &&
@@ -271,17 +245,13 @@ function midiApp() {
         for (const staffEntry of container.staffEntries) {
           if (!staffEntry?.voiceEntries) continue
           for (const voiceEntry of staffEntry.voiceEntries) {
-            this.extractNotesFromVoiceEntry(
-              voiceEntry,
-              measureIndex,
-              staffEntry.timestamp || 0
-            )
+            this.extractNotesFromVoiceEntry(voiceEntry, measureIndex)
           }
         }
       }
     },
 
-    extractNotesFromVoiceEntry(voiceEntry, measureIndex, baseTimestamp) {
+    extractNotesFromVoiceEntry(voiceEntry, measureIndex) {
       if (!voiceEntry.notes) return
       for (const note of voiceEntry.notes) {
         if (!note.pitch) continue
@@ -290,7 +260,7 @@ function midiApp() {
           note: note,
           midiNumber: noteInfo.midiNote,
           noteName: noteInfo.noteName,
-          timestamp: baseTimestamp + measureIndex * 1000,
+          timestamp: measureIndex + voiceEntry.timestamp.realValue,
           measureIndex: measureIndex
         })
       }
@@ -298,26 +268,9 @@ function midiApp() {
 
     pitchToMidiFromSourceNote(pitch) {
       const midiNote = pitch.halfTone + 12
-      const noteNamesMidi = [
-        'C',
-        'C#',
-        'D',
-        'D#',
-        'E',
-        'F',
-        'F#',
-        'G',
-        'G#',
-        'A',
-        'A#',
-        'B'
-      ]
-      const noteNameStd = noteNamesMidi[midiNote % 12]
+      const noteNameStd = NOTE_NAMES[midiNote % 12]
       const octaveStd = Math.floor(midiNote / 12) - 1
-      return {
-        noteName: `${noteNameStd}${octaveStd}`,
-        midiNote: midiNote
-      }
+      return { noteName: `${noteNameStd}${octaveStd}`, midiNote: midiNote }
     },
 
     highlightNextNote() {
@@ -372,20 +325,45 @@ function midiApp() {
     },
 
     validatePlayedNote(midiNote) {
-      if (!this.osmdInstance || !this.hasScore || this.allNotes.length === 0) {
-        console.log('Pas de partition chargée pour la validation')
+      if (!this.osmdInstance || !this.hasScore || this.allNotes.length === 0)
         return
-      }
-      const expectedNote = this.allNotes[this.currentNoteIndex]
 
       if (this.currentNoteIndex >= this.allNotes.length) return
 
+      const expectedNote = this.allNotes[this.currentNoteIndex]
+      const currentTimestamp = expectedNote.timestamp
       const playedNoteName = this.noteName(midiNote)
 
-      if (expectedNote.midiNumber === midiNote) {
-        if (expectedNote.note) {
-          expectedNote.note.NoteheadColor = '#22c55e'
-          expectedNote.note.StemColor = '#22c55e'
+      // Trouver toutes les notes qui ont le même timestamp que la note attendue
+      const notesAtSameTimestamp = this.allNotes.filter(
+        (note, index) =>
+          index >= this.currentNoteIndex && note.timestamp === currentTimestamp
+      )
+
+      // Vérifier si la note jouée correspond à une des notes ayant le même timestamp
+      const matchingNoteIndex = this.allNotes.findIndex(
+        (note, index) =>
+          index >= this.currentNoteIndex &&
+          note.timestamp === currentTimestamp &&
+          note.midiNumber === midiNote
+      )
+
+      if (matchingNoteIndex !== -1) {
+        const matchingNote = this.allNotes[matchingNoteIndex]
+
+        if (matchingNote.note) {
+          matchingNote.note.NoteheadColor = '#22c55e'
+          matchingNote.note.StemColor = '#22c55e'
+        }
+
+        if (matchingNoteIndex !== this.currentNoteIndex) {
+          ;[
+            this.allNotes[this.currentNoteIndex],
+            this.allNotes[matchingNoteIndex]
+          ] = [
+            this.allNotes[matchingNoteIndex],
+            this.allNotes[this.currentNoteIndex]
+          ]
         }
 
         this.currentNoteIndex++
@@ -393,7 +371,12 @@ function midiApp() {
 
         if (this.currentNoteIndex >= this.allNotes.length)
           this.showCompletionMessage()
-      } else this.showErrorFeedback(expectedNote.noteName, playedNoteName)
+      } else {
+        const expectedNoteNames = notesAtSameTimestamp
+          .map(note => note.noteName)
+          .join(' ou ')
+        this.showErrorFeedback(expectedNoteNames, playedNoteName)
+      }
     },
 
     showCompletionMessage() {
@@ -445,22 +428,16 @@ function midiApp() {
       }
       try {
         this.device = await navigator.bluetooth.requestDevice({
-          filters: [
-            { services: ['03b80e5a-ede8-4b33-a751-6ce34ec4c700'] } // MIDI BLE UUID
-          ],
-          optionalServices: ['battery_service']
+          filters: [{ services: [MIDI_BLE_UUID] }]
         })
         const server = await this.device.gatt.connect()
-        const service = await server.getPrimaryService(
-          '03b80e5a-ede8-4b33-a751-6ce34ec4c700'
-        )
+        const service = await server.getPrimaryService(MIDI_BLE_UUID)
         const characteristic = await service.getCharacteristic(
           '7772e5db-3868-4112-a1a9-f2669d106bf3'
         )
         await characteristic.startNotifications()
         characteristic.addEventListener('characteristicvaluechanged', event => {
-          const value = event.target.value
-          this.parseMidiBLE(value)
+          this.parseMidiBLE(event.target.value)
         })
         this.bluetoothConnected = true
       } catch (e) {
@@ -468,71 +445,43 @@ function midiApp() {
       }
     },
     parseMidiBLE(dataView, isReplay = false) {
-      // Debug : affichage du contenu brut du paquet
       let arr = []
       for (let k = 0; k < dataView.byteLength; k++)
         arr.push(dataView.getUint8(k))
-      console.log(`MIDI BLE ${isReplay ? 'replay ' : ''}packet:`, arr)
 
-      // Enregistrer les données brutes si l'enregistrement est actif (et pas en rejeu)
       if (this.isRecording && !isReplay) {
         const timestamp = Date.now() - this.recordingStartTime
-        this.recordingData.push({
-          timestamp: timestamp,
-          data: arr
-        })
+        this.recordingData.push({ timestamp: timestamp, data: arr })
       }
-
-      // Nouveau parsing : chaque paquet fait 5 octets
-      if (arr.length === 5) {
-        const status = arr[2] // Le vrai status MIDI est à l'index 2
-        const note = arr[3] // La note est à l'index 3
-        const velocity = arr[4] // La vélocité est à l'index 4
-        console.log('status:', status, 'note:', note, 'velocity:', velocity)
-        if (status >= 0x80 && status <= 0xef) {
-          // Note On
-          if (status === 144 && velocity > 0 && note < 128 && velocity < 128) {
+      arr.shift()
+      while (arr.length) {
+        arr.shift()
+        const status = arr.shift()
+        const note = arr.shift()
+        const velocity = arr.shift()
+        if (status >= 128 && status <= 239) {
+          if (status === NOTE_ON && velocity > 0 && note < 128) {
             const noteName = this.noteName(note)
             this.addNoteToStaff(noteName)
-
-            // Valider la note dans la partition MusicXML si elle est chargée
             this.validatePlayedNote(note)
-
             console.log(
               `Note ON ${isReplay ? 'replayed' : 'detected'}:`,
               noteName
             )
           }
-          // Note Off
-          if (status === 128) {
+          if (status === NOTE_OFF)
             console.log(
               `Note OFF ${isReplay ? 'replayed' : 'detected'}:`,
               this.noteName(note)
             )
-          }
         }
       }
     },
     noteName(n) {
-      const notes = [
-        'C',
-        'C#',
-        'D',
-        'D#',
-        'E',
-        'F',
-        'F#',
-        'G',
-        'G#',
-        'A',
-        'A#',
-        'B'
-      ]
       const octave = Math.floor(n / 12) - 1
-      return notes[n % 12] + octave
+      return NOTE_NAMES[n % 12] + octave
     },
 
-    // === ENREGISTREMENT ===
     startRecording() {
       this.isRecording = true
       this.recordingData = []
@@ -544,8 +493,6 @@ function midiApp() {
           (Date.now() - this.recordingStartTime) / 1000
         )
       }, 1000)
-
-      console.log('Enregistrement démarré')
     },
 
     async stopRecording() {
@@ -557,7 +504,6 @@ function midiApp() {
         return
       }
 
-      // Demander le nom de la cassette
       const cassetteName = prompt(
         'Nom de la cassette :',
         `Cassette_${new Date().toISOString().slice(0, 19).replace(/[:-]/g, '')}`
@@ -598,44 +544,25 @@ function midiApp() {
       )
     },
 
-    // === GESTION DES CASSETTES ===
     async loadCassettesList() {
-      try {
-        const response = await fetch('/api/cassettes')
-        if (response.ok) {
-          this.cassettes = await response.json()
-          console.log('Cassettes chargées:', this.cassettes)
-        } else {
-          console.error('Erreur lors du chargement des cassettes')
-        }
-      } catch (error) {
-        console.error('Erreur lors du chargement des cassettes:', error)
-      }
+      const response = await fetch('/api/cassettes')
+      this.cassettes = await response.json()
     },
 
-    // === REJEU ===
     async replayCassette() {
       if (!this.selectedCassette) return
-
       this.isReplaying = true
 
       try {
-        // Charger les données de la cassette
         const response = await fetch(`/${this.selectedCassette}`)
         const cassette = await response.json()
 
-        console.log(`Début du rejeu de la cassette: ${cassette.name}`)
-        console.log(`${cassette.data.length} messages à rejouer`)
-
-        // Vider la partition avant le rejeu
         this.staff.notes = []
         this.redrawStaff()
 
-        // Rejouer chaque message avec le bon timing
         for (let i = 0; i < cassette.data.length; i++) {
           const message = cassette.data[i]
 
-          // Attendre le bon moment
           if (i > 0) {
             const delay = message.timestamp - cassette.data[i - 1].timestamp
             if (delay > 0) {
@@ -643,7 +570,6 @@ function midiApp() {
             }
           }
 
-          // Simuler la réception du message MIDI
           const uint8Array = new Uint8Array(message.data)
           const dataView = new DataView(uint8Array.buffer)
           this.parseMidiBLE(dataView, true) // true = mode rejeu
@@ -652,7 +578,6 @@ function midiApp() {
         console.log('Rejeu terminé')
       } catch (error) {
         console.error('Erreur lors du rejeu:', error)
-        alert('Erreur lors du rejeu de la cassette')
       }
 
       this.isReplaying = false
