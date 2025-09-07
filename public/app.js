@@ -142,7 +142,6 @@ function midiApp() {
         this.osmdInstance = osmd
         window.osmdInstance = osmd
         this.extractNotesFromScore()
-        this.highlightNextNote()
         this.addPlaybackControls(osmd)
       } catch (error) {
         console.error('Erreur lors du rendu MusicXML avec OSMD:', error)
@@ -200,12 +199,9 @@ function midiApp() {
       try {
         this.currentNoteIndex = 0
 
-        for (const noteData of this.allNotes) {
-          noteData.note.NoteheadColor = '#000000'
-          noteData.note.StemColor = '#000000'
-        }
+        for (const noteData of this.allNotes)
+          this.svgNote(noteData.note).classList.remove('played-note')
 
-        this.highlightNextNote()
         this.updateProgressDisplay()
         console.log('Progression réinitialisée')
       } catch (error) {
@@ -273,34 +269,6 @@ function midiApp() {
       return { noteName: `${noteNameStd}${octaveStd}`, midiNote: midiNote }
     },
 
-    highlightNextNote() {
-      if (!this.osmdInstance || this.allNotes.length === 0) return
-
-      try {
-        for (const noteData of this.allNotes) {
-          if (noteData.note) {
-            noteData.note.NoteheadColor = '#000000'
-            noteData.note.StemColor = '#000000'
-          }
-        }
-
-        for (let i = 0; i < this.currentNoteIndex; i++) {
-          if (this.allNotes[i]?.note) {
-            this.allNotes[i].note.NoteheadColor = '#22c55e'
-            this.allNotes[i].note.StemColor = '#22c55e'
-          }
-        }
-
-        this.osmdInstance.render()
-        this.updateProgressDisplay()
-      } catch (error) {
-        console.error(
-          'Erreur lors de la mise en évidence de la prochaine note:',
-          error
-        )
-      }
-    },
-
     updateProgressDisplay() {
       const progressDiv = document.getElementById('score-progress')
       if (!progressDiv) return
@@ -324,6 +292,10 @@ function midiApp() {
       }
     },
 
+    svgNote(note) {
+      return this.osmdInstance.rules.GNote(note).getSVGGElement()
+    },
+
     validatePlayedNote(midiNote) {
       if (!this.osmdInstance || !this.hasScore || this.allNotes.length === 0)
         return
@@ -332,13 +304,6 @@ function midiApp() {
 
       const expectedNote = this.allNotes[this.currentNoteIndex]
       const currentTimestamp = expectedNote.timestamp
-      const playedNoteName = this.noteName(midiNote)
-
-      // Trouver toutes les notes qui ont le même timestamp que la note attendue
-      const notesAtSameTimestamp = this.allNotes.filter(
-        (note, index) =>
-          index >= this.currentNoteIndex && note.timestamp === currentTimestamp
-      )
 
       // Vérifier si la note jouée correspond à une des notes ayant le même timestamp
       const matchingNoteIndex = this.allNotes.findIndex(
@@ -350,12 +315,7 @@ function midiApp() {
 
       if (matchingNoteIndex !== -1) {
         const matchingNote = this.allNotes[matchingNoteIndex]
-
-        if (matchingNote.note) {
-          matchingNote.note.NoteheadColor = '#22c55e'
-          matchingNote.note.StemColor = '#22c55e'
-        }
-
+        this.svgNote(matchingNote.note).classList.add('played-note')
         if (matchingNoteIndex !== this.currentNoteIndex) {
           ;[
             this.allNotes[this.currentNoteIndex],
@@ -367,15 +327,20 @@ function midiApp() {
         }
 
         this.currentNoteIndex++
-        this.highlightNextNote()
 
         if (this.currentNoteIndex >= this.allNotes.length)
           this.showCompletionMessage()
       } else {
+        // Trouver toutes les notes qui ont le même timestamp que la note attendue
+        const notesAtSameTimestamp = this.allNotes.filter(
+          (note, index) =>
+            index >= this.currentNoteIndex &&
+            note.timestamp === currentTimestamp
+        )
         const expectedNoteNames = notesAtSameTimestamp
           .map(note => note.noteName)
           .join(' ou ')
-        this.showErrorFeedback(expectedNoteNames, playedNoteName)
+        this.showErrorFeedback(expectedNoteNames, this.noteName(midiNote))
       }
     },
 

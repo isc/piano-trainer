@@ -49,3 +49,9 @@
 .btn-replay {
   background-color: var(--primary-color);
 }
+
+svg g.played-note {
+  .vf-notehead path {
+    fill: #22c55e;
+  }
+}
