@@ -12,14 +12,6 @@ class PianoTrainerTest < CapybaraTestBase
     puts console_logs
   end
 
-  def test_musicxml_note_extraction_two_parts
-    visit '/'
-    attach_file('musicxml-upload', File.expand_path('fixtures/schumann-melodie.xml', __dir__))
-    assert_text 'Extraction terminée: 256 notes trouvées'
-    select 'oh-when-the-saints'
-    click_on 'Rejouer cassette'
-  end
-
   def test_cassette_playback_with_note_highlighting
     visit '/'
     # Load Schumann's partition
@@ -27,7 +19,7 @@ class PianoTrainerTest < CapybaraTestBase
     assert_text 'Extraction terminée: 256 notes trouvées'
     
     # Select and play the melodie-2-bars cassette
-    find('select').find(:option, 'melodie-2-bars').select_option
+    select 'melodie-2-bars'
     click_on 'Rejouer cassette'
     
     # Wait for playback to start and progress
