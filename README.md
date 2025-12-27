@@ -68,7 +68,11 @@ MIDI Device → Web Bluetooth API → MIDI Message Parser → Note Validator →
 
 - `app.rb`: Main Sinatra application with API endpoints
 - `public/index.html`: Main HTML interface
-- `public/app.js`: Core application logic (MIDI, MusicXML, UI)
+- `public/js/app.js`: Alpine.js coordination layer (118 lines)
+- `public/js/midi.js`: Bluetooth MIDI & recording (147 lines)
+- `public/js/musicxml.js`: MusicXML parsing & validation (282 lines)
+- `public/js/staff.js`: VexFlow rendering (103 lines)
+- `public/js/cassettes.js`: Cassette management (103 lines)
 - `public/styles.css`: Custom styling
 - `test/piano_trainer_test.rb`: Test suite
 
@@ -126,10 +130,12 @@ The application will be available at `http://localhost:4567`
 
 ### Advanced Features
 
+- **Modular Architecture**: Clean separation of concerns with 5 specialized JavaScript modules
 - **Note Validation**: The system checks if you're playing the correct notes from the sheet music
 - **Progress Tracking**: Shows which notes you've played correctly and what's next
 - **Error Feedback**: Displays what note was expected vs. what you played
 - **Completion Detection**: Shows a celebration message when you complete a piece
+- **Callback System**: Loose coupling between modules via event callbacks
 
 ## API Documentation
 
@@ -257,7 +263,12 @@ piano-trainer/
 ├── app.rb                  # Main Sinatra application
 ├── public/
 │   ├── index.html         # Main HTML interface
-│   ├── app.js             # Core JavaScript logic
+│   ├── js/                # JavaScript modules
+│   │   ├── app.js         # Alpine.js coordination
+│   │   ├── midi.js        # Bluetooth MIDI & recording
+│   │   ├── musicxml.js    # MusicXML parsing & validation
+│   │   ├── staff.js       # VexFlow rendering
+│   │   └── cassettes.js   # Cassette management
 │   ├── styles.css         # Custom styles
 │   ├── cassettes/         # MIDI recordings
 │   └── vendor/            # Third-party libraries

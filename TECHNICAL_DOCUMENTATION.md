@@ -80,21 +80,64 @@ Recordings are stored as JSON files in `public/cassettes/` with the following st
 
 ## Frontend Implementation
 
-### Core Application (`public/app.js`)
+### Modular Architecture
+
+The frontend is organized into five specialized modules, each with a clear responsibility:
+
+```
+public/js/
+├── app.js         (118 lines) - Alpine.js coordination layer
+├── midi.js        (147 lines) - Bluetooth MIDI & recording
+├── musicxml.js    (282 lines) - MusicXML parsing & validation
+├── staff.js       (103 lines) - VexFlow rendering
+└── cassettes.js   (103 lines) - Cassette management
+```
+
+#### Module Communication
+
+Modules communicate through a callback system, ensuring loose coupling:
+
+```javascript
+// In app.js - Coordination layer
+const midi = initMidi()
+const musicxml = initMusicXML()
+const cassettes = initCassettes()
+const staff = initStaff()
+
+// Set up inter-module communication
+midi.setCallbacks({
+  onNotePlayed: (noteName, midiNote) => {
+    staff.addNoteToStaff(noteName)
+    musicxml.validatePlayedNote(midiNote)
+  }
+})
+
+musicxml.setCallbacks({
+  onNotesExtracted: notes => {
+    this.allNotes = notes
+  }
+})
+
+cassettes.setCallbacks({
+  onReplayStart: () => this.isReplaying = true,
+  onReplayEnd: () => this.isReplaying = false
+})
+```
+
+### Core Application (`public/js/app.js`)
 
 #### State Management
 
-The application uses Alpine.js for reactive state management:
+The application uses Alpine.js for reactive UI state:
 
 ```javascript
 function midiApp() {
   return {
     bluetoothConnected: false,
     device: null,
-    staff: null,
-    osmdInstance: null,  // OpenSheetMusicDisplay instance
+    osmdInstance: null,
     currentNoteIndex: 0,
-    allNotes: [],        // Extracted notes from MusicXML
+    allNotes: [],
     isRecording: false,
     recordingData: [],
     recordingStartTime: null,
@@ -107,124 +150,171 @@ function midiApp() {
 }
 ```
 
-#### MIDI Processing
+### MIDI Module (`public/js/midi.js`)
+
+Handles all Bluetooth MIDI communication and recording:
+
+```javascript
+// Module exports
+export function initMidi() {
+  return {
+    connectBluetooth,
+    parseMidiBLE,
+    noteName,
+    startRecording,
+    stopRecording,
+    setCallbacks,
+    state
+  }
+}
+```
 
 ##### Bluetooth Connection
 
 ```javascript
-async scanBluetooth() {
-  this.device = await navigator.bluetooth.requestDevice({
+async function connectBluetooth() {
+  state.device = await navigator.bluetooth.requestDevice({
     filters: [{ services: [MIDI_BLE_UUID] }]
   });
-  const server = await this.device.gatt.connect();
+  const server = await state.device.gatt.connect();
   const service = await server.getPrimaryService(MIDI_BLE_UUID);
   const characteristic = await service.getCharacteristic(
     '7772e5db-3868-4112-a1a9-f2669d106bf3'
   );
   await characteristic.startNotifications();
   characteristic.addEventListener('characteristicvaluechanged', event => {
-    this.parseMidiBLE(event.target.value);
+    parseMidiBLE(event.target.value);
   });
+  state.bluetoothConnected = true;
 }
 ```
 
 ##### MIDI Message Parsing
 
 ```javascript
-parseMidiBLE(dataView, isReplay = false) {
-  // Convert DataView to byte array
+function parseMidiBLE(dataView, isReplay = false) {
   let arr = [];
-  for (let k = 0; k < dataView.byteLength; k++)
+  for (let k = 0; k < dataView.byteLength; k++) {
     arr.push(dataView.getUint8(k));
-  
-  // Store recording data if recording
-  if (this.isRecording && !isReplay) {
-    const timestamp = Date.now() - this.recordingStartTime;
-    this.recordingData.push({ timestamp: timestamp, data: arr });
   }
-  
+
+  // Store recording data
+  if (state.isRecording && !isReplay) {
+    const timestamp = Date.now() - state.recordingStartTime;
+    state.recordingData.push({ timestamp, data: arr });
+  }
+
   // Parse MIDI messages
-  arr.shift(); // Remove header
+  arr.shift();
   while (arr.length) {
-    arr.shift(); // Remove timestamp bytes
+    arr.shift();
     const status = arr.shift();
     const note = arr.shift();
     const velocity = arr.shift();
-    
+
     if (status >= 128 && status <= 239) {
       if (status === NOTE_ON && velocity > 0 && note < 128) {
-        const noteName = this.noteName(note);
-        this.addNoteToStaff(noteName);
-        this.validatePlayedNote(note);
+        const noteNameStr = noteName(note);
+        if (callbacks.onNotePlayed) {
+          callbacks.onNotePlayed(noteNameStr, note);
+        }
       }
     }
   }
 }
 ```
 
-#### MusicXML Processing
+### MusicXML Module (`public/js/musicxml.js`)
+
+Handles parsing and validation of MusicXML scores:
+
+```javascript
+// Module exports
+export function initMusicXML() {
+  return {
+    loadMusicXML,
+    renderMusicXML,
+    extractNotesFromScore,
+    validatePlayedNote,
+    resetProgress,
+    clearScore,
+    setCallbacks,
+    getOsmdInstance: () => osmdInstance,
+    getAllNotes: () => allNotes,
+    getCurrentNoteIndex: () => currentNoteIndex
+  };
+}
+```
 
 ##### Loading and Rendering
 
 ```javascript
-async loadMusicXML(event) {
+async function loadMusicXML(event) {
   const file = event.target.files[0];
   if (!file) return;
-  
+
   const xmlContent = await file.text();
-  if (!xmlContent.includes('score-partwise') && 
+  if (!xmlContent.includes('score-partwise') &&
       !xmlContent.includes('score-timewise')) {
     alert('Ce fichier ne semble pas être un fichier MusicXML valide');
     return;
   }
-  
-  await this.renderMusicXML(xmlContent);
+
+  await renderMusicXML(xmlContent);
 }
 
-async renderMusicXML(xmlContent) {
+async function renderMusicXML(xmlContent) {
   const scoreContainer = document.getElementById('score');
   const osmd = new opensheetmusicdisplay.OpenSheetMusicDisplay(scoreContainer);
   await osmd.load(xmlContent);
-  this.osmdInstance = osmd;
-  this.extractNotesFromScore();
-  this.addPlaybackControls(osmd);
+  osmdInstance = osmd;
+  extractNotesFromScore();
+  addPlaybackControls(osmd);
 }
 ```
 
 ##### Note Extraction Algorithm
 
 ```javascript
-extractNotesFromScore() {
-  this.allNotes = [];
-  this.extractFromSourceMeasures(this.osmdInstance.Sheet.SourceMeasures);
-  this.allNotes.sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
+function extractNotesFromScore() {
+  allNotes = [];
+  currentNoteIndex = 0;
+
+  if (!osmdInstance) return;
+
+  extractFromSourceMeasures(osmdInstance.Sheet.SourceMeasures);
+  allNotes.sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
+
+  if (callbacks.onNotesExtracted) {
+    callbacks.onNotesExtracted(allNotes);
+  }
 }
 
-extractFromSourceMeasures(sourceMeasures) {
+function extractFromSourceMeasures(sourceMeasures) {
   sourceMeasures.forEach((measure, measureIndex) => {
-    measure.verticalSourceStaffEntryContainers.forEach(container =>
-      this.extractNotesFromContainer(container, measureIndex)
-    );
+    measure.verticalSourceStaffEntryContainers.forEach(container => {
+      extractNotesFromContainer(container, measureIndex);
+    });
   });
 }
 
-extractNotesFromContainer(container, measureIndex) {
+function extractNotesFromContainer(container, measureIndex) {
   if (container.staffEntries) {
     for (const staffEntry of container.staffEntries) {
       if (!staffEntry?.voiceEntries) continue;
       for (const voiceEntry of staffEntry.voiceEntries) {
-        this.extractNotesFromVoiceEntry(voiceEntry, measureIndex);
+        extractNotesFromVoiceEntry(voiceEntry, measureIndex);
       }
     }
   }
 }
 
-extractNotesFromVoiceEntry(voiceEntry, measureIndex) {
+function extractNotesFromVoiceEntry(voiceEntry, measureIndex) {
   if (!voiceEntry.notes) return;
   for (const note of voiceEntry.notes) {
     if (!note.pitch) continue;
-    const noteInfo = this.pitchToMidiFromSourceNote(note.pitch);
-    this.allNotes.push({
+    const noteInfo = pitchToMidiFromSourceNote(note.pitch);
+    allNotes.push({
       note: note,
       midiNumber: noteInfo.midiNote,
       noteName: noteInfo.noteName,
@@ -234,7 +324,7 @@ extractNotesFromVoiceEntry(voiceEntry, measureIndex) {
   }
 }
 
-pitchToMidiFromSourceNote(pitch) {
+function pitchToMidiFromSourceNote(pitch) {
   const midiNote = pitch.halfTone + 12;
   const noteNameStd = NOTE_NAMES[midiNote % 12];
   const octaveStd = Math.floor(midiNote / 12) - 1;
@@ -242,10 +332,147 @@ pitchToMidiFromSourceNote(pitch) {
 }
 ```
 
+### Staff Module (`public/js/staff.js`)
+
+Handles VexFlow rendering of the musical staff:
+
+```javascript
+// Module exports
+export function initStaff() {
+  return {
+    initStaff: initStaffInternal,
+    addNoteToStaff,
+    redrawStaff,
+    getStaffState
+  }
+}
+```
+
+#### VexFlow Integration
+
+```javascript
+function initStaffInternal() {
+  const div = document.getElementById('staff');
+  div.innerHTML = '';
+  const renderer = new VexFlow.Renderer(div, VexFlow.Renderer.Backends.SVG);
+  renderer.resize(600, 200);
+  const context = renderer.getContext();
+
+  staffState = {
+    renderer,
+    context,
+    stave: new VexFlow.Stave(10, 40, 580),
+    notes: []
+  };
+
+  staffState.stave.addClef('treble').addTimeSignature('4/4');
+  staffState.stave.setContext(context).draw();
+}
+
+function addNoteToStaff(noteName) {
+  const vexNote = convertToVexFlowNote(noteName);
+  staffState.notes.push(vexNote);
+
+  if (staffState.notes.length > 8) {
+    staffState.notes.shift();
+  }
+
+  redrawStaff();
+}
+```
+
+### Cassettes Module (`public/js/cassettes.js`)
+
+Manages recording storage and playback:
+
+```javascript
+// Module exports
+export function initCassettes() {
+  return {
+    loadCassettesList,
+    saveCassette,
+    replayCassette,
+    setCallbacks,
+    getState: () => state
+  }
+}
+```
+
+#### Cassette Management
+
+```javascript
+async function loadCassettesList() {
+  try {
+    const response = await fetch('/api/cassettes');
+    state.cassettes = await response.json();
+    return state.cassettes;
+  } catch (error) {
+    console.error('Erreur lors du chargement des cassettes:', error);
+    state.cassettes = [];
+    return [];
+  }
+}
+
+async function saveCassette(name, recordingData) {
+  try {
+    const response = await fetch('/api/cassettes', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, data: recordingData })
+    });
+
+    if (response.ok) {
+      await loadCassettesList();
+      return { success: true, name };
+    } else {
+      const error = await response.json();
+      return { success: false, error: error.error };
+    }
+  } catch (error) {
+    return { success: false, error: 'Erreur lors de la sauvegarde' };
+  }
+}
+
+async function replayCassette(cassetteFile, midiParser, staffController) {
+  state.isReplaying = true;
+  if (callbacks.onReplayStart) callbacks.onReplayStart();
+
+  try {
+    const response = await fetch(`/${cassetteFile}`);
+    const cassette = await response.json();
+
+    if (staffController) {
+      staffController.getStaffState().notes = [];
+      staffController.redrawStaff();
+    }
+
+    for (let i = 0; i < cassette.data.length; i++) {
+      const message = cassette.data[i];
+
+      if (i > 0) {
+        const delay = message.timestamp - cassette.data[i - 1].timestamp;
+        if (delay > 0) {
+          await new Promise(resolve => setTimeout(resolve, delay));
+        }
+      }
+
+      const uint8Array = new Uint8Array(message.data);
+      const dataView = new DataView(uint8Array.buffer);
+      midiParser(dataView, true);
+    }
+  } catch (error) {
+    console.error('Erreur lors du rejeu:', error);
+  }
+
+  state.isReplaying = false;
+  if (callbacks.onReplayEnd) callbacks.onReplayEnd();
+}
+```
+
 #### Note Validation System
 
 ```javascript
-validatePlayedNote(midiNote) {
+function validatePlayedNote(midiNote) {
   if (!this.osmdInstance || this.allNotes.length === 0) return;
   if (this.currentNoteIndex >= this.allNotes.length) return;
   
@@ -294,177 +521,26 @@ validatePlayedNote(midiNote) {
 #### Visual Feedback
 
 ```javascript
-svgNote(note) {
-  return this.osmdInstance.rules.GNote(note).getSVGGElement();
+function svgNote(note) {
+  return osmdInstance.rules.GNote(note).getSVGGElement();
 }
 
-updateProgressDisplay() {
+function updateProgressDisplay() {
   const progressDiv = document.getElementById('score-progress');
   if (!progressDiv) return;
-  
-  const total = this.allNotes.length;
-  const completed = this.currentNoteIndex;
+
+  const total = allNotes.length;
+  const completed = currentNoteIndex;
   const percentage = Math.round((completed / total) * 100);
-  
+
   if (completed >= total) {
     progressDiv.innerHTML = `🎉 Partition terminée ! (${total}/${total} notes - 100%)`;
     progressDiv.style.color = '#22c55e';
   } else {
-    const nextNote = this.allNotes[this.currentNoteIndex]?.noteName || '?';
-    progressDiv.innerHTML = `Note suivante: <strong>${nextNote}</strong> | 
+    const nextNote = allNotes[currentNoteIndex]?.noteName || '?';
+    progressDiv.innerHTML = `Note suivante: <strong>${nextNote}</strong> |
                              Progression: ${completed}/${total} (${percentage}%)`;
     progressDiv.style.color = '#3b82f6';
-  }
-}
-```
-
-#### Recording System
-
-```javascript
-startRecording() {
-  this.isRecording = true;
-  this.recordingData = [];
-  this.recordingStartTime = Date.now();
-  this.recordingDuration = 0;
-  
-  this.recordingTimer = setInterval(() => {
-    this.recordingDuration = Math.floor(
-      (Date.now() - this.recordingStartTime) / 1000
-    );
-  }, 1000);
-}
-
-async stopRecording() {
-  this.isRecording = false;
-  clearInterval(this.recordingTimer);
-  
-  if (this.recordingData.length === 0) {
-    alert('Aucune donnée enregistrée !');
-    return;
-  }
-  
-  const cassetteName = prompt(
-    'Nom de la cassette :',
-    `Cassette_${new Date().toISOString().slice(0, 19).replace(/[:-]/g, '')}`
-  );
-  
-  if (!cassetteName) return;
-  
-  const response = await fetch('/api/cassettes', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      name: cassetteName,
-      data: this.recordingData
-    })
-  });
-  
-  const result = await response.json();
-  if (response.ok) {
-    alert(`Cassette "${cassetteName}" sauvegardée avec succès !`);
-    this.loadCassettesList();
-  }
-}
-```
-
-#### Playback System
-
-```javascript
-async replayCassette() {
-  if (!this.selectedCassette) return;
-  this.isReplaying = true;
-  
-  const response = await fetch(`/${this.selectedCassette}`);
-  const cassette = await response.json();
-  
-  this.staff.notes = [];
-  this.redrawStaff();
-  
-  for (let i = 0; i < cassette.data.length; i++) {
-    const message = cassette.data[i];
-    
-    if (i > 0) {
-      const delay = message.timestamp - cassette.data[i - 1].timestamp;
-      if (delay > 0) await new Promise(resolve => setTimeout(resolve, delay));
-    }
-    
-    const uint8Array = new Uint8Array(message.data);
-    const dataView = new DataView(uint8Array.buffer);
-    this.parseMidiBLE(dataView, true);
-  }
-  
-  this.isReplaying = false;
-}
-```
-
-### Music Notation Rendering
-
-#### VexFlow Integration
-
-```javascript
-initStaff() {
-  const div = document.getElementById('staff');
-  div.innerHTML = '';
-  const renderer = new VexFlow.Renderer(div, VexFlow.Renderer.Backends.SVG);
-  renderer.resize(600, 200);
-  const context = renderer.getContext();
-  
-  this.staff = {
-    renderer,
-    context,
-    stave: new VexFlow.Stave(10, 40, 580),
-    notes: []
-  };
-  
-  this.staff.stave.addClef('treble').addTimeSignature('4/4');
-  this.staff.stave.setContext(context).draw();
-}
-
-addNoteToStaff(noteName) {
-  const vexNote = this.convertToVexFlowNote(noteName);
-  this.staff.notes.push(vexNote);
-  
-  if (this.staff.notes.length > 8) this.staff.notes.shift();
-  this.redrawStaff();
-}
-
-convertToVexFlowNote(noteName) {
-  const isSharp = noteName.includes('#');
-  let note = noteName.replace('#', '').slice(0, -1).toLowerCase();
-  const octave = parseInt(noteName.slice(-1));
-  
-  return { keys: [`${note}/${octave}`], accidental: isSharp ? '#' : null };
-}
-
-drawNotesWithVexFlow5(savedNotes) {
-  this.initStaff();
-  
-  const vfNotes = savedNotes.map(noteData => {
-    const note = new VexFlow.StaveNote({
-      clef: 'treble',
-      keys: noteData.keys,
-      duration: 'q'
-    });
-    
-    if (noteData.accidental)
-      note.addModifier(new VexFlow.Accidental(noteData.accidental), 0);
-    
-    return note;
-  });
-  
-  if (vfNotes.length > 0) {
-    const voice = new VexFlow.Voice({ num_beats: 4, beat_value: 4 });
-    voice.setStrict(false);
-    
-    vfNotes.forEach(note => {
-      note.setStave(this.staff.stave);
-      voice.addTickable(note);
-    });
-    
-    const formatter = new VexFlow.Formatter();
-    formatter.joinVoices([voice]);
-    formatter.formatToStave([voice], this.staff.stave);
-    voice.draw(this.staff.context, this.staff.stave);
   }
 }
 ```
@@ -642,10 +718,10 @@ end
 
 ### Architecture Evolution
 
-- **Modularization**: Split large `app.js` into modules
 - **State Management**: Consider Redux or similar for complex state
 - **Backend**: Potential migration to Rails for more features
 - **Real-time**: WebSocket support for collaborative features
+- **TypeScript**: Add type safety across modules
 
 ## Troubleshooting
 
