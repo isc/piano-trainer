@@ -1,12 +1,12 @@
 import { initMidi } from './midi.js'
 import { initMusicXML } from './musicxml.js'
-import { initUI } from './ui.js'
+import { initCassettes } from './cassettes.js'
 import { initStaff } from './staff.js'
 
 export function midiApp() {
   const midi = initMidi()
   const musicxml = initMusicXML()
-  const ui = initUI()
+  const cassettes = initCassettes()
   const staff = initStaff()
 
   return {
@@ -42,6 +42,15 @@ export function midiApp() {
         }
       })
 
+      cassettes.setCallbacks({
+        onReplayStart: () => {
+          this.isReplaying = true
+        },
+        onReplayEnd: () => {
+          this.isReplaying = false
+        }
+      })
+
       window.addEventListener('beforeunload', () => {
         if (this.device) this.device.gatt.disconnect()
       })
@@ -72,67 +81,24 @@ export function midiApp() {
       clearInterval(this.recordingTimer)
 
       if (result) {
-        try {
-          const response = await fetch('/api/cassettes', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(result)
-          })
+        const saveResult = await cassettes.saveCassette(result.name, result.data)
 
-          if (response.ok) {
-            alert(`Cassette "${result.name}" sauvegardée avec succès !`)
-            await this.loadCassettesList()
-          } else {
-            const error = await response.json()
-            alert(`Erreur: ${error.error}`)
-          }
-        } catch (error) {
-          console.error('Erreur lors de la sauvegarde:', error)
-          alert('Erreur lors de la sauvegarde de la cassette')
+        if (saveResult.success) {
+          alert(`Cassette "${saveResult.name}" sauvegardée avec succès !`)
+          await this.loadCassettesList()
+        } else {
+          alert(`Erreur: ${saveResult.error}`)
         }
       }
     },
 
     async loadCassettesList() {
-      try {
-        const response = await fetch('/api/cassettes')
-        this.cassettes = await response.json()
-      } catch (error) {
-        console.error('Erreur lors du chargement des cassettes:', error)
-        this.cassettes = []
-      }
+      this.cassettes = await cassettes.loadCassettesList()
     },
 
     async replayCassette() {
       if (!this.selectedCassette) return
-      this.isReplaying = true
-
-      try {
-        const response = await fetch(`/${this.selectedCassette}`)
-        const cassette = await response.json()
-
-        staff.getStaffState().notes = []
-        staff.redrawStaff()
-
-        for (let i = 0; i < cassette.data.length; i++) {
-          const message = cassette.data[i]
-
-          if (i > 0) {
-            const delay = message.timestamp - cassette.data[i - 1].timestamp
-            if (delay > 0) {
-              await new Promise(resolve => setTimeout(resolve, delay))
-            }
-          }
-
-          const uint8Array = new Uint8Array(message.data)
-          const dataView = new DataView(uint8Array.buffer)
-          midi.parseMidiBLE(dataView, true)
-        }
-      } catch (error) {
-        console.error('Erreur lors du rejeu:', error)
-      }
-
-      this.isReplaying = false
+      await cassettes.replayCassette(this.selectedCassette, midi.parseMidiBLE, staff)
     },
 
     async loadMusicXML(event) {
