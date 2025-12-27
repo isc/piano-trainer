@@ -15,9 +15,12 @@ class PianoTrainerTest < CapybaraTestBase
     attach_file('musicxml-upload', File.expand_path('fixtures/schumann-melodie.xml', __dir__))
     assert_text 'Extraction terminée: 256 notes trouvées'
     
-    # Count initial played notes (should be 0)
-    initial_played_notes = page.all('svg g.played-note').count
-    assert_equal 0, initial_played_notes, 'Should start with no played notes'
+    # Get all stave notes and verify none are highlighted initially
+    all_stave_notes = page.all('svg g.vf-stavenote')
+    assert_operator all_stave_notes.count, :>, 0, 'Should have stave notes in the partition'
+    
+    initial_highlighted = all_stave_notes.select { |note| note[:class].include?('played-note') }
+    assert_equal 0, initial_highlighted.count, 'No notes should be highlighted initially'
     
     # Select and play the melodie-2-bars cassette
     select 'melodie-2-bars'
@@ -27,17 +30,23 @@ class PianoTrainerTest < CapybaraTestBase
     # Wait for playback to process some notes
     sleep(2)
     
-    # Verify that notes are being highlighted (should have played-note class)
-    played_notes_after_playback = page.all('svg g.played-note').count
-    assert_operator played_notes_after_playback, :>, 0, 'Notes should be highlighted during playback'
+    # Get all stave notes again and check which ones are highlighted
+    all_stave_notes_after = page.all('svg g.vf-stavenote')
+    highlighted_after = all_stave_notes_after.select { |note| note[:class].include?('played-note') }
     
-    # Verify that the number of played notes increased
-    assert_operator played_notes_after_playback, :>, initial_played_notes, 'Played notes count should increase'
+    # Verify that some notes are now highlighted
+    assert_operator highlighted_after.count, :>, 0, 'Some notes should be highlighted after playback'
     
-    # Verify that the highlighted notes are among the expected cassette notes
-    # Expected notes from melodie-2-bars cassette: C4, E5, G4, F4, D5, C5, E4, B4, A4, D4
-    # We can't easily extract note names from SVG in Capybara, but we can verify
-    # that notes are being highlighted in the score, which confirms the feature works
+    # Verify that only early notes are highlighted (first part of partition)
+    # Get the indices of highlighted notes
+    highlighted_indices = highlighted_after.map { |note| all_stave_notes_after.index(note) }
+    
+    # All highlighted notes should be in the first part of the partition
+    # The melodie-2-bars cassette plays the first few notes, so highlighted notes
+    # should have relatively low indices (not in the middle or end of the partition)
+    max_highlighted_index = highlighted_indices.max
+    assert_operator max_highlighted_index, :<, all_stave_notes_after.count / 2, 
+                   'Highlighted notes should be in the first part of the partition'
   end
 
   private
