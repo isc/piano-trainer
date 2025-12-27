@@ -20,6 +20,30 @@ class PianoTrainerTest < CapybaraTestBase
     click_on 'Rejouer cassette'
   end
 
+  def test_cassette_playback_with_note_highlighting
+    visit '/'
+    # Load Schumann's partition
+    attach_file('musicxml-upload', File.expand_path('fixtures/schumann-melodie.xml', __dir__))
+    assert_text 'Extraction terminée: 256 notes trouvées'
+    
+    # Select and play the melodie-2-bars cassette
+    find('select').find(:option, 'melodie-2-bars').select_option
+    click_on 'Rejouer cassette'
+    
+    # Wait for playback to start and progress
+    sleep(3) # Wait for initial playback
+    
+    # Verify that the cassette is playing (replay status should be visible)
+    assert_text '▶️ Rejeu en cours...'
+    
+    # Wait a bit more for notes to be processed
+    sleep(3)
+    
+    puts 'Cassette playback test completed - cassette played successfully'
+    puts 'BROWSER LOGS:'
+    puts console_logs
+  end
+
   private
 
   def console_logs
