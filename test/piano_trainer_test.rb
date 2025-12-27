@@ -3,7 +3,7 @@ require_relative 'test_helper'
 class PianoTrainerTest < CapybaraTestBase
   def test_musicxml_note_extraction
     visit '/'
-    attach_file('musicxml-upload', File.expand_path('../simple-score.xml', __dir__))
+    attach_file('musicxml-upload', File.expand_path('fixtures/simple-score.xml', __dir__))
     assert_text 'Extraction terminée: 4 notes trouvées'
     select 'oh-when-the-saints'
     click_on 'Rejouer cassette'
@@ -14,7 +14,7 @@ class PianoTrainerTest < CapybaraTestBase
 
   def test_musicxml_note_extraction_two_parts
     visit '/'
-    attach_file('musicxml-upload', File.expand_path('../schumann-melodie.xml', __dir__))
+    attach_file('musicxml-upload', File.expand_path('fixtures/schumann-melodie.xml', __dir__))
     assert_text 'Extraction terminée: 256 notes trouvées'
     select 'oh-when-the-saints'
     click_on 'Rejouer cassette'
