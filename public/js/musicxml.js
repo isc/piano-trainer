@@ -1,3 +1,5 @@
+import { NOTE_NAMES, noteName } from './midi.js'
+
 let osmdInstance = null;
 let allNotes = [];
 let currentNoteIndex = 0;
@@ -15,7 +17,10 @@ export function initMusicXML() {
     validatePlayedNote,
     resetProgress,
     clearScore,
-    setCallbacks
+    setCallbacks,
+    getOsmdInstance: () => osmdInstance,
+    getAllNotes: () => allNotes,
+    getCurrentNoteIndex: () => currentNoteIndex
   };
 }
 
@@ -244,9 +249,7 @@ function showErrorFeedback(expected, played) {
 function addPlaybackControls(osmd) {
   const scoreContainer = document.getElementById('score');
   const controlsDiv = document.createElement('div');
-  controlsDiv.style.cssText = '
-    margin: 10px 0; padding: 10px; background: #f8f9fa; border-radius: 5px;
-  ';
+  controlsDiv.style.cssText = 'margin: 10px 0; padding: 10px; background: #f8f9fa; border-radius: 5px;';
 
   const info = document.createElement('div');
   info.innerHTML = `
@@ -258,9 +261,7 @@ function addPlaybackControls(osmd) {
 
   const resetColorsBtn = document.createElement('button');
   resetColorsBtn.textContent = '🎨 Réinitialiser';
-  resetColorsBtn.style.cssText = '
-    margin-left: 10px; padding: 5px 10px; font-size: 12px;
-  ';
+  resetColorsBtn.style.cssText = 'margin-left: 10px; padding: 5px 10px; font-size: 12px;';
   resetColorsBtn.onclick = () => resetProgress();
   controlsDiv.appendChild(resetColorsBtn);
 
@@ -272,13 +273,10 @@ function addPlaybackControls(osmd) {
 
   const statusDiv = document.createElement('div');
   statusDiv.id = 'extraction-status';
-  statusDiv.style.cssText = '
-    margin-top: 10px; padding: 5px; background: #e8f5e8; border-radius: 3px; color: #2d5a2d;
-  ';
+  statusDiv.style.cssText = 'margin-top: 10px; padding: 5px; background: #e8f5e8; border-radius: 3px; color: #2d5a2d;';
   statusDiv.textContent = `✅ Extraction terminée: ${allNotes.length} notes trouvées`;
   controlsDiv.appendChild(statusDiv);
 
   document.body.appendChild(controlsDiv);
 }
 
-export { NOTE_NAMES };

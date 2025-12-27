@@ -6,6 +6,15 @@ let staffState = {
 }
 
 export function initStaff() {
+  return {
+    initStaff: initStaffInternal,
+    addNoteToStaff,
+    redrawStaff,
+    getStaffState
+  }
+}
+
+function initStaffInternal() {
   const div = document.getElementById('staff')
   div.innerHTML = ''
   const renderer = new VexFlow.Renderer(div, VexFlow.Renderer.Backends.SVG)
@@ -23,7 +32,7 @@ export function initStaff() {
   staffState.stave.setContext(context).draw()
 }
 
-export function addNoteToStaff(noteName) {
+function addNoteToStaff(noteName) {
   const vexNote = convertToVexFlowNote(noteName)
   staffState.notes.push(vexNote)
 
@@ -42,16 +51,16 @@ function convertToVexFlowNote(noteName) {
   return { keys: [`${note}/${octave}`], accidental: isSharp ? '#' : null }
 }
 
-export function redrawStaff() {
+function redrawStaff() {
   const savedNotes = [...staffState.notes]
   if (savedNotes.length > 0) {
     drawNotesWithVexFlow5(savedNotes)
   }
 }
 
-export function drawNotesWithVexFlow5(savedNotes) {
+function drawNotesWithVexFlow5(savedNotes) {
   try {
-    initStaff()
+    initStaffInternal()
 
     const vfNotes = savedNotes.map(noteData => {
       const note = new VexFlow.StaveNote({
@@ -89,6 +98,6 @@ export function drawNotesWithVexFlow5(savedNotes) {
   }
 }
 
-export function getStaffState() {
+function getStaffState() {
   return staffState
 }

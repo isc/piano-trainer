@@ -21,10 +21,14 @@
     <script src="vendor/vexflow.5.0.0.js"></script>
     <!-- https://cdn.jsdelivr.net/npm/opensheetmusicdisplay@1.8.5/build/opensheetmusicdisplay.min.js -->
     <script src="vendor/opensheetmusicdisplay.1.8.5.min.js"></script>
+    <!-- Load modules before Alpine -->
+    <script type="module">
+      import { midiApp } from './js/app.js'
+      window.midiApp = midiApp
+      console.log('Piano Trainer: midiApp loaded and available globally')
+    </script>
     <!-- https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js -->
     <script defer src="vendor/alpinejs.3.14.9.min.js"></script>
-    <!-- Load the modular JavaScript application -->
-    <script type="module" src="js/index.js"></script>
   </head>
   <body>
     <main class="container">

@@ -25,7 +25,8 @@ export function initMidi() {
     noteName,
     startRecording,
     stopRecording,
-    setCallbacks
+    setCallbacks,
+    state
   }
 }
 
@@ -83,11 +84,11 @@ function parseMidiBLE(dataView, isReplay = false) {
 
     if (status >= 128 && status <= 239) {
       if (status === NOTE_ON && velocity > 0 && note < 128) {
-        const noteName = noteName(note)
+        const noteNameStr = noteName(note)
         if (callbacks.onNotePlayed) {
-          callbacks.onNotePlayed(noteName, note)
+          callbacks.onNotePlayed(noteNameStr, note)
         }
-        console.log(`Note ON ${isReplay ? 'replayed' : 'detected'}:`, noteName)
+        console.log(`Note ON ${isReplay ? 'replayed' : 'detected'}:`, noteNameStr)
       }
       if (status === NOTE_OFF) {
         console.log(
@@ -143,4 +144,4 @@ async function stopRecording() {
   }
 }
 
-export { NOTE_ON, NOTE_OFF, MIDI_BLE_UUID, NOTE_NAMES }
+export { NOTE_ON, NOTE_OFF, MIDI_BLE_UUID, NOTE_NAMES, noteName }
