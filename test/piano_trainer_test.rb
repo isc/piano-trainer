@@ -8,36 +8,42 @@ class PianoTrainerTest < CapybaraTestBase
     select 'oh-when-the-saints'
     click_on 'Rejouer cassette'
     assert_text 'Partition terminée'
-    puts 'BROWSER LOGS CAPTURED FROM TEST:'
-    puts console_logs
   end
 
   def test_cassette_playback_with_note_highlighting
     visit '/'
-    # Load Schumann's partition
     attach_file('musicxml-upload', File.expand_path('fixtures/schumann-melodie.xml', __dir__))
     assert_text 'Extraction terminée: 256 notes trouvées'
+    
+    # Count initial played notes (should be 0)
+    initial_played_notes = page.all('svg g.played-note').count
+    assert_equal 0, initial_played_notes, 'Should start with no played notes'
     
     # Select and play the melodie-2-bars cassette
     select 'melodie-2-bars'
     click_on 'Rejouer cassette'
-    
-    # Wait for playback to start and progress
-    sleep(3) # Wait for initial playback
-    
-    # Verify that the cassette is playing (replay status should be visible)
     assert_text '▶️ Rejeu en cours...'
     
-    # Wait a bit more for notes to be processed
-    sleep(3)
+    # Wait for playback to process some notes
+    sleep(2)
     
-    puts 'Cassette playback test completed - cassette played successfully'
-    puts 'BROWSER LOGS:'
-    puts console_logs
+    # Verify that notes are being highlighted (should have played-note class)
+    played_notes_after_playback = page.all('svg g.played-note').count
+    assert_operator played_notes_after_playback, :>, 0, 'Notes should be highlighted during playback'
+    
+    # Verify that the number of played notes increased
+    assert_operator played_notes_after_playback, :>, initial_played_notes, 'Played notes count should increase'
+    
+    # Verify that the highlighted notes are among the expected cassette notes
+    # Expected notes from melodie-2-bars cassette: C4, E5, G4, F4, D5, C5, E4, B4, A4, D4
+    # We can't easily extract note names from SVG in Capybara, but we can verify
+    # that notes are being highlighted in the score, which confirms the feature works
   end
 
   private
 
+  # Helper method to display the browser console logs.
+  # Should remain unused in committed files but can be used by the AI agent when debugging.
   def console_logs
     logs = page.driver.browser.options.logger.string
     logs.split("\n").map do |line|
