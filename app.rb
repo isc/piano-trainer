@@ -3,14 +3,12 @@ require 'json'
 require 'fileutils'
 
 class App < Sinatra::Base
-  # Configuration
   configure do
     set :port, 4567
     set :bind, '0.0.0.0'
     set :public_folder, File.dirname(__FILE__) + '/public'
     set :static, true
 
-    # Créer le dossier cassettes s'il n'existe pas
     cassettes_dir = File.join(__dir__, 'public', 'cassettes')
     FileUtils.mkdir_p(cassettes_dir) unless Dir.exist?(cassettes_dir)
   end
@@ -76,14 +74,12 @@ class App < Sinatra::Base
       cassettes_dir = File.join(settings.public_folder, 'cassettes')
       filepath = File.join(cassettes_dir, filename)
 
-      # Créer l'objet cassette
       cassette = {
         name:,
         created_at: Time.now.iso8601,
         data: midi_data
       }
 
-      # Sauvegarder le fichier
       File.write(filepath, JSON.pretty_generate(cassette))
 
       {

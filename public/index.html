@@ -87,12 +87,12 @@
             id="musicxml-upload"
           />
 
-          <button @click="clearScore" x-show="hasScore">
+          <button @click="clearScore" x-show="!!osmdInstance">
             🗑️ Effacer partition
           </button>
         </div>
 
-        <div id="score" class="score-container" x-show="hasScore"></div>
+        <div id="score" class="score-container" x-show="!!osmdInstance"></div>
         <div id="staff" class="staff-container"></div>
       </div>
     </main>

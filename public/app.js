@@ -2,13 +2,13 @@ const NOTE_ON = 144
 const NOTE_OFF = 128
 const MIDI_BLE_UUID = '03b80e5a-ede8-4b33-a751-6ce34ec4c700'
 const NOTE_NAMES = 'C C# D D# E F F# G G# A A# B'.split(' ')
+
 function midiApp() {
   return {
     bluetoothConnected: false,
     device: null,
     staff: null,
     // Partition MusicXML
-    hasScore: false,
     osmdInstance: null,
     currentNoteIndex: 0,
     allNotes: [],
@@ -119,9 +119,6 @@ function midiApp() {
           alert('Ce fichier ne semble pas être un fichier MusicXML valide')
           return
         }
-
-        this.hasScore = true
-
         await this.renderMusicXML(xmlContent)
       } catch (error) {
         console.error('Erreur lors du chargement du MusicXML:', error)
@@ -138,7 +135,6 @@ function midiApp() {
         )
 
         await osmd.load(xmlContent)
-        osmd.render()
         this.osmdInstance = osmd
         window.osmdInstance = osmd
         this.extractNotesFromScore()
@@ -153,6 +149,7 @@ function midiApp() {
 
       // Ajouter des contrôles de base
       const controlsDiv = document.createElement('div')
+
       controlsDiv.style.cssText =
         'margin: 10px 0; padding: 10px; background: #f8f9fa; border-radius: 5px;'
 
@@ -163,7 +160,6 @@ function midiApp() {
         Compositeur: ${osmd.Sheet?.Composer || 'Non spécifié'}</small>
       `
       controlsDiv.appendChild(info)
-
       // Ajouter un bouton pour réinitialiser les couleurs
       const resetColorsBtn = document.createElement('button')
       resetColorsBtn.textContent = '🎨 Réinitialiser'
@@ -191,7 +187,7 @@ function midiApp() {
     },
 
     resetProgress() {
-      if (!this.osmdInstance || !this.hasScore) {
+      if (!this.osmdInstance) {
         console.log('Pas de partition pour réinitialiser la progression')
         return
       }
@@ -213,7 +209,6 @@ function midiApp() {
     },
 
     clearScore() {
-      this.hasScore = false
       this.osmdInstance = null
       this.currentNoteIndex = 0
       this.allNotes = []
@@ -297,9 +292,7 @@ function midiApp() {
     },
 
     validatePlayedNote(midiNote) {
-      if (!this.osmdInstance || !this.hasScore || this.allNotes.length === 0)
-        return
-
+      if (!this.osmdInstance || this.allNotes.length === 0) return
       if (this.currentNoteIndex >= this.allNotes.length) return
 
       const expectedNote = this.allNotes[this.currentNoteIndex]
@@ -530,17 +523,13 @@ function midiApp() {
 
           if (i > 0) {
             const delay = message.timestamp - cassette.data[i - 1].timestamp
-            if (delay > 0) {
+            if (delay > 0)
               await new Promise(resolve => setTimeout(resolve, delay))
-            }
           }
-
           const uint8Array = new Uint8Array(message.data)
           const dataView = new DataView(uint8Array.buffer)
-          this.parseMidiBLE(dataView, true) // true = mode rejeu
+          this.parseMidiBLE(dataView, true)
         }
-
-        console.log('Rejeu terminé')
       } catch (error) {
         console.error('Erreur lors du rejeu:', error)
       }
