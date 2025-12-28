@@ -2,14 +2,14 @@ require_relative 'test_helper'
 
 class PianoTrainerTest < CapybaraTestBase
   def test_musicxml_note_extraction
-    load_score('simple-score.xml', 4)
+    load_score('simple-score.xml', 1, 4)
     select 'oh-when-the-saints'
     click_on 'Rejouer cassette'
     assert_text 'Partition terminée'
   end
 
   def test_cassette_playback_with_note_highlighting
-    load_score('schumann-melodie.xml', 256)
+    load_score('schumann-melodie.xml', 20, 256)
 
     assert_selector 'svg g.vf-stavenote', count: 256
     assert_no_selector 'svg g.vf-stavenote.played-note'
@@ -23,7 +23,7 @@ class PianoTrainerTest < CapybaraTestBase
   end
 
   def test_notes_must_be_played_in_correct_order
-    load_score('simple-score.xml', 4)
+    load_score('simple-score.xml', 1, 4)
 
     assert_selector 'svg g.vf-stavenote', count: 4
     assert_no_selector 'svg g.vf-stavenote.played-note'
@@ -39,10 +39,10 @@ class PianoTrainerTest < CapybaraTestBase
 
   private
 
-  def load_score(filename, expected_notes_count)
+  def load_score(filename, expected_measures, expected_notes)
     visit '/'
     attach_file('musicxml-upload', File.expand_path("fixtures/#{filename}", __dir__))
-    assert_text "Extraction terminée: #{expected_notes_count} notes trouvées"
+    assert_text "Extraction terminée: #{expected_measures} mesures, #{expected_notes} notes"
   end
 
   # Helper method to display the browser console logs.
