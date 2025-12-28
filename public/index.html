@@ -110,7 +110,25 @@
           <p>Répétez chaque mesure <span x-text="targetRepeatCount"></span> fois sans faire d'erreurs.</p>
         </article>
 
-        <div id="score" class="score-container" x-show="!!osmdInstance"></div>
+        <div id="score" class="score-container" x-show="!!osmdInstance">
+          <div class="osmd-container"></div>
+
+          <article x-show="scoreTitle != null || scoreComposer != null" aria-live="polite">
+            <header x-show="scoreTitle != null">
+              <strong x-text="scoreTitle || ''"></strong>
+              <small x-show="scoreComposer != null"> | <span x-text="scoreComposer || ''"></span></small>
+            </header>
+          </article>
+
+          <div class="score-progress" x-text="scoreProgress || ''"></div>
+
+          <div aria-live="polite">
+            <small x-text="extractionStatus || ''"></small>
+          </div>
+
+          <div x-show="errorMessage != null" class="error-message" x-text="errorMessage" x-transition></div>
+        </div>
+
         <div id="staff" class="staff-container"></div>
       </div>
     </main>

@@ -24,6 +24,13 @@ export function midiApp() {
     trainingMode: false,
     targetRepeatCount: 3,
 
+    // UI states
+    scoreTitle: null,
+    scoreComposer: null,
+    scoreProgress: null,
+    extractionStatus: null,
+    errorMessage: null,
+
     init() {
       staff.initStaff()
       this.loadCassettesList()
@@ -36,14 +43,26 @@ export function midiApp() {
       })
 
       musicxml.setCallbacks({
-        onNotesExtracted: notes => {
+        onNotesExtracted: (notes, metadata) => {
+          console.log('onNotesExtracted called with notes:', notes.length);
           this.allNotes = notes
-          console.log(`Extracted ${notes.length} measures from score`)
+          this.scoreTitle = metadata?.title || undefined
+          this.scoreComposer = metadata?.composer || undefined
+          const totalNotes = notes.reduce((acc, m) => acc + m.notes.length, 0)
+          this.extractionStatus = `✅ Extraction terminée: ${notes.length} mesures, ${totalNotes} notes`
+          this.scoreProgress = `Mesure: 1/${notes.length} | Progression: 0/${totalNotes} (0%)`
+          console.log('States updated:', this.extractionStatus);
         },
         onMeasureCompleted: (measureIndex) => {
           if (!this.trainingMode && measureIndex >= this.allNotes.length - 1) {
             this.showScoreComplete()
+          } else {
+            this.updateScoreProgress()
           }
+        },
+        onNoteError: (expected, played) => {
+          this.errorMessage = `❌ Erreur: attendu ${expected}, joué ${played}`
+          setTimeout(() => { this.errorMessage = '' }, 2000)
         },
         onTrainingProgress: (measureIndex, repeatCount, targetRepeatCount) => {
           this.updateTrainingDisplay(measureIndex, repeatCount, targetRepeatCount)
@@ -65,6 +84,19 @@ export function midiApp() {
       window.addEventListener('beforeunload', () => {
         if (this.device) this.device.gatt.disconnect()
       })
+    },
+
+    updateScoreProgress() {
+      const total = this.allNotes.reduce((acc, m) => acc + m.notes.length, 0)
+      const completed = this.allNotes.reduce((acc, m) => acc + m.notes.filter(n => n.played).length, 0)
+      const currentMeasure = this.allNotes.find(m => m.notes.some(n => !n.played))?.measureIndex || this.allNotes.length - 1
+      const percentage = total > 0 ? Math.round((completed / total) * 100) : 0
+      
+      if (completed >= total) {
+        this.scoreProgress = `🎉 Partition terminée ! (${total}/${total} notes - 100%)`
+      } else {
+        this.scoreProgress = `Mesure: ${currentMeasure + 1}/${this.allNotes.length} | Progression: ${completed}/${total} (${percentage}%)`
+      }
     },
 
     async scanBluetooth() {
@@ -112,6 +144,14 @@ export function midiApp() {
     },
 
     async loadMusicXML(event) {
+      // Reset UI state before loading
+      this.scoreTitle = null
+      this.scoreComposer = null
+      this.scoreProgress = null
+      this.extractionStatus = null
+      this.errorMessage = null
+
+      // Load the MusicXML file (this will trigger callbacks that set the state)
       await musicxml.loadMusicXML(event)
       this.osmdInstance = musicxml.getOsmdInstance()
       this.allNotes = musicxml.getNotesByMeasure()
@@ -122,6 +162,11 @@ export function midiApp() {
       this.osmdInstance = null
       this.allNotes = []
       this.trainingMode = false
+      this.scoreTitle = null
+      this.scoreComposer = null
+      this.scoreProgress = null
+      this.extractionStatus = null
+      this.errorMessage = null
       const trainingInfo = document.getElementById('training-info')
       if (trainingInfo) trainingInfo.remove()
     },

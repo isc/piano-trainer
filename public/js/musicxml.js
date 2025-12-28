@@ -11,6 +11,7 @@ let callbacks = {
   onNotesExtracted: null,
   onNoteValidation: null,
   onMeasureCompleted: null,
+  onNoteError: null,
   onTrainingProgress: null,
   onTrainingComplete: null
 };
@@ -70,14 +71,14 @@ async function loadMusicXML(event) {
 async function renderMusicXML(xmlContent) {
   try {
     const scoreContainer = document.getElementById('score');
-    const osmd = new opensheetmusicdisplay.OpenSheetMusicDisplay(scoreContainer);
+    const osmdContainer = scoreContainer.querySelector('.osmd-container') || scoreContainer;
+    const osmd = new opensheetmusicdisplay.OpenSheetMusicDisplay(osmdContainer);
 
     await osmd.load(xmlContent);
     osmdInstance = osmd;
     window.osmdInstance = osmd;
 
     extractNotesFromScore();
-    addPlaybackControls(osmd);
 
   } catch (error) {
     console.error('Erreur lors du rendu MusicXML avec OSMD:', error);
@@ -92,10 +93,15 @@ function extractNotesFromScore() {
 
   if (!osmdInstance) return;
 
-  extractFromSourceMeasures(osmdInstance.Sheet.SourceMeasures);
+  const sheet = osmdInstance.Sheet;
+  extractFromSourceMeasures(sheet.SourceMeasures);
 
   if (callbacks.onNotesExtracted) {
-    callbacks.onNotesExtracted(allNotes);
+    console.log('Calling onNotesExtracted callback');
+    callbacks.onNotesExtracted(allNotes, {
+      title: sheet.Title?.text || '',
+      composer: sheet.Composer || ''
+    });
   }
 }
 
@@ -208,8 +214,8 @@ function validatePlayedNote(midiNote) {
     return true;
   } else {
     const expectedNote = measureData.notes.find(n => !n.played);
-    if (expectedNote) {
-      showErrorFeedback(expectedNote.noteName, noteName(midiNote));
+    if (expectedNote && callbacks.onNoteError) {
+      callbacks.onNoteError(expectedNote.noteName, noteName(midiNote));
     }
     return false;
   }
@@ -231,7 +237,6 @@ function resetProgress() {
   currentMeasureIndex = 0;
   repeatCount = 0;
   trainingMode = false;
-  updateProgressDisplay();
 }
 
 function clearScore() {
@@ -241,91 +246,9 @@ function clearScore() {
   trainingMode = false;
   repeatCount = 0;
   const scoreContainer = document.getElementById('score');
-  scoreContainer.innerHTML = '';
+  const osmdContainer = scoreContainer.querySelector('.osmd-container');
+  if (osmdContainer) {
+    osmdContainer.innerHTML = '';
+  }
   document.getElementById('musicxml-upload').value = '';
-  
-  const oldControls = document.querySelector('#score-controls');
-  if (oldControls) oldControls.remove();
-  
-  const trainingInfo = document.getElementById('training-info');
-  if (trainingInfo) trainingInfo.remove();
-}
-
-function updateProgressDisplay() {
-  const progressDiv = document.getElementById('score-progress');
-  if (!progressDiv) return;
-
-  const total = allNotes.reduce((acc, m) => acc + m.notes.length, 0);
-  const completed = allNotes.reduce((acc, m) => acc + m.notes.filter(n => n.played).length, 0);
-  const percentage = total > 0 ? Math.round((completed / total) * 100) : 0;
-  
-  if (completed >= total) {
-    progressDiv.innerHTML = `🎉 Partition terminée ! (${total}/${total} notes - 100%)`;
-    progressDiv.style.color = '#22c55e';
-  } else {
-    const currentMeasure = allNotes[currentMeasureIndex]?.measureIndex || 0;
-    progressDiv.innerHTML = `Mesure: ${currentMeasure + 1}/${allNotes.length} | Progression: ${completed}/${total} (${percentage}%)`;
-    progressDiv.style.color = '#3b82f6';
-  }
-}
-
-function showErrorFeedback(expected, played) {
-  const progressDiv = document.getElementById('score-progress');
-  if (progressDiv) {
-    const originalContent = progressDiv.innerHTML;
-    const originalColor = progressDiv.style.color;
-
-    progressDiv.innerHTML = `❌ Erreur: attendu <strong>${expected}</strong>, joué <strong>${played}</strong>`;
-    progressDiv.style.color = '#ef4444';
-
-    setTimeout(() => {
-      progressDiv.innerHTML = originalContent;
-      progressDiv.style.color = originalColor;
-    }, 2000);
-  }
-}
-
-function addPlaybackControls(osmd) {
-  const oldControls = document.querySelector('#score-controls');
-  if (oldControls) oldControls.remove();
-
-  const scoreContainer = document.getElementById('score');
-  const controlsDiv = document.createElement('div');
-  controlsDiv.id = 'score-controls';
-  controlsDiv.style.cssText = 'margin: 10px 0; padding: 10px; background: #f8f9fa; border-radius: 5px;';
-
-  const info = document.createElement('div');
-  info.innerHTML = `
-    <strong>Partition chargée avec succès !</strong><br>
-    <small>Titre: ${JSON.stringify(osmd.Sheet?.Title) || 'Non spécifié'} |
-    Compositeur: ${osmd.Sheet?.Composer || 'Non spécifié'}</small>
-  `;
-  controlsDiv.appendChild(info);
-
-  const resetColorsBtn = document.createElement('button');
-  resetColorsBtn.textContent = '🎨 Réinitialiser';
-  resetColorsBtn.style.cssText = 'margin-left: 10px; padding: 5px 10px; font-size: 12px;';
-  resetColorsBtn.onclick = () => resetProgress();
-  controlsDiv.appendChild(resetColorsBtn);
-
-  const progressDiv = document.createElement('div');
-  progressDiv.id = 'score-progress';
-  progressDiv.style.cssText = 'margin-top: 10px; font-weight: bold;';
-  updateProgressDisplay();
-  controlsDiv.appendChild(progressDiv);
-
-  const statusDiv = document.createElement('div');
-  statusDiv.id = 'extraction-status';
-  statusDiv.style.cssText = 'margin-top: 10px; padding: 5px; background: #e8f5e8; border-radius: 3px; color: #2d5a2d;';
-  const totalNotes = allNotes.reduce((acc, m) => acc + m.notes.length, 0);
-  statusDiv.textContent = `✅ Extraction terminée: ${allNotes.length} mesures, ${totalNotes} notes`;
-  controlsDiv.appendChild(statusDiv);
-
-  // Insert after all existing children (which are the rendered score)
-  const lastChild = Array.from(scoreContainer.children).pop();
-  if (lastChild) {
-    lastChild.after(controlsDiv);
-  } else {
-    scoreContainer.appendChild(controlsDiv);
-  }
 }
