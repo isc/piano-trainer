@@ -321,5 +321,5 @@ function addPlaybackControls(osmd) {
   statusDiv.textContent = `✅ Extraction terminée: ${allNotes.length} mesures, ${totalNotes} notes`;
   controlsDiv.appendChild(statusDiv);
 
-  scoreContainer.insertBefore(controlsDiv, scoreContainer.firstChild);
+  scoreContainer.appendChild(controlsDiv);
 }
