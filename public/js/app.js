@@ -15,7 +15,6 @@ export function midiApp() {
     osmdInstance: null,
     allNotes: [],
     isRecording: false,
-    recordingData: [],
     recordingStartTime: null,
     recordingDuration: 0,
     recordingTimer: null,
