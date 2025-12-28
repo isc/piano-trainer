@@ -90,7 +90,6 @@ async function replayCassette(cassetteFile, midiParser, staffController) {
 
       const uint8Array = new Uint8Array(message.data)
       const dataView = new DataView(uint8Array.buffer)
-      await new Promise(resolve => setTimeout(resolve, 10)) // Small delay to ensure validation completes
       midiParser(dataView, true)
     }
   } catch (error) {
