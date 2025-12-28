@@ -155,10 +155,19 @@ function validatePlayedNote(midiNote) {
   const measureData = allNotes[currentMeasureIndex];
   if (!measureData || !measureData.notes || measureData.notes.length === 0) return false;
 
+  // Find the next expected note (first unplayed note)
+  const expectedNote = measureData.notes.find(n => !n.played);
+  if (!expectedNote) return false;
+
+  const expectedTimestamp = expectedNote.timestamp;
+
+  // Check if the played note matches any note at the expected timestamp
   let foundIndex = -1;
   for (let i = 0; i < measureData.notes.length; i++) {
     const noteData = measureData.notes[i];
-    if (!noteData.played && noteData.midiNumber === midiNote) {
+    if (!noteData.played &&
+        noteData.timestamp === expectedTimestamp &&
+        noteData.midiNumber === midiNote) {
       foundIndex = i;
       break;
     }
