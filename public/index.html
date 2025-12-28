@@ -105,10 +105,38 @@
         </div>
 
         <!-- Instructions pour le mode entraînement -->
-        <article x-show="trainingMode" aria-live="polite">
+        <article x-show="trainingMode && !trainingComplete" aria-live="polite">
           <strong>🎯 Mode Entraînement</strong>
           <p>Répétez chaque mesure <span x-text="targetRepeatCount"></span> fois sans faire d'erreurs.</p>
         </article>
+
+        <!-- Mode entraînement en cours -->
+        <article x-show="trainingInfo" aria-live="polite">
+          <header>
+            <strong>🔄 Mode Entraînement</strong>
+          </header>
+          <p x-text="trainingInfo"></p>
+          <progress :value="repeatCount" :max="targetRepeatCount"></progress>
+        </article>
+
+        <!-- Mode entraînement terminé -->
+        <article x-show="trainingComplete" class="success">
+          <header>
+            <strong>🎉 Félicitations !</strong>
+          </header>
+          <p>Vous avez complété toutes les mesures du morceau !</p>
+          <button @click="toggleTrainingMode">Quitter le mode entraînement</button>
+        </article>
+
+        <!-- Partition terminée - Modal -->
+        <dialog :open="showScoreCompleteModal">
+          <article class="success">
+            <header>
+              <strong>🎉 Félicitations !</strong>
+            </header>
+            <p>Partition terminée !</p>
+          </article>
+        </dialog>
 
         <div id="score" class="score-container" x-show="!!osmdInstance">
           <div class="osmd-container"></div>

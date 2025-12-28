@@ -23,6 +23,7 @@ export function midiApp() {
     selectedCassette: '',
     trainingMode: false,
     targetRepeatCount: 3,
+    repeatCount: 0,
 
     // UI states
     scoreTitle: null,
@@ -30,6 +31,9 @@ export function midiApp() {
     scoreProgress: null,
     extractionStatus: null,
     errorMessage: null,
+    trainingInfo: null,
+    trainingComplete: false,
+    showScoreCompleteModal: false,
 
     init() {
       staff.initStaff()
@@ -176,71 +180,35 @@ export function midiApp() {
       
       if (this.trainingMode) {
         musicxml.setTrainingMode(true)
+        this.trainingComplete = false
+        this.repeatCount = 0
         const state = musicxml.getTrainingState()
         this.updateTrainingDisplay(state.currentMeasureIndex, state.repeatCount, state.targetRepeatCount)
       } else {
         musicxml.setTrainingMode(false)
         musicxml.resetProgress()
-        const trainingInfo = document.getElementById('training-info')
-        if (trainingInfo) trainingInfo.remove()
+        this.trainingInfo = null
+        this.trainingComplete = false
+        this.repeatCount = 0
       }
     },
 
     updateTrainingDisplay(measureIndex, repeatCount, targetRepeatCount) {
-      let trainingInfo = document.getElementById('training-info')
-      if (!trainingInfo) {
-        trainingInfo = document.createElement('div')
-        trainingInfo.id = 'training-info'
-        trainingInfo.setAttribute('aria-live', 'polite')
-        
-        const scoreContainer = document.getElementById('score')
-        scoreContainer.insertBefore(trainingInfo, scoreContainer.firstChild)
-      }
-      
       const measureNum = measureIndex + 1
       const totalMeasures = this.allNotes.length
-      const progress = Math.round((repeatCount / targetRepeatCount) * 100)
-      
-      trainingInfo.ariaValueNow = progress
-      trainingInfo.innerHTML = `
-        <article>
-          <header>
-            <strong>🔄 Mode Entraînement</strong>
-          </header>
-          <p>Mesure: ${measureNum}/${totalMeasures} | Répétition: ${repeatCount}/${targetRepeatCount}</p>
-          <progress value="${repeatCount}" max="${targetRepeatCount}"></progress>
-        </article>
-      `
+      this.trainingInfo = `Mesure: ${measureNum}/${totalMeasures} | Répétition: ${repeatCount}/${targetRepeatCount}`
+      this.repeatCount = repeatCount
     },
 
     showTrainingComplete() {
-      const trainingInfo = document.getElementById('training-info')
-      if (trainingInfo) {
-        trainingInfo.innerHTML = `
-          <article class="success">
-            <header>
-              <strong>🎉 Félicitations !</strong>
-            </header>
-            <p>Vous avez complété toutes les mesures du morceau !</p>
-            <button onclick="document.querySelector('[x-data]').__x.$data.toggleTrainingMode()">Quitter le mode entraînement</button>
-          </article>
-        `
-      }
+      this.trainingComplete = true
+      this.trainingInfo = null
     },
 
     showScoreComplete() {
-      const congratsDiv = document.createElement('article')
-      congratsDiv.className = 'success'
-      congratsDiv.innerHTML = '<strong>🎉 Félicitations !</strong><br>Partition terminée !'
-
-      const modal = document.createElement('dialog')
-      modal.appendChild(congratsDiv)
-      document.body.appendChild(modal)
-      modal.showModal()
-
+      this.showScoreCompleteModal = true
       setTimeout(() => {
-        modal.close()
-        document.body.removeChild(modal)
+        this.showScoreCompleteModal = false
       }, 3000)
     }
   }
