@@ -96,8 +96,8 @@
             🗑️ Effacer partition
           </button>
 
-          <button 
-            @click="toggleTrainingMode" 
+          <button
+            @click="toggleTrainingMode"
             x-show="!!osmdInstance"
             x-text="trainingMode ? '🔄 Mode Entraînement Actif' : '🎯 Mode Entraînement'"
             :aria-pressed="trainingMode"
@@ -107,7 +107,10 @@
         <!-- Instructions pour le mode entraînement -->
         <article x-show="trainingMode && !trainingComplete" aria-live="polite">
           <strong>🎯 Mode Entraînement</strong>
-          <p>Répétez chaque mesure <span x-text="targetRepeatCount"></span> fois sans faire d'erreurs.</p>
+          <p>
+            Répétez chaque mesure <span x-text="targetRepeatCount"></span> fois
+            sans faire d'erreurs.
+          </p>
         </article>
 
         <!-- Mode entraînement en cours -->
@@ -125,7 +128,9 @@
             <strong>🎉 Félicitations !</strong>
           </header>
           <p>Vous avez complété toutes les mesures du morceau !</p>
-          <button @click="toggleTrainingMode">Quitter le mode entraînement</button>
+          <button @click="toggleTrainingMode">
+            Quitter le mode entraînement
+          </button>
         </article>
 
         <!-- Partition terminée - Modal -->
@@ -140,22 +145,31 @@
 
         <div id="score" class="score-container" x-show="!!osmdInstance">
           <div class="osmd-container"></div>
+        </div>
 
-          <article x-show="scoreTitle != null || scoreComposer != null" aria-live="polite">
-            <header x-show="scoreTitle != null">
-              <strong x-text="scoreTitle || ''"></strong>
-              <small x-show="scoreComposer != null"> | <span x-text="scoreComposer || ''"></span></small>
-            </header>
-          </article>
-
+        <article
+          x-show="scoreTitle != null || scoreComposer != null"
+          aria-live="polite"
+        >
+          <header x-show="scoreTitle != null">
+            <strong x-text="scoreTitle || ''"></strong>
+            <small x-show="scoreComposer != null">
+              | <span x-text="scoreComposer || ''"></span
+            ></small>
+          </header>
           <div class="score-progress" x-text="scoreProgress || ''"></div>
 
           <div aria-live="polite">
             <small x-text="extractionStatus || ''"></small>
           </div>
 
-          <div x-show="errorMessage != null" class="error-message" x-text="errorMessage" x-transition></div>
-        </div>
+          <div
+            x-show="errorMessage != null"
+            class="error-message"
+            x-text="errorMessage"
+            x-transition
+          ></div>
+        </article>
 
         <div id="staff" class="staff-container"></div>
       </div>
