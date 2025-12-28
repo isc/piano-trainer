@@ -146,7 +146,7 @@ export function midiApp() {
       if (!trainingInfo) {
         trainingInfo = document.createElement('div')
         trainingInfo.id = 'training-info'
-        trainingInfo.style.cssText = 'margin: 10px 0; padding: 15px; background: #dbeafe; border-radius: 5px; color: #1e40af;'
+        trainingInfo.setAttribute('aria-live', 'polite')
         
         const scoreContainer = document.getElementById('score')
         scoreContainer.insertBefore(trainingInfo, scoreContainer.firstChild)
@@ -156,12 +156,15 @@ export function midiApp() {
       const totalMeasures = this.allNotes.length
       const progress = Math.round((repeatCount / targetRepeatCount) * 100)
       
+      trainingInfo.ariaValueNow = progress
       trainingInfo.innerHTML = `
-        <strong>🔄 Mode Entraînement</strong><br>
-        <small>Mesure: ${measureNum}/${totalMeasures} | Répétition: ${repeatCount}/${targetRepeatCount}</small>
-        <div style="margin-top: 5px; background: #93c5fd; height: 10px; border-radius: 5px; overflow: hidden;">
-          <div style="background: #3b82f6; height: 100%; width: ${progress}%; transition: width 0.3s;"></div>
-        </div>
+        <article>
+          <header>
+            <strong>🔄 Mode Entraînement</strong>
+          </header>
+          <p>Mesure: ${measureNum}/${totalMeasures} | Répétition: ${repeatCount}/${targetRepeatCount}</p>
+          <progress value="${repeatCount}" max="${targetRepeatCount}"></progress>
+        </article>
       `
     },
 
@@ -169,39 +172,30 @@ export function midiApp() {
       const trainingInfo = document.getElementById('training-info')
       if (trainingInfo) {
         trainingInfo.innerHTML = `
-          <strong>🎉 Félicitations !</strong><br>
-          <small>Vous avez complété toutes les mesures du morceau !</small>
-          <br><br>
-          <button onclick="document.querySelector('[x-data]').__x.$data.toggleTrainingMode()">Quitter le mode entraînement</button>
+          <article class="success">
+            <header>
+              <strong>🎉 Félicitations !</strong>
+            </header>
+            <p>Vous avez complété toutes les mesures du morceau !</p>
+            <button onclick="document.querySelector('[x-data]').__x.$data.toggleTrainingMode()">Quitter le mode entraînement</button>
+          </article>
         `
-        trainingInfo.style.background = '#dcfce7'
-        trainingInfo.style.color = '#166534'
       }
     },
 
     showScoreComplete() {
-      const scoreContainer = document.getElementById('score')
-      const congratsDiv = document.createElement('div')
-      congratsDiv.style.cssText = `
-        position: fixed;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        background: #22c55e;
-        color: white;
-        padding: 20px 40px;
-        border-radius: 10px;
-        font-size: 18px;
-        font-weight: bold;
-        z-index: 1000;
-        text-align: center;
-      `
-      congratsDiv.innerHTML = '🎉 Félicitations !<br>Partition terminée !'
+      const congratsDiv = document.createElement('article')
+      congratsDiv.className = 'success'
+      congratsDiv.innerHTML = '<strong>🎉 Félicitations !</strong><br>Partition terminée !'
 
-      document.body.appendChild(congratsDiv)
+      const modal = document.createElement('dialog')
+      modal.appendChild(congratsDiv)
+      document.body.appendChild(modal)
+      modal.showModal()
 
       setTimeout(() => {
-        document.body.removeChild(congratsDiv)
+        modal.close()
+        document.body.removeChild(modal)
       }, 3000)
     }
   }
