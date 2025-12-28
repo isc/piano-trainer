@@ -95,6 +95,19 @@
           <button @click="clearScore" x-show="!!osmdInstance">
             🗑️ Effacer partition
           </button>
+
+          <button 
+            @click="toggleTrainingMode" 
+            x-show="!!osmdInstance"
+            :style="trainingMode ? 'background: #22c55e;' : ''"
+            x-text="trainingMode ? '🔄 Mode Entraînement Actif' : '🎯 Mode Entraînement'"
+          ></button>
+        </div>
+
+        <!-- Instructions pour le mode entraînement -->
+        <div x-show="trainingMode" style="margin: 10px 0; padding: 10px; background: #fef3c7; border-radius: 5px; color: #92400e;">
+          <strong>🎯 Mode Entraînement</strong><br>
+          <small>Répétez chaque mesure <span x-text="targetRepeatCount"></span> fois sans faire d'erreurs.</small>
         </div>
 
         <div id="score" class="score-container" x-show="!!osmdInstance"></div>

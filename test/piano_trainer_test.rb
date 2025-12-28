@@ -4,7 +4,7 @@ class PianoTrainerTest < CapybaraTestBase
   def test_musicxml_note_extraction
     visit "/"
     attach_file("musicxml-upload", File.expand_path("fixtures/simple-score.xml", __dir__))
-    assert_text "Extraction terminée: 4 notes trouvées"
+    assert_text "Extraction terminée: 1 mesures, 4 notes"
     select "oh-when-the-saints"
     click_on "Rejouer cassette"
     assert_text "Partition terminée"
@@ -13,7 +13,7 @@ class PianoTrainerTest < CapybaraTestBase
   def test_cassette_playback_with_note_highlighting
     visit "/"
     attach_file("musicxml-upload", File.expand_path("fixtures/schumann-melodie.xml", __dir__))
-    assert_text "Extraction terminée: 256 notes trouvées"
+    assert_text "Extraction terminée: 20 mesures, 256 notes"
 
     assert_selector "svg g.vf-stavenote", count: 256
     assert_no_selector "svg g.vf-stavenote.played-note"

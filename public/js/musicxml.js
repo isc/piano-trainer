@@ -2,11 +2,18 @@ import { NOTE_NAMES, noteName } from './midi.js'
 
 let osmdInstance = null;
 let allNotes = [];
+let currentMeasureIndex = 0;
 let currentNoteIndex = 0;
+let trainingMode = false;
+let targetRepeatCount = 3;
+let repeatCount = 0;
 
 let callbacks = {
   onNotesExtracted: null,
-  onNoteValidation: null
+  onNoteValidation: null,
+  onMeasureCompleted: null,
+  onTrainingProgress: null,
+  onTrainingComplete: null
 };
 
 export function initMusicXML() {
@@ -20,7 +27,24 @@ export function initMusicXML() {
     setCallbacks,
     getOsmdInstance: () => osmdInstance,
     getAllNotes: () => allNotes,
-    getCurrentNoteIndex: () => currentNoteIndex
+    getCurrentNoteIndex: () => currentNoteIndex,
+    getNotesByMeasure: () => allNotes,
+    getTrainingState: () => ({ trainingMode, currentMeasureIndex, repeatCount, targetRepeatCount }),
+    setTrainingMode: (enabled) => {
+      trainingMode = enabled
+      repeatCount = 0
+      currentMeasureIndex = 0
+      currentNoteIndex = 0
+      resetProgress()
+    },
+    resetMeasureProgress: () => {
+      for (const measureData of allNotes) {
+        for (const noteData of measureData.notes) {
+          noteData.played = false
+        }
+      }
+      currentNoteIndex = 0
+    }
   };
 }
 
@@ -66,12 +90,14 @@ async function renderMusicXML(xmlContent) {
 
 function extractNotesFromScore() {
   allNotes = [];
+  currentMeasureIndex = 0;
   currentNoteIndex = 0;
+  trainingMode = false;
+  repeatCount = 0;
 
   if (!osmdInstance) return;
 
   extractFromSourceMeasures(osmdInstance.Sheet.SourceMeasures);
-  allNotes.sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
 
   if (callbacks.onNotesExtracted) {
     callbacks.onNotesExtracted(allNotes);
@@ -80,36 +106,38 @@ function extractNotesFromScore() {
 
 function extractFromSourceMeasures(sourceMeasures) {
   sourceMeasures.forEach((measure, measureIndex) => {
+    const measureNotes = [];
+    
     measure.verticalSourceStaffEntryContainers.forEach(container => {
-      extractNotesFromContainer(container, measureIndex);
-    });
-  });
-}
-
-function extractNotesFromContainer(container, measureIndex) {
-  if (container.staffEntries) {
-    for (const staffEntry of container.staffEntries) {
-      if (!staffEntry?.voiceEntries) continue;
-      for (const voiceEntry of staffEntry.voiceEntries) {
-        extractNotesFromVoiceEntry(voiceEntry, measureIndex);
+      if (container.staffEntries) {
+        for (const staffEntry of container.staffEntries) {
+          if (!staffEntry?.voiceEntries) continue;
+          for (const voiceEntry of staffEntry.voiceEntries) {
+            if (!voiceEntry.notes) continue;
+            for (const note of voiceEntry.notes) {
+              if (!note.pitch) continue;
+              const noteInfo = pitchToMidiFromSourceNote(note.pitch);
+              measureNotes.push({
+                note: note,
+                midiNumber: noteInfo.midiNote,
+                noteName: noteInfo.noteName,
+                timestamp: measureIndex + voiceEntry.timestamp.realValue,
+                measureIndex: measureIndex,
+                played: false
+              });
+            }
+          }
+        }
       }
-    }
-  }
-}
-
-function extractNotesFromVoiceEntry(voiceEntry, measureIndex) {
-  if (!voiceEntry.notes) return;
-  for (const note of voiceEntry.notes) {
-    if (!note.pitch) continue;
-    const noteInfo = pitchToMidiFromSourceNote(note.pitch);
-    allNotes.push({
-      note: note,
-      midiNumber: noteInfo.midiNote,
-      noteName: noteInfo.noteName,
-      timestamp: measureIndex + voiceEntry.timestamp.realValue,
-      measureIndex: measureIndex
     });
-  }
+    
+    if (measureNotes.length > 0) {
+      allNotes.push({
+        measureIndex: measureIndex,
+        notes: measureNotes
+      });
+    }
+  });
 }
 
 function pitchToMidiFromSourceNote(pitch) {
@@ -120,46 +148,79 @@ function pitchToMidiFromSourceNote(pitch) {
 }
 
 function validatePlayedNote(midiNote) {
-  if (!osmdInstance || allNotes.length === 0) return;
-  if (currentNoteIndex >= allNotes.length) return;
+  if (!osmdInstance || allNotes.length === 0) return false;
+  if (currentMeasureIndex >= allNotes.length) return false;
 
-  const expectedNote = allNotes[currentNoteIndex];
-  const currentTimestamp = expectedNote.timestamp;
+  const measureData = allNotes[currentMeasureIndex];
+  if (!measureData || !measureData.notes || measureData.notes.length === 0) return false;
 
-  // Find matching note at current timestamp
-  const matchingNoteIndex = allNotes.findIndex(
-    (note, index) =>
-      index >= currentNoteIndex &&
-      note.timestamp === currentTimestamp &&
-      note.midiNumber === midiNote
-  );
-
-  if (matchingNoteIndex !== -1) {
-    const matchingNote = allNotes[matchingNoteIndex];
-    svgNote(matchingNote.note).classList.add('played-note');
-
-    // Handle out-of-order notes
-    if (matchingNoteIndex !== currentNoteIndex) {
-      [allNotes[currentNoteIndex], allNotes[matchingNoteIndex]] =
-      [allNotes[matchingNoteIndex], allNotes[currentNoteIndex]];
+  let foundIndex = -1;
+  for (let i = 0; i < measureData.notes.length; i++) {
+    const noteData = measureData.notes[i];
+    if (!noteData.played && noteData.midiNumber === midiNote) {
+      foundIndex = i;
+      break;
     }
+  }
 
+  if (foundIndex !== -1) {
+    const noteData = measureData.notes[foundIndex];
+    svgNote(noteData.note).classList.add('played-note');
+    measureData.notes[foundIndex].played = true;
     currentNoteIndex++;
 
-    if (currentNoteIndex >= allNotes.length) {
-      showCompletionMessage();
+    const allNotesPlayed = measureData.notes.every(note => note.played);
+    
+    if (allNotesPlayed) {
+      if (trainingMode) {
+        repeatCount++;
+        if (callbacks.onTrainingProgress) {
+          callbacks.onTrainingProgress(currentMeasureIndex, repeatCount, targetRepeatCount);
+        }
+        
+        if (repeatCount >= targetRepeatCount) {
+          if (currentMeasureIndex + 1 >= allNotes.length) {
+            if (callbacks.onTrainingComplete) {
+              callbacks.onTrainingComplete();
+            }
+          } else {
+            setTimeout(() => {
+              resetMeasureProgress();
+              currentMeasureIndex++;
+              currentNoteIndex = 0;
+              repeatCount = 0;
+              if (callbacks.onTrainingProgress) {
+                callbacks.onTrainingProgress(currentMeasureIndex, repeatCount, targetRepeatCount);
+              }
+            }, 1000);
+          }
+        } else {
+          setTimeout(() => {
+            resetMeasureProgress();
+            currentNoteIndex = 0;
+            if (callbacks.onTrainingProgress) {
+              callbacks.onTrainingProgress(currentMeasureIndex, repeatCount, targetRepeatCount);
+            }
+          }, 1000);
+        }
+      } else {
+        if (currentMeasureIndex + 1 < allNotes.length) {
+          currentMeasureIndex++;
+          currentNoteIndex = 0;
+        } else {
+          if (callbacks.onMeasureCompleted) {
+            callbacks.onMeasureCompleted(currentMeasureIndex);
+          }
+        }
+      }
     }
+    return true;
   } else {
-    // Show error for incorrect note
-    const notesAtSameTimestamp = allNotes.filter(
-      (note, index) =>
-        index >= currentNoteIndex &&
-        note.timestamp === currentTimestamp
-    );
-    const expectedNoteNames = notesAtSameTimestamp
-      .map(note => note.noteName)
-      .join(' ou ');
-    showErrorFeedback(expectedNoteNames, noteName(midiNote));
+    const expectedNote = measureData.notes.find(n => !n.played);
+    if (expectedNote) {
+      showErrorFeedback(expectedNote.noteName, noteName(midiNote));
+    }
+    return false;
   }
 }
 
@@ -171,9 +232,15 @@ function resetProgress() {
   if (!osmdInstance) return;
 
   currentNoteIndex = 0;
-  for (const noteData of allNotes) {
-    svgNote(noteData.note).classList.remove('played-note');
+  for (const measureData of allNotes) {
+    for (const noteData of measureData.notes) {
+      svgNote(noteData.note).classList.remove('played-note');
+      noteData.played = false;
+    }
   }
+  currentMeasureIndex = 0;
+  repeatCount = 0;
+  trainingMode = false;
   updateProgressDisplay();
 }
 
@@ -181,25 +248,34 @@ function clearScore() {
   osmdInstance = null;
   allNotes = [];
   currentNoteIndex = 0;
+  currentMeasureIndex = 0;
+  trainingMode = false;
+  repeatCount = 0;
   const scoreContainer = document.getElementById('score');
   scoreContainer.innerHTML = '';
   document.getElementById('musicxml-upload').value = '';
+  
+  const oldControls = document.querySelector('#score-controls');
+  if (oldControls) oldControls.remove();
+  
+  const trainingInfo = document.getElementById('training-info');
+  if (trainingInfo) trainingInfo.remove();
 }
 
 function updateProgressDisplay() {
   const progressDiv = document.getElementById('score-progress');
   if (!progressDiv) return;
 
-  const total = allNotes.length;
-  const completed = currentNoteIndex;
-  const percentage = Math.round((completed / total) * 100);
-
+  const total = allNotes.reduce((acc, m) => acc + m.notes.length, 0);
+  const completed = allNotes.reduce((acc, m) => acc + m.notes.filter(n => n.played).length, 0);
+  const percentage = total > 0 ? Math.round((completed / total) * 100) : 0;
+  
   if (completed >= total) {
     progressDiv.innerHTML = `🎉 Partition terminée ! (${total}/${total} notes - 100%)`;
     progressDiv.style.color = '#22c55e';
   } else {
-    const nextNote = allNotes[currentNoteIndex]?.noteName || '?';
-    progressDiv.innerHTML = `Note suivante: <strong>${nextNote}</strong> | Progression: ${completed}/${total} (${percentage}%)`;
+    const currentMeasure = allNotes[currentMeasureIndex]?.measureIndex || 0;
+    progressDiv.innerHTML = `Mesure: ${currentMeasure + 1}/${allNotes.length} | Progression: ${completed}/${total} (${percentage}%)`;
     progressDiv.style.color = '#3b82f6';
   }
 }
@@ -247,8 +323,12 @@ function showErrorFeedback(expected, played) {
 }
 
 function addPlaybackControls(osmd) {
+  const oldControls = document.querySelector('#score-controls');
+  if (oldControls) oldControls.remove();
+
   const scoreContainer = document.getElementById('score');
   const controlsDiv = document.createElement('div');
+  controlsDiv.id = 'score-controls';
   controlsDiv.style.cssText = 'margin: 10px 0; padding: 10px; background: #f8f9fa; border-radius: 5px;';
 
   const info = document.createElement('div');
@@ -274,9 +354,9 @@ function addPlaybackControls(osmd) {
   const statusDiv = document.createElement('div');
   statusDiv.id = 'extraction-status';
   statusDiv.style.cssText = 'margin-top: 10px; padding: 5px; background: #e8f5e8; border-radius: 3px; color: #2d5a2d;';
-  statusDiv.textContent = `✅ Extraction terminée: ${allNotes.length} notes trouvées`;
+  const totalNotes = allNotes.reduce((acc, m) => acc + m.notes.length, 0);
+  statusDiv.textContent = `✅ Extraction terminée: ${allNotes.length} mesures, ${totalNotes} notes`;
   controlsDiv.appendChild(statusDiv);
 
-  document.body.appendChild(controlsDiv);
+  scoreContainer.insertBefore(controlsDiv, scoreContainer.firstChild);
 }
-
