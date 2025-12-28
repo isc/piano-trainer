@@ -23,6 +23,7 @@ export function midiApp() {
     cassettes: [],
     selectedCassette: '',
     trainingMode: false,
+    targetRepeatCount: 3,
 
     init() {
       staff.initStaff()
@@ -75,7 +76,6 @@ export function midiApp() {
     startRecording() {
       midi.startRecording()
       this.isRecording = true
-      this.recordingData = []
       this.recordingStartTime = Date.now()
       this.recordingDuration = 0
 
