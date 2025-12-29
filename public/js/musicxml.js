@@ -7,6 +7,7 @@ let trainingMode = false;
 let targetRepeatCount = 3;
 let repeatCount = 0;
 let currentRepetitionIsClean = true;
+let lastStaffY = null;
 
 let callbacks = {
   onNotesExtracted: null,
@@ -53,6 +54,13 @@ function setCallbacks(cbs) {
   callbacks = { ...callbacks, ...cbs };
 }
 
+function resetPlaybackState() {
+  currentMeasureIndex = 0;
+  repeatCount = 0;
+  currentRepetitionIsClean = true;
+  lastStaffY = null;
+}
+
 async function loadMusicXML(event) {
   const file = event.target.files[0];
   if (!file) return;
@@ -68,9 +76,8 @@ async function loadMusicXML(event) {
     // Clear previous score before loading new one
     if (osmdInstance) {
       const scoreContainer = document.getElementById('score');
-      const osmdContainer = scoreContainer.querySelector('.osmd-container');
-      if (osmdContainer) {
-        osmdContainer.innerHTML = '';
+      if (scoreContainer) {
+        scoreContainer.innerHTML = '';
       }
     }
 
@@ -84,8 +91,7 @@ async function loadMusicXML(event) {
 async function renderMusicXML(xmlContent) {
   try {
     const scoreContainer = document.getElementById('score');
-    const osmdContainer = scoreContainer.querySelector('.osmd-container') || scoreContainer;
-    const osmd = new opensheetmusicdisplay.OpenSheetMusicDisplay(osmdContainer);
+    const osmd = new opensheetmusicdisplay.OpenSheetMusicDisplay(scoreContainer);
 
     await osmd.load(xmlContent);
     osmdInstance = osmd;
@@ -100,10 +106,8 @@ async function renderMusicXML(xmlContent) {
 
 function extractNotesFromScore() {
   allNotes = [];
-  currentMeasureIndex = 0;
   trainingMode = false;
-  repeatCount = 0;
-  currentRepetitionIsClean = true;
+  resetPlaybackState();
 
   if (!osmdInstance) return;
 
@@ -277,13 +281,32 @@ function validatePlayedNote(midiNote) {
     svgNote(noteData.note).classList.add('played-note');
     measureData.notes[foundIndex].played = true;
 
-    // Scroll to score title when first note is played
-    const isFirstNote = currentMeasureIndex === 0 &&
-                        measureData.notes.filter(n => n.played).length === 1;
-    if (isFirstNote) {
-      const scoreContainer = document.getElementById('score');
-      if (scoreContainer) {
-        scoreContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    // Check if this is the first note of the measure
+    const isFirstNoteOfMeasure = measureData.notes.filter(n => n.played).length === 1;
+
+    if (isFirstNoteOfMeasure) {
+      // Scroll to score title when first note of first measure is played
+      if (currentMeasureIndex === 0) {
+        const scoreContainer = document.getElementById('score');
+        if (scoreContainer) {
+          scoreContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          // Store initial Y position
+          const noteElement = svgNote(noteData.note);
+          const bbox = noteElement.getBBox();
+          lastStaffY = bbox.y;
+        }
+      } else {
+        // Check if we've moved to a new staff (Y position changed significantly)
+        const noteElement = svgNote(noteData.note);
+        const bbox = noteElement.getBBox();
+        const currentY = bbox.y;
+
+        if (lastStaffY !== null && Math.abs(currentY - lastStaffY) > 50) {
+          // We've moved to a new staff, scroll by one staff height
+          const staffHeight = Math.abs(currentY - lastStaffY);
+          window.scrollBy({ top: staffHeight, behavior: 'smooth' });
+          lastStaffY = currentY;
+        }
       }
     }
 
@@ -360,22 +383,17 @@ function resetProgress() {
       noteData.played = false;
     }
   }
-  currentMeasureIndex = 0;
-  repeatCount = 0;
-  currentRepetitionIsClean = true;
+  resetPlaybackState();
 }
 
 function clearScore() {
   osmdInstance = null;
   allNotes = [];
-  currentMeasureIndex = 0;
   trainingMode = false;
-  repeatCount = 0;
-  currentRepetitionIsClean = true;
+  resetPlaybackState();
   const scoreContainer = document.getElementById('score');
-  const osmdContainer = scoreContainer.querySelector('.osmd-container');
-  if (osmdContainer) {
-    osmdContainer.innerHTML = '';
+  if (scoreContainer) {
+    scoreContainer.innerHTML = '';
   }
   document.getElementById('musicxml-upload').value = '';
 }
