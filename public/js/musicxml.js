@@ -148,6 +148,18 @@ function pitchToMidiFromSourceNote(pitch) {
   return { noteName: `${noteNameStd}${octaveStd}`, midiNote: midiNote };
 }
 
+function resetMeasureProgress() {
+  if (currentMeasureIndex >= allNotes.length) return;
+
+  const measureData = allNotes[currentMeasureIndex];
+  if (!measureData) return;
+
+  for (const noteData of measureData.notes) {
+    svgNote(noteData.note).classList.remove('played-note');
+    noteData.played = false;
+  }
+}
+
 function validatePlayedNote(midiNote) {
   if (!osmdInstance || allNotes.length === 0) return false;
   if (currentMeasureIndex >= allNotes.length) return false;
@@ -155,13 +167,11 @@ function validatePlayedNote(midiNote) {
   const measureData = allNotes[currentMeasureIndex];
   if (!measureData || !measureData.notes || measureData.notes.length === 0) return false;
 
-  // Find the next expected note (first unplayed note)
   const expectedNote = measureData.notes.find(n => !n.played);
   if (!expectedNote) return false;
 
   const expectedTimestamp = expectedNote.timestamp;
 
-  // Check if the played note matches any note at the expected timestamp
   let foundIndex = -1;
   for (let i = 0; i < measureData.notes.length; i++) {
     const noteData = measureData.notes[i];
@@ -179,7 +189,7 @@ function validatePlayedNote(midiNote) {
     measureData.notes[foundIndex].played = true;
 
     const allNotesPlayed = measureData.notes.every(note => note.played);
-    
+
     if (allNotesPlayed) {
       if (trainingMode) {
         repeatCount++;
@@ -200,7 +210,7 @@ function validatePlayedNote(midiNote) {
               if (callbacks.onTrainingProgress) {
                 callbacks.onTrainingProgress(currentMeasureIndex, repeatCount, targetRepeatCount);
               }
-            }, 1000);
+            }, 500);
           }
         } else {
           setTimeout(() => {
@@ -208,7 +218,7 @@ function validatePlayedNote(midiNote) {
             if (callbacks.onTrainingProgress) {
               callbacks.onTrainingProgress(currentMeasureIndex, repeatCount, targetRepeatCount);
             }
-          }, 1000);
+          }, 500);
         }
       } else {
         if (currentMeasureIndex + 1 < allNotes.length) {
@@ -245,7 +255,6 @@ function resetProgress() {
   }
   currentMeasureIndex = 0;
   repeatCount = 0;
-  trainingMode = false;
 }
 
 function clearScore() {
