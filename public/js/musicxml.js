@@ -64,6 +64,15 @@ async function loadMusicXML(event) {
       return;
     }
 
+    // Clear previous score before loading new one
+    if (osmdInstance) {
+      const scoreContainer = document.getElementById('score');
+      const osmdContainer = scoreContainer.querySelector('.osmd-container');
+      if (osmdContainer) {
+        osmdContainer.innerHTML = '';
+      }
+    }
+
     await renderMusicXML(xmlContent);
   } catch (error) {
     console.error('Erreur lors du chargement du MusicXML:', error);

@@ -32,13 +32,35 @@
   </head>
   <body>
     <main class="container">
-      <button
-        @click="scanBluetooth"
-        x-text="'Scanner Bluetooth MIDI'"
-        x-show="!bluetoothConnected"
-      ></button>
-
       <div>
+        <!-- Connexion Bluetooth et sélection de cassettes -->
+        <div class="controls-row">
+          <button
+            @click="scanBluetooth"
+            x-text="'Scanner Bluetooth MIDI'"
+            x-show="!bluetoothConnected"
+          ></button>
+
+          <select x-model="selectedCassette" @change="loadCassettesList()" x-show="!isRecording">
+            <option value="">Choisir une cassette...</option>
+            <template x-for="cassette in cassettes" :key="cassette.name">
+              <option :value="cassette.file" x-text="cassette.name"></option>
+            </template>
+          </select>
+
+          <button
+            @click="replayCassette"
+            x-show="selectedCassette && !isReplaying && !isRecording"
+            class="btn-replay"
+          >
+            ▶️ Rejouer cassette
+          </button>
+
+          <span x-show="isReplaying" class="replay-status">
+            ▶️ Rejeu en cours...
+          </span>
+        </div>
+
         <!-- Contrôles d'enregistrement -->
         <div class="controls-row">
           <button
@@ -60,28 +82,6 @@
           </span>
         </div>
 
-        <!-- Sélection et rejeu de cassettes -->
-        <div class="controls-row" x-show="!isRecording">
-          <select x-model="selectedCassette" @change="loadCassettesList()">
-            <option value="">Choisir une cassette...</option>
-            <template x-for="cassette in cassettes" :key="cassette.name">
-              <option :value="cassette.file" x-text="cassette.name"></option>
-            </template>
-          </select>
-
-          <button
-            @click="replayCassette"
-            x-show="selectedCassette && !isReplaying"
-            class="btn-replay"
-          >
-            ▶️ Rejouer cassette
-          </button>
-
-          <span x-show="isReplaying" class="replay-status">
-            ▶️ Rejeu en cours...
-          </span>
-        </div>
-
         <!-- Upload et affichage de partition MusicXML -->
         <div class="controls-row">
           <label for="musicxml-upload">📄 Charger partition MusicXML</label>
@@ -91,10 +91,6 @@
             @change="loadMusicXML($event)"
             id="musicxml-upload"
           />
-
-          <button @click="clearScore" x-show="!!osmdInstance">
-            🗑️ Effacer partition
-          </button>
 
           <button
             @click="toggleTrainingMode"

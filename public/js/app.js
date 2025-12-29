@@ -148,13 +148,6 @@ export function midiApp() {
     },
 
     async loadMusicXML(event) {
-      // Reset UI state before loading
-      this.scoreTitle = null
-      this.scoreComposer = null
-      this.scoreProgress = null
-      this.extractionStatus = null
-      this.errorMessage = null
-
       // Load the MusicXML file (this will trigger callbacks that set the state)
       await musicxml.loadMusicXML(event)
       this.osmdInstance = musicxml.getOsmdInstance()
