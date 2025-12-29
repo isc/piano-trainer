@@ -8,6 +8,7 @@ let targetRepeatCount = 3;
 let repeatCount = 0;
 let currentRepetitionIsClean = true;
 let lastStaffY = null;
+let measureClickHandlers = new Map();
 
 let callbacks = {
   onNotesExtracted: null,
@@ -39,7 +40,14 @@ export function initMusicXML() {
       currentRepetitionIsClean = true
       resetProgress()
       updateMeasureCursor()
+
+      if (enabled) {
+        setupMeasureClickHandlers()
+      } else {
+        removeMeasureClickHandlers()
+      }
     },
+    jumpToMeasure: (measureIndex) => jumpToMeasure(measureIndex),
     resetMeasureProgress: () => {
       for (const measureData of allNotes) {
         for (const noteData of measureData.notes) {
@@ -166,7 +174,7 @@ function pitchToMidiFromSourceNote(pitch) {
   return { noteName: `${noteNameStd}${octaveStd}`, midiNote: midiNote };
 }
 
-function resetMeasureProgress() {
+function resetMeasureProgress(resetRepeatCount = true) {
   if (currentMeasureIndex >= allNotes.length) return;
 
   const measureData = allNotes[currentMeasureIndex];
@@ -176,6 +184,11 @@ function resetMeasureProgress() {
     svgNote(noteData.note).classList.remove('played-note');
     noteData.played = false;
   }
+
+  if (resetRepeatCount) {
+    repeatCount = 0;
+  }
+  currentRepetitionIsClean = true;
 }
 
 function updateMeasureCursor() {
@@ -251,6 +264,56 @@ function updateRepeatIndicators() {
   indicators.forEach((circle, index) => {
     circle.classList.toggle('filled', index < repeatCount);
   });
+}
+
+function setupMeasureClickHandlers() {
+  if (!osmdInstance || allNotes.length === 0) return;
+
+  // Clear existing handlers first
+  measureClickHandlers.clear();
+
+  // Add click handlers to all notes
+  allNotes.forEach((measureData, measureIndex) => {
+    measureData.notes.forEach((noteData) => {
+      const noteElement = svgNote(noteData.note);
+      noteElement.style.cursor = 'pointer';
+      noteElement.dataset.measureIndex = measureIndex;
+
+      // Create and store handler
+      const handler = () => jumpToMeasure(measureIndex);
+      measureClickHandlers.set(noteElement, handler);
+      noteElement.addEventListener('click', handler);
+    });
+  });
+}
+
+function removeMeasureClickHandlers() {
+  // Remove click handlers from all notes
+  measureClickHandlers.forEach((handler, noteElement) => {
+    noteElement.style.cursor = '';
+    delete noteElement.dataset.measureIndex;
+    noteElement.removeEventListener('click', handler);
+  });
+
+  measureClickHandlers.clear();
+}
+
+function jumpToMeasure(measureIndex) {
+  if (measureIndex < 0 || measureIndex >= allNotes.length) return;
+
+  // Reset progress for current measure before jumping
+  resetMeasureProgress();
+
+  // Jump to new measure
+  currentMeasureIndex = measureIndex;
+
+  // Update visual cursor
+  updateMeasureCursor();
+
+  // Notify callback
+  if (callbacks.onTrainingProgress) {
+    callbacks.onTrainingProgress(currentMeasureIndex, repeatCount, targetRepeatCount);
+  }
 }
 
 function validatePlayedNote(midiNote) {
@@ -330,8 +393,6 @@ function validatePlayedNote(midiNote) {
             setTimeout(() => {
               resetMeasureProgress();
               currentMeasureIndex++;
-              repeatCount = 0;
-              currentRepetitionIsClean = true;
               updateMeasureCursor();
               if (callbacks.onTrainingProgress) {
                 callbacks.onTrainingProgress(currentMeasureIndex, repeatCount, targetRepeatCount);
@@ -340,8 +401,7 @@ function validatePlayedNote(midiNote) {
           }
         } else {
           setTimeout(() => {
-            resetMeasureProgress();
-            currentRepetitionIsClean = true;
+            resetMeasureProgress(false);
             if (callbacks.onTrainingProgress) {
               callbacks.onTrainingProgress(currentMeasureIndex, repeatCount, targetRepeatCount);
             }

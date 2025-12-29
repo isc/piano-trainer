@@ -84,6 +84,29 @@ class PianoTrainerTest < CapybaraTestBase
     assert_no_text 'Mesure: 1/1'
   end
 
+  def test_training_mode_allows_jumping_to_specific_measure
+    load_score('schumann-melodie.xml', 20, 256)
+
+    click_on 'Mode Entraînement'
+
+    # Measure 1 should be highlighted by default
+    initial_rect_x = page.find('svg rect#measure-highlight-rect')['x'].to_f
+
+    # Click on a note in measure 2 (measureIndex=1 in 0-based indexing)
+    measure_2_note = page.first('svg g.vf-stavenote[data-measure-index="1"]')
+    measure_2_note.trigger('click')
+
+    # Verify the highlight rectangle moved to measure 2
+    new_rect_x = page.find('svg rect#measure-highlight-rect')['x'].to_f
+    assert new_rect_x != initial_rect_x, "Highlight rectangle should have moved"
+
+    # Play first note of measure 2 (A4 = MIDI 69)
+    replay_cassette('melodie-measure-2-first-note')
+
+    # Verify that exactly one note was validated
+    assert_selector 'svg g.vf-stavenote.played-note', count: 1
+  end
+
   private
 
   def load_score(filename, expected_measures, expected_notes)
