@@ -3,6 +3,9 @@ require 'json'
 require 'fileutils'
 
 class App < Sinatra::Base
+  class ValidationError < StandardError
+  end
+
   configure do
     set :port, 4567
     set :bind, '0.0.0.0'
@@ -11,6 +14,57 @@ class App < Sinatra::Base
 
     cassettes_dir = File.join(__dir__, 'public', 'cassettes')
     FileUtils.mkdir_p(cassettes_dir)
+  end
+
+  helpers do
+    def parse_request_body
+      JSON.parse(request.body.read)
+    end
+
+    def validate_cassette_data(data)
+      name = data['name']
+      midi_data = data['data']
+
+      raise ValidationError, 'Le nom de la cassette est requis' if name.nil? || name.empty?
+
+      return unless midi_data.nil? || !midi_data.is_a?(Array)
+
+      raise ValidationError,
+            'Les données MIDI sont requises et doivent être un tableau'
+    end
+
+    def build_cassette_filepath(clean_name)
+      filename = "#{clean_name}.json"
+      cassettes_dir = File.join(settings.public_folder, 'cassettes')
+      File.join(cassettes_dir, filename)
+    end
+
+    def save_cassette_file(filepath, name, midi_data)
+      cassette = {
+        name:,
+        created_at: Time.now.iso8601,
+        data: midi_data
+      }
+      File.write(filepath, JSON.generate(cassette))
+    end
+
+    def success_response(clean_name)
+      status 200
+      {
+        success: true,
+        message: 'Cassette sauvegardée avec succès',
+        file: "cassettes/#{clean_name}.json"
+      }.to_json
+    end
+
+    def error_response(status_code, message)
+      status status_code
+      { error: message }.to_json
+    end
+
+    def sanitize_cassette_name(name)
+      name.gsub(/[^a-zA-Z0-9_-]/, '_')
+    end
   end
 
   # CORS pour permettre les requêtes depuis le frontend
@@ -84,58 +138,4 @@ class App < Sinatra::Base
 
   # Démarrer l'application si ce fichier est exécuté directement
   run! if app_file == $PROGRAM_NAME
-
-  private
-
-  def parse_request_body
-    JSON.parse(request.body.read)
-  end
-
-  def validate_cassette_data(data)
-    name = data['name']
-    midi_data = data['data']
-
-    raise ValidationError, 'Le nom de la cassette est requis' if name.nil? || name.empty?
-
-    return unless midi_data.nil? || !midi_data.is_a?(Array)
-
-    raise ValidationError,
-          'Les données MIDI sont requises et doivent être un tableau'
-  end
-
-  def build_cassette_filepath(clean_name)
-    filename = "#{clean_name}.json"
-    cassettes_dir = File.join(settings.public_folder, 'cassettes')
-    File.join(cassettes_dir, filename)
-  end
-
-  def save_cassette_file(filepath, name, midi_data)
-    cassette = {
-      name:,
-      created_at: Time.now.iso8601,
-      data: midi_data
-    }
-    File.write(filepath, JSON.generate(cassette))
-  end
-
-  def success_response(clean_name)
-    status 200
-    {
-      success: true,
-      message: 'Cassette sauvegardée avec succès',
-      file: "cassettes/#{clean_name}.json"
-    }.to_json
-  end
-
-  def error_response(status_code, message)
-    status status_code
-    { error: message }.to_json
-  end
-
-  def sanitize_cassette_name(name)
-    name.gsub(/[^a-zA-Z0-9_-]/, '_')
-  end
-
-  class ValidationError < StandardError
-  end
 end
