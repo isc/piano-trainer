@@ -34,6 +34,7 @@ export function initMusicXML() {
       repeatCount = 0
       currentMeasureIndex = 0
       resetProgress()
+      updateMeasureCursor()
     },
     resetMeasureProgress: () => {
       for (const measureData of allNotes) {
@@ -160,6 +161,47 @@ function resetMeasureProgress() {
   }
 }
 
+function updateMeasureCursor() {
+  if (!osmdInstance) return;
+
+  // Remove existing highlight rectangle
+  const existingHighlight = document.getElementById('measure-highlight-rect');
+  if (existingHighlight) {
+    existingHighlight.remove();
+  }
+
+  if (trainingMode && currentMeasureIndex < allNotes.length) {
+    const measureData = allNotes[currentMeasureIndex];
+    if (measureData && measureData.notes && measureData.notes.length > 0) {
+      // Get bounding boxes of all notes in the measure
+      const noteElements = measureData.notes.map(n => svgNote(n.note));
+      const boxes = noteElements.map(el => el.getBBox());
+
+      if (boxes.length > 0) {
+        // Calculate combined bounding box
+        const minX = Math.min(...boxes.map(b => b.x));
+        const minY = Math.min(...boxes.map(b => b.y));
+        const maxX = Math.max(...boxes.map(b => b.x + b.width));
+        const maxY = Math.max(...boxes.map(b => b.y + b.height));
+
+        // Create highlight rectangle
+        const svg = noteElements[0].ownerSVGElement;
+        const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+        rect.setAttribute('id', 'measure-highlight-rect');
+        rect.setAttribute('x', minX - 10);
+        rect.setAttribute('y', minY - 10);
+        rect.setAttribute('width', maxX - minX + 20);
+        rect.setAttribute('height', maxY - minY + 20);
+        rect.setAttribute('fill', 'rgba(59, 130, 246, 0.15)');
+        rect.setAttribute('rx', '4');
+
+        // Insert at beginning so it's behind notes
+        svg.insertBefore(rect, svg.firstChild);
+      }
+    }
+  }
+}
+
 function validatePlayedNote(midiNote) {
   if (!osmdInstance || allNotes.length === 0) return false;
   if (currentMeasureIndex >= allNotes.length) return false;
@@ -207,6 +249,7 @@ function validatePlayedNote(midiNote) {
               resetMeasureProgress();
               currentMeasureIndex++;
               repeatCount = 0;
+              updateMeasureCursor();
               if (callbacks.onTrainingProgress) {
                 callbacks.onTrainingProgress(currentMeasureIndex, repeatCount, targetRepeatCount);
               }

@@ -38,6 +38,9 @@ class PianoTrainerTest < CapybaraTestBase
     click_on 'Mode Entraînement'
     assert_text 'Mode Entraînement Actif'
 
+    # Verify measure highlight rectangle is present in training mode
+    assert_selector 'svg rect#measure-highlight-rect'
+
     replay_cassette('simple-score-3-repeats')
 
     # Verify visual transitions during playback
