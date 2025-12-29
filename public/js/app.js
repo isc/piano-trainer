@@ -13,16 +13,27 @@ export function midiApp() {
     bluetoothConnected: false,
     device: null,
     osmdInstance: null,
-    currentNoteIndex: 0,
     allNotes: [],
     isRecording: false,
-    recordingData: [],
     recordingStartTime: null,
     recordingDuration: 0,
     recordingTimer: null,
     isReplaying: false,
     cassettes: [],
     selectedCassette: '',
+    trainingMode: false,
+    targetRepeatCount: 3,
+    repeatCount: 0,
+
+    // UI states
+    scoreTitle: null,
+    scoreComposer: null,
+    scoreProgress: null,
+    extractionStatus: null,
+    errorMessage: null,
+    trainingInfo: null,
+    trainingComplete: false,
+    showScoreCompleteModal: false,
 
     init() {
       staff.initStaff()
@@ -36,9 +47,32 @@ export function midiApp() {
       })
 
       musicxml.setCallbacks({
-        onNotesExtracted: notes => {
+        onNotesExtracted: (notes, metadata) => {
+          console.log('onNotesExtracted called with notes:', notes.length);
           this.allNotes = notes
-          console.log(`Extracted ${notes.length} notes from score`)
+          this.scoreTitle = metadata?.title || undefined
+          this.scoreComposer = metadata?.composer || undefined
+          const totalNotes = notes.reduce((acc, m) => acc + m.notes.length, 0)
+          this.extractionStatus = `✅ Extraction terminée: ${notes.length} mesures, ${totalNotes} notes`
+          this.scoreProgress = `Mesure: 1/${notes.length} | Progression: 0/${totalNotes} (0%)`
+          console.log('States updated:', this.extractionStatus);
+        },
+        onMeasureCompleted: (measureIndex) => {
+          if (!this.trainingMode && measureIndex >= this.allNotes.length - 1) {
+            this.showScoreComplete()
+          } else {
+            this.updateScoreProgress()
+          }
+        },
+        onNoteError: (expected, played) => {
+          this.errorMessage = `❌ Erreur: attendu ${expected}, joué ${played}`
+          setTimeout(() => { this.errorMessage = '' }, 2000)
+        },
+        onTrainingProgress: (measureIndex, repeatCount, targetRepeatCount) => {
+          this.updateTrainingDisplay(measureIndex, repeatCount, targetRepeatCount)
+        },
+        onTrainingComplete: () => {
+          this.showTrainingComplete()
         }
       })
 
@@ -56,6 +90,19 @@ export function midiApp() {
       })
     },
 
+    updateScoreProgress() {
+      const total = this.allNotes.reduce((acc, m) => acc + m.notes.length, 0)
+      const completed = this.allNotes.reduce((acc, m) => acc + m.notes.filter(n => n.played).length, 0)
+      const currentMeasure = this.allNotes.find(m => m.notes.some(n => !n.played))?.measureIndex || this.allNotes.length - 1
+      const percentage = total > 0 ? Math.round((completed / total) * 100) : 0
+      
+      if (completed >= total) {
+        this.scoreProgress = `🎉 Partition terminée ! (${total}/${total} notes - 100%)`
+      } else {
+        this.scoreProgress = `Mesure: ${currentMeasure + 1}/${this.allNotes.length} | Progression: ${completed}/${total} (${percentage}%)`
+      }
+    },
+
     async scanBluetooth() {
       await midi.connectBluetooth()
       this.bluetoothConnected = midi.state.bluetoothConnected
@@ -64,7 +111,6 @@ export function midiApp() {
     startRecording() {
       midi.startRecording()
       this.isRecording = true
-      this.recordingData = []
       this.recordingStartTime = Date.now()
       this.recordingDuration = 0
 
@@ -102,17 +148,68 @@ export function midiApp() {
     },
 
     async loadMusicXML(event) {
+      // Reset UI state before loading
+      this.scoreTitle = null
+      this.scoreComposer = null
+      this.scoreProgress = null
+      this.extractionStatus = null
+      this.errorMessage = null
+
+      // Load the MusicXML file (this will trigger callbacks that set the state)
       await musicxml.loadMusicXML(event)
       this.osmdInstance = musicxml.getOsmdInstance()
-      this.allNotes = musicxml.getAllNotes()
-      this.currentNoteIndex = musicxml.getCurrentNoteIndex()
+      this.allNotes = musicxml.getNotesByMeasure()
     },
 
     clearScore() {
       musicxml.clearScore()
       this.osmdInstance = null
       this.allNotes = []
-      this.currentNoteIndex = 0
+      this.trainingMode = false
+      this.scoreTitle = null
+      this.scoreComposer = null
+      this.scoreProgress = null
+      this.extractionStatus = null
+      this.errorMessage = null
+      const trainingInfo = document.getElementById('training-info')
+      if (trainingInfo) trainingInfo.remove()
+    },
+
+    toggleTrainingMode() {
+      this.trainingMode = !this.trainingMode
+      
+      if (this.trainingMode) {
+        musicxml.setTrainingMode(true)
+        this.trainingComplete = false
+        this.repeatCount = 0
+        const state = musicxml.getTrainingState()
+        this.updateTrainingDisplay(state.currentMeasureIndex, state.repeatCount, state.targetRepeatCount)
+      } else {
+        musicxml.setTrainingMode(false)
+        musicxml.resetProgress()
+        this.trainingInfo = null
+        this.trainingComplete = false
+        this.repeatCount = 0
+      }
+    },
+
+    updateTrainingDisplay(measureIndex, repeatCount, targetRepeatCount) {
+      const measureNum = measureIndex + 1
+      const totalMeasures = this.allNotes.length
+      this.trainingInfo = `Mesure: ${measureNum}/${totalMeasures} | Répétition: ${repeatCount}/${targetRepeatCount}`
+      this.repeatCount = repeatCount
+    },
+
+    showTrainingComplete() {
+      this.trainingComplete = true
+      this.trainingInfo = null
+    },
+
+    showScoreComplete() {
+      this.showScoreCompleteModal = true
+      setTimeout(() => {
+        this.showScoreCompleteModal = false
+      }, 3000)
     }
   }
 }

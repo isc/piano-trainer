@@ -115,7 +115,7 @@ class App < Sinatra::Base
       created_at: Time.now.iso8601,
       data: midi_data
     }
-    File.write(filepath, JSON.pretty_generate(cassette))
+    File.write(filepath, JSON.generate(cassette))
   end
 
   def success_response(clean_name)

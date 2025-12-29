@@ -2,305 +2,55 @@
   "name": "perdrix",
   "created_at": "2025-09-07T15:19:41+02:00",
   "data": [
-    {
-      "timestamp": 1129,
-      "data": [
-
-      ]
-    },
-    {
-      "timestamp": 1445,
-      "data": [
-
-      ]
-    },
-    {
-      "timestamp": 1565,
-      "data": [
-
-      ]
-    },
-    {
-      "timestamp": 1760,
-      "data": [
-
-      ]
-    },
-    {
-      "timestamp": 1969,
-      "data": [
-
-      ]
-    },
-    {
-      "timestamp": 2496,
-      "data": [
-
-      ]
-    },
-    {
-      "timestamp": 2803,
-      "data": [
-
-      ]
-    },
-    {
-      "timestamp": 3035,
-      "data": [
-
-      ]
-    },
-    {
-      "timestamp": 3215,
-      "data": [
-
-      ]
-    },
-    {
-      "timestamp": 3470,
-      "data": [
-
-      ]
-    },
-    {
-      "timestamp": 3620,
-      "data": [
-
-      ]
-    },
-    {
-      "timestamp": 4176,
-      "data": [
-
-      ]
-    },
-    {
-      "timestamp": 4520,
-      "data": [
-
-      ]
-    },
-    {
-      "timestamp": 4565,
-      "data": [
-
-      ]
-    },
-    {
-      "timestamp": 4700,
-      "data": [
-
-      ]
-    },
-    {
-      "timestamp": 4805,
-      "data": [
-
-      ]
-    },
-    {
-      "timestamp": 4972,
-      "data": [
-
-      ]
-    },
-    {
-      "timestamp": 5136,
-      "data": [
-
-      ]
-    },
-    {
-      "timestamp": 5405,
-      "data": [
-
-      ]
-    },
-    {
-      "timestamp": 6050,
-      "data": [
-
-      ]
-    },
-    {
-      "timestamp": 6290,
-      "data": [
-
-      ]
-    },
-    {
-      "timestamp": 6560,
-      "data": [
-
-      ]
-    },
-    {
-      "timestamp": 6770,
-      "data": [
-
-      ]
-    },
-    {
-      "timestamp": 6996,
-      "data": [
-
-      ]
-    },
-    {
-      "timestamp": 7175,
-      "data": [
-
-      ]
-    },
-    {
-      "timestamp": 7700,
-      "data": [
-
-      ]
-    },
-    {
-      "timestamp": 8031,
-      "data": [
-
-      ]
-    },
-    {
-      "timestamp": 8300,
-      "data": [
-
-      ]
-    },
-    {
-      "timestamp": 8454,
-      "data": [
-
-      ]
-    },
-    {
-      "timestamp": 8676,
-      "data": [
-
-      ]
-    },
-    {
-      "timestamp": 8916,
-      "data": [
-
-      ]
-    },
-    {
-      "timestamp": 9485,
-      "data": [
-
-      ]
-    },
-    {
-      "timestamp": 9770,
-      "data": [
-
-      ]
-    },
-    {
-      "timestamp": 10009,
-      "data": [
-
-      ]
-    },
-    {
-      "timestamp": 10190,
-      "data": [
-
-      ]
-    },
-    {
-      "timestamp": 10400,
-      "data": [
-
-      ]
-    },
-    {
-      "timestamp": 10610,
-      "data": [
-
-      ]
-    },
-    {
-      "timestamp": 11210,
-      "data": [
-
-      ]
-    },
-    {
-      "timestamp": 11435,
-      "data": [
-
-      ]
-    },
-    {
-      "timestamp": 11720,
-      "data": [
-
-      ]
-    },
-    {
-      "timestamp": 11855,
-      "data": [
-
-      ]
-    },
-    {
-      "timestamp": 12111,
-      "data": [
-
-      ]
-    },
-    {
-      "timestamp": 12290,
-      "data": [
-
-      ]
-    },
-    {
-      "timestamp": 12965,
-      "data": [
-
-      ]
-    },
-    {
-      "timestamp": 13175,
-      "data": [
-
-      ]
-    },
-    {
-      "timestamp": 13401,
-      "data": [
-
-      ]
-    },
-    {
-      "timestamp": 13586,
-      "data": [
-
-      ]
-    },
-    {
-      "timestamp": 13686,
-      "data": [
-
-      ]
-    },
-    {
-      "timestamp": 13985,
-      "data": [
-
-      ]
-    },
-    {
-      "timestamp": 14209,
-      "data": [
-
-      ]
-    }
+    {"timestamp": 1129, "data": []},
+    {"timestamp": 1445, "data": []},
+    {"timestamp": 1565, "data": []},
+    {"timestamp": 1760, "data": []},
+    {"timestamp": 1969, "data": []},
+    {"timestamp": 2496, "data": []},
+    {"timestamp": 2803, "data": []},
+    {"timestamp": 3035, "data": []},
+    {"timestamp": 3215, "data": []},
+    {"timestamp": 3470, "data": []},
+    {"timestamp": 3620, "data": []},
+    {"timestamp": 4176, "data": []},
+    {"timestamp": 4520, "data": []},
+    {"timestamp": 4565, "data": []},
+    {"timestamp": 4700, "data": []},
+    {"timestamp": 4805, "data": []},
+    {"timestamp": 4972, "data": []},
+    {"timestamp": 5136, "data": []},
+    {"timestamp": 5405, "data": []},
+    {"timestamp": 6050, "data": []},
+    {"timestamp": 6290, "data": []},
+    {"timestamp": 6560, "data": []},
+    {"timestamp": 6770, "data": []},
+    {"timestamp": 6996, "data": []},
+    {"timestamp": 7175, "data": []},
+    {"timestamp": 7700, "data": []},
+    {"timestamp": 8031, "data": []},
+    {"timestamp": 8300, "data": []},
+    {"timestamp": 8454, "data": []},
+    {"timestamp": 8676, "data": []},
+    {"timestamp": 8916, "data": []},
+    {"timestamp": 9485, "data": []},
+    {"timestamp": 9770, "data": []},
+    {"timestamp": 10009, "data": []},
+    {"timestamp": 10190, "data": []},
+    {"timestamp": 10400, "data": []},
+    {"timestamp": 10610, "data": []},
+    {"timestamp": 11210, "data": []},
+    {"timestamp": 11435, "data": []},
+    {"timestamp": 11720, "data": []},
+    {"timestamp": 11855, "data": []},
+    {"timestamp": 12111, "data": []},
+    {"timestamp": 12290, "data": []},
+    {"timestamp": 12965, "data": []},
+    {"timestamp": 13175, "data": []},
+    {"timestamp": 13401, "data": []},
+    {"timestamp": 13586, "data": []},
+    {"timestamp": 13686, "data": []},
+    {"timestamp": 13985, "data": []},
+    {"timestamp": 14209, "data": []}
   ]
 }
