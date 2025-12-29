@@ -6,6 +6,7 @@ let currentMeasureIndex = 0;
 let trainingMode = false;
 let targetRepeatCount = 3;
 let repeatCount = 0;
+let currentRepetitionIsClean = true;
 
 let callbacks = {
   onNotesExtracted: null,
@@ -33,6 +34,7 @@ export function initMusicXML() {
       trainingMode = enabled
       repeatCount = 0
       currentMeasureIndex = 0
+      currentRepetitionIsClean = true
       resetProgress()
       updateMeasureCursor()
     },
@@ -91,6 +93,7 @@ function extractNotesFromScore() {
   currentMeasureIndex = 0;
   trainingMode = false;
   repeatCount = 0;
+  currentRepetitionIsClean = true;
 
   if (!osmdInstance) return;
 
@@ -234,11 +237,13 @@ function validatePlayedNote(midiNote) {
 
     if (allNotesPlayed) {
       if (trainingMode) {
-        repeatCount++;
+        if (currentRepetitionIsClean) {
+          repeatCount++;
+        }
         if (callbacks.onTrainingProgress) {
           callbacks.onTrainingProgress(currentMeasureIndex, repeatCount, targetRepeatCount);
         }
-        
+
         if (repeatCount >= targetRepeatCount) {
           if (currentMeasureIndex + 1 >= allNotes.length) {
             if (callbacks.onTrainingComplete) {
@@ -249,6 +254,7 @@ function validatePlayedNote(midiNote) {
               resetMeasureProgress();
               currentMeasureIndex++;
               repeatCount = 0;
+              currentRepetitionIsClean = true;
               updateMeasureCursor();
               if (callbacks.onTrainingProgress) {
                 callbacks.onTrainingProgress(currentMeasureIndex, repeatCount, targetRepeatCount);
@@ -258,6 +264,7 @@ function validatePlayedNote(midiNote) {
         } else {
           setTimeout(() => {
             resetMeasureProgress();
+            currentRepetitionIsClean = true;
             if (callbacks.onTrainingProgress) {
               callbacks.onTrainingProgress(currentMeasureIndex, repeatCount, targetRepeatCount);
             }
@@ -275,6 +282,9 @@ function validatePlayedNote(midiNote) {
     }
     return true;
   } else {
+    if (trainingMode) {
+      currentRepetitionIsClean = false;
+    }
     const expectedNote = measureData.notes.find(n => !n.played);
     if (expectedNote && callbacks.onNoteError) {
       callbacks.onNoteError(expectedNote.noteName, noteName(midiNote));
@@ -298,6 +308,7 @@ function resetProgress() {
   }
   currentMeasureIndex = 0;
   repeatCount = 0;
+  currentRepetitionIsClean = true;
 }
 
 function clearScore() {
@@ -306,6 +317,7 @@ function clearScore() {
   currentMeasureIndex = 0;
   trainingMode = false;
   repeatCount = 0;
+  currentRepetitionIsClean = true;
   const scoreContainer = document.getElementById('score');
   const osmdContainer = scoreContainer.querySelector('.osmd-container');
   if (osmdContainer) {

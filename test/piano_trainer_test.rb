@@ -48,9 +48,25 @@ class PianoTrainerTest < CapybaraTestBase
     assert_selector 'svg g.vf-stavenote.played-note', count: 0  # After automatic reset (500ms)
     assert_selector 'svg g.vf-stavenote.played-note', minimum: 1, maximum: 3  # During 2nd repetition
 
-    assert_no_text '▶️ Rejeu en cours...', wait: 10
+    assert_no_text '▶️ Rejeu en cours...', wait: 4
     assert_text 'Félicitations'
     assert_text 'complété toutes les mesures'
+  end
+
+  def test_training_mode_requires_clean_repetitions
+    load_score('simple-score.xml', 1, 4)
+
+    click_on 'Mode Entraînement'
+    assert_text 'Mode Entraînement Actif'
+
+    replay_cassette('simple-score-with-mistakes')
+
+    assert_no_text '▶️ Rejeu en cours...', wait: 4
+
+    # The cassette has 3 repetitions: clean, dirty (D instead of F), clean
+    # Only 2 clean repetitions count, so training should NOT complete
+    assert_no_text 'Félicitations'
+    assert_no_text 'complété toutes les mesures'
   end
 
   private
