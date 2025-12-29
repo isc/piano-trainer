@@ -9,8 +9,6 @@ class PianoTrainerTest < CapybaraTestBase
 
   def test_note_highlighting_when_playing_complex_score
     load_score('schumann-melodie.xml', 20, 256)
-
-    assert_selector 'svg g.vf-stavenote', count: 256
     assert_no_selector 'svg g.vf-stavenote.played-note'
 
     replay_cassette('melodie-2-bars')
@@ -21,8 +19,6 @@ class PianoTrainerTest < CapybaraTestBase
 
   def test_notes_must_be_played_in_correct_order
     load_score('simple-score.xml', 1, 4)
-
-    assert_selector 'svg g.vf-stavenote', count: 4
     assert_no_selector 'svg g.vf-stavenote.played-note'
 
     replay_cassette('simple-score-wrong-order')
@@ -75,13 +71,11 @@ class PianoTrainerTest < CapybaraTestBase
     load_score('simple-score.xml', 1, 4)
     assert_text 'Simple Score'
     assert_text 'Mesure: 1/1'
-    assert_selector 'svg g.vf-stavenote', count: 4
 
     # Load second score - should replace the first one
     load_score('schumann-melodie.xml', 20, 256)
     assert_text 'Melodie'
     assert_text 'Mesure: 1/20'
-    assert_selector 'svg g.vf-stavenote', count: 256
 
     # First score should no longer be visible
     assert_no_text 'Simple Score'
@@ -94,6 +88,7 @@ class PianoTrainerTest < CapybaraTestBase
     visit '/' unless page.has_selector?('main.container')
     attach_file('musicxml-upload', File.expand_path("fixtures/#{filename}", __dir__))
     assert_text "Extraction terminée: #{expected_measures} mesures, #{expected_notes} notes"
+    assert_selector 'svg g.vf-stavenote', count: expected_notes
   end
 
   def replay_cassette(name)
