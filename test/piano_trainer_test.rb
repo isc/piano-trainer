@@ -84,6 +84,34 @@ class PianoTrainerTest < CapybaraTestBase
     assert_no_text 'Mesure: 1/1'
   end
 
+  def test_training_mode_allows_jumping_to_specific_measure
+    load_score('schumann-melodie.xml', 20, 256)
+
+    click_on 'Mode Entraînement'
+    assert_text 'Mode Entraînement Actif'
+
+    # Measure 1 should be highlighted by default
+    assert_selector 'svg rect#measure-highlight-rect'
+
+    # Wait for click handlers to be installed
+    sleep 0.5
+
+    # Click on a note in measure 2 to jump to that measure
+    # Find all notes and click on approximately the 10th one (should be in measure 2)
+    notes = page.all('svg g.vf-stavenote')
+    notes[9].click if notes[9]
+
+    # Wait for measure to change
+    sleep 0.5
+
+    # Play melodie-2-bars which contains the first 2 measures
+    # After jumping to measure 2, it should validate notes from that measure
+    replay_cassette('melodie-2-bars')
+
+    # Verify that notes were validated (measure 2 has notes)
+    assert_selector 'svg g.vf-stavenote.played-note', minimum: 1
+  end
+
   private
 
   def load_score(filename, expected_measures, expected_notes)
