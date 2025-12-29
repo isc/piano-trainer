@@ -30,6 +30,7 @@ export function initMusicXML() {
     getAllNotes: () => allNotes,
     getNotesByMeasure: () => allNotes,
     getTrainingState: () => ({ trainingMode, currentMeasureIndex, repeatCount, targetRepeatCount }),
+    updateRepeatIndicators: () => updateRepeatIndicators(),
     setTrainingMode: (enabled) => {
       trainingMode = enabled
       repeatCount = 0
@@ -62,6 +63,15 @@ async function loadMusicXML(event) {
     if (!xmlContent.includes('score-partwise') && !xmlContent.includes('score-timewise')) {
       alert('Ce fichier ne semble pas être un fichier MusicXML valide');
       return;
+    }
+
+    // Clear previous score before loading new one
+    if (osmdInstance) {
+      const scoreContainer = document.getElementById('score');
+      const osmdContainer = scoreContainer.querySelector('.osmd-container');
+      if (osmdContainer) {
+        osmdContainer.innerHTML = '';
+      }
     }
 
     await renderMusicXML(xmlContent);
@@ -167,10 +177,14 @@ function resetMeasureProgress() {
 function updateMeasureCursor() {
   if (!osmdInstance) return;
 
-  // Remove existing highlight rectangle
+  // Remove existing highlight rectangle and repeat indicators
   const existingHighlight = document.getElementById('measure-highlight-rect');
   if (existingHighlight) {
     existingHighlight.remove();
+  }
+  const existingIndicators = document.getElementById('repeat-indicators');
+  if (existingIndicators) {
+    existingIndicators.remove();
   }
 
   if (trainingMode && currentMeasureIndex < allNotes.length) {
@@ -187,22 +201,52 @@ function updateMeasureCursor() {
         const maxX = Math.max(...boxes.map(b => b.x + b.width));
         const maxY = Math.max(...boxes.map(b => b.y + b.height));
 
-        // Create highlight rectangle
         const svg = noteElements[0].ownerSVGElement;
+
+        // Create highlight rectangle
         const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-        rect.setAttribute('id', 'measure-highlight-rect');
+        rect.id = 'measure-highlight-rect';
         rect.setAttribute('x', minX - 10);
         rect.setAttribute('y', minY - 10);
         rect.setAttribute('width', maxX - minX + 20);
         rect.setAttribute('height', maxY - minY + 20);
-        rect.setAttribute('fill', 'rgba(59, 130, 246, 0.15)');
-        rect.setAttribute('rx', '4');
 
         // Insert at beginning so it's behind notes
         svg.insertBefore(rect, svg.firstChild);
+
+        // Create repeat indicators (circles)
+        const indicatorsGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+        indicatorsGroup.id = 'repeat-indicators';
+
+        const centerX = (minX + maxX) / 2;
+        const circleY = minY - 40;
+        const circleRadius = 6;
+        const circleSpacing = 18;
+
+        for (let i = 0; i < targetRepeatCount; i++) {
+          const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+          const offsetX = (i - (targetRepeatCount - 1) / 2) * circleSpacing;
+          circle.setAttribute('cx', centerX + offsetX);
+          circle.setAttribute('cy', circleY);
+          circle.setAttribute('r', circleRadius);
+          circle.className.baseVal = i < repeatCount ? 'repeat-indicator filled' : 'repeat-indicator';
+          circle.dataset.index = i;
+          indicatorsGroup.appendChild(circle);
+        }
+
+        svg.appendChild(indicatorsGroup);
       }
     }
   }
+}
+
+function updateRepeatIndicators() {
+  if (!osmdInstance || !trainingMode) return;
+
+  const indicators = document.querySelectorAll('.repeat-indicator');
+  indicators.forEach((circle, index) => {
+    circle.classList.toggle('filled', index < repeatCount);
+  });
 }
 
 function validatePlayedNote(midiNote) {

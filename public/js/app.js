@@ -31,7 +31,6 @@ export function midiApp() {
     scoreProgress: null,
     extractionStatus: null,
     errorMessage: null,
-    trainingInfo: null,
     trainingComplete: false,
     showScoreCompleteModal: false,
 
@@ -148,13 +147,6 @@ export function midiApp() {
     },
 
     async loadMusicXML(event) {
-      // Reset UI state before loading
-      this.scoreTitle = null
-      this.scoreComposer = null
-      this.scoreProgress = null
-      this.extractionStatus = null
-      this.errorMessage = null
-
       // Load the MusicXML file (this will trigger callbacks that set the state)
       await musicxml.loadMusicXML(event)
       this.osmdInstance = musicxml.getOsmdInstance()
@@ -196,22 +188,18 @@ export function midiApp() {
       } else {
         musicxml.setTrainingMode(false)
         musicxml.resetProgress()
-        this.trainingInfo = null
         this.trainingComplete = false
         this.repeatCount = 0
       }
     },
 
     updateTrainingDisplay(measureIndex, repeatCount, targetRepeatCount) {
-      const measureNum = measureIndex + 1
-      const totalMeasures = this.allNotes.length
-      this.trainingInfo = `Mesure: ${measureNum}/${totalMeasures} | Répétition: ${repeatCount}/${targetRepeatCount}`
       this.repeatCount = repeatCount
+      musicxml.updateRepeatIndicators()
     },
 
     showTrainingComplete() {
       this.trainingComplete = true
-      this.trainingInfo = null
     },
 
     showScoreComplete() {
