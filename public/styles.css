@@ -55,3 +55,19 @@ svg g.played-note {
     fill: #22c55e;
   }
 }
+
+/* Training mode indicators */
+#measure-highlight-rect {
+  fill: rgba(59, 130, 246, 0.15);
+  rx: 4;
+}
+
+.repeat-indicator {
+  stroke: rgba(59, 130, 246, 0.8);
+  stroke-width: 2;
+  fill: none;
+}
+
+.repeat-indicator.filled {
+  fill: rgba(59, 130, 246, 0.8);
+}

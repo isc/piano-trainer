@@ -63,8 +63,7 @@ class PianoTrainerTest < CapybaraTestBase
     # Only 2 clean repetitions count, so training should NOT complete
     # Check repeat indicators: 2 filled circles, 1 empty
     assert_selector 'svg circle.repeat-indicator', count: 3
-    filled_circles = page.all('svg circle.repeat-indicator').select { |c| c['fill'] != 'none' }
-    assert_equal 2, filled_circles.count
+    assert_selector 'svg circle.repeat-indicator.filled', count: 2
     assert_no_text 'Félicitations'
     assert_no_text 'complété toutes les mesures'
   end

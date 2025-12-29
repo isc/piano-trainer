@@ -205,23 +205,21 @@ function updateMeasureCursor() {
 
         // Create highlight rectangle
         const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-        rect.setAttribute('id', 'measure-highlight-rect');
+        rect.id = 'measure-highlight-rect';
         rect.setAttribute('x', minX - 10);
         rect.setAttribute('y', minY - 10);
         rect.setAttribute('width', maxX - minX + 20);
         rect.setAttribute('height', maxY - minY + 20);
-        rect.setAttribute('fill', 'rgba(59, 130, 246, 0.15)');
-        rect.setAttribute('rx', '4');
 
         // Insert at beginning so it's behind notes
         svg.insertBefore(rect, svg.firstChild);
 
         // Create repeat indicators (circles)
         const indicatorsGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-        indicatorsGroup.setAttribute('id', 'repeat-indicators');
+        indicatorsGroup.id = 'repeat-indicators';
 
         const centerX = (minX + maxX) / 2;
-        const circleY = minY - 25;
+        const circleY = minY - 40;
         const circleRadius = 6;
         const circleSpacing = 18;
 
@@ -231,11 +229,8 @@ function updateMeasureCursor() {
           circle.setAttribute('cx', centerX + offsetX);
           circle.setAttribute('cy', circleY);
           circle.setAttribute('r', circleRadius);
-          circle.setAttribute('stroke', 'rgba(59, 130, 246, 0.8)');
-          circle.setAttribute('stroke-width', '2');
-          circle.setAttribute('fill', i < repeatCount ? 'rgba(59, 130, 246, 0.8)' : 'none');
-          circle.setAttribute('class', 'repeat-indicator');
-          circle.setAttribute('data-index', i);
+          circle.className.baseVal = i < repeatCount ? 'repeat-indicator filled' : 'repeat-indicator';
+          circle.dataset.index = i;
           indicatorsGroup.appendChild(circle);
         }
 
@@ -250,7 +245,7 @@ function updateRepeatIndicators() {
 
   const indicators = document.querySelectorAll('.repeat-indicator');
   indicators.forEach((circle, index) => {
-    circle.setAttribute('fill', index < repeatCount ? 'rgba(59, 130, 246, 0.8)' : 'none');
+    circle.classList.toggle('filled', index < repeatCount);
   });
 }
 
