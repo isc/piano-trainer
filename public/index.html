@@ -100,15 +100,6 @@
           ></button>
         </div>
 
-        <!-- Mode entraînement en cours -->
-        <article x-show="trainingInfo" aria-live="polite">
-          <header>
-            <strong>🔄 Mode Entraînement</strong>
-          </header>
-          <p x-text="trainingInfo"></p>
-          <progress :value="repeatCount" :max="targetRepeatCount"></progress>
-        </article>
-
         <!-- Mode entraînement terminé -->
         <article x-show="trainingComplete" class="success">
           <header>

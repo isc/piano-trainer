@@ -31,7 +31,6 @@ export function midiApp() {
     scoreProgress: null,
     extractionStatus: null,
     errorMessage: null,
-    trainingInfo: null,
     trainingComplete: false,
     showScoreCompleteModal: false,
 
@@ -189,22 +188,18 @@ export function midiApp() {
       } else {
         musicxml.setTrainingMode(false)
         musicxml.resetProgress()
-        this.trainingInfo = null
         this.trainingComplete = false
         this.repeatCount = 0
       }
     },
 
     updateTrainingDisplay(measureIndex, repeatCount, targetRepeatCount) {
-      const measureNum = measureIndex + 1
-      const totalMeasures = this.allNotes.length
-      this.trainingInfo = `Mesure: ${measureNum}/${totalMeasures} | Répétition: ${repeatCount}/${targetRepeatCount}`
       this.repeatCount = repeatCount
+      musicxml.updateRepeatIndicators()
     },
 
     showTrainingComplete() {
       this.trainingComplete = true
-      this.trainingInfo = null
     },
 
     showScoreComplete() {
