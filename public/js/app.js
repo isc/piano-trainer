@@ -159,6 +159,15 @@ export function midiApp() {
       await musicxml.loadMusicXML(event)
       this.osmdInstance = musicxml.getOsmdInstance()
       this.allNotes = musicxml.getNotesByMeasure()
+
+      // Activer le wake lock pour empêcher la mise en veille
+      if ('wakeLock' in navigator) {
+        try {
+          await navigator.wakeLock.request('screen')
+        } catch (err) {
+          console.warn('Wake lock non disponible:', err)
+        }
+      }
     },
 
     clearScore() {
