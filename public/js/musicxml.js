@@ -288,8 +288,6 @@ function setupMeasureClickHandlers() {
 }
 
 function removeMeasureClickHandlers() {
-  if (!osmdInstance || allNotes.length === 0) return;
-
   // Remove click handlers from all notes
   measureClickHandlers.forEach((handler, noteElement) => {
     noteElement.style.cursor = '';
