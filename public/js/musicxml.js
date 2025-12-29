@@ -272,6 +272,7 @@ function setupMeasureClickHandlers() {
     measureData.notes.forEach((noteData) => {
       const noteElement = svgNote(noteData.note);
       noteElement.style.cursor = 'pointer';
+      noteElement.dataset.measureIndex = measureIndex;
 
       // Create and store handler
       const handler = () => jumpToMeasure(measureIndex);
@@ -287,6 +288,7 @@ function removeMeasureClickHandlers() {
   // Remove click handlers from all notes
   measureClickHandlers.forEach((handler, noteElement) => {
     noteElement.style.cursor = '';
+    delete noteElement.dataset.measureIndex;
     noteElement.removeEventListener('click', handler);
   });
 

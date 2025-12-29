@@ -88,28 +88,23 @@ class PianoTrainerTest < CapybaraTestBase
     load_score('schumann-melodie.xml', 20, 256)
 
     click_on 'Mode Entraînement'
-    assert_text 'Mode Entraînement Actif'
 
     # Measure 1 should be highlighted by default
-    assert_selector 'svg rect#measure-highlight-rect'
+    initial_rect_x = page.find('svg rect#measure-highlight-rect')['x'].to_f
 
-    # Wait for click handlers to be installed
-    sleep 0.5
+    # Click on a note in measure 2 (measureIndex=1 in 0-based indexing)
+    measure_2_note = page.first('svg g.vf-stavenote[data-measure-index="1"]')
+    measure_2_note.trigger('click')
 
-    # Click on a note in measure 2 to jump to that measure
-    # Find all notes and click on approximately the 10th one (should be in measure 2)
-    notes = page.all('svg g.vf-stavenote')
-    notes[9].click if notes[9]
+    # Verify the highlight rectangle moved to measure 2
+    new_rect_x = page.find('svg rect#measure-highlight-rect')['x'].to_f
+    assert new_rect_x != initial_rect_x, "Highlight rectangle should have moved"
 
-    # Wait for measure to change
-    sleep 0.5
+    # Play first note of measure 2 (A4 = MIDI 69)
+    replay_cassette('melodie-measure-2-first-note')
 
-    # Play melodie-2-bars which contains the first 2 measures
-    # After jumping to measure 2, it should validate notes from that measure
-    replay_cassette('melodie-2-bars')
-
-    # Verify that notes were validated (measure 2 has notes)
-    assert_selector 'svg g.vf-stavenote.played-note', minimum: 1
+    # Verify that exactly one note was validated
+    assert_selector 'svg g.vf-stavenote.played-note', count: 1
   end
 
   private
