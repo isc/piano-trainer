@@ -174,7 +174,7 @@ function pitchToMidiFromSourceNote(pitch) {
   return { noteName: `${noteNameStd}${octaveStd}`, midiNote: midiNote };
 }
 
-function resetMeasureProgress() {
+function resetMeasureProgress(resetRepeatCount = true) {
   if (currentMeasureIndex >= allNotes.length) return;
 
   const measureData = allNotes[currentMeasureIndex];
@@ -184,6 +184,11 @@ function resetMeasureProgress() {
     svgNote(noteData.note).classList.remove('played-note');
     noteData.played = false;
   }
+
+  if (resetRepeatCount) {
+    repeatCount = 0;
+  }
+  currentRepetitionIsClean = true;
 }
 
 function updateMeasureCursor() {
@@ -303,8 +308,6 @@ function jumpToMeasure(measureIndex) {
 
   // Jump to new measure
   currentMeasureIndex = measureIndex;
-  repeatCount = 0;
-  currentRepetitionIsClean = true;
 
   // Update visual cursor
   updateMeasureCursor();
@@ -392,8 +395,6 @@ function validatePlayedNote(midiNote) {
             setTimeout(() => {
               resetMeasureProgress();
               currentMeasureIndex++;
-              repeatCount = 0;
-              currentRepetitionIsClean = true;
               updateMeasureCursor();
               if (callbacks.onTrainingProgress) {
                 callbacks.onTrainingProgress(currentMeasureIndex, repeatCount, targetRepeatCount);
@@ -402,8 +403,7 @@ function validatePlayedNote(midiNote) {
           }
         } else {
           setTimeout(() => {
-            resetMeasureProgress();
-            currentRepetitionIsClean = true;
+            resetMeasureProgress(false);
             if (callbacks.onTrainingProgress) {
               callbacks.onTrainingProgress(currentMeasureIndex, repeatCount, targetRepeatCount);
             }
