@@ -1,13 +1,13 @@
 require_relative 'test_helper'
 
 class PianoTrainerTest < CapybaraTestBase
-  def test_musicxml_note_extraction
+  def test_play_simple_score_till_the_end
     load_score('simple-score.xml', 1, 4)
     replay_cassette('oh-when-the-saints')
     assert_text 'Partition terminée'
   end
 
-  def test_cassette_playback_with_note_highlighting
+  def test_note_highlighting_when_playing_complex_score
     load_score('schumann-melodie.xml', 20, 256)
 
     assert_selector 'svg g.vf-stavenote', count: 256
