@@ -65,6 +65,7 @@ class PianoTrainerTest < CapybaraTestBase
 
     # The cassette has 3 repetitions: clean, dirty (D instead of F), clean
     # Only 2 clean repetitions count, so training should NOT complete
+    assert_text 'Répétition: 2/3'
     assert_no_text 'Félicitations'
     assert_no_text 'complété toutes les mesures'
   end
