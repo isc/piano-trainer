@@ -277,6 +277,16 @@ function validatePlayedNote(midiNote) {
     svgNote(noteData.note).classList.add('played-note');
     measureData.notes[foundIndex].played = true;
 
+    // Scroll to score title when first note is played
+    const isFirstNote = currentMeasureIndex === 0 &&
+                        measureData.notes.filter(n => n.played).length === 1;
+    if (isFirstNote) {
+      const scoreContainer = document.getElementById('score');
+      if (scoreContainer) {
+        scoreContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }
+
     const allNotesPlayed = measureData.notes.every(note => note.played);
 
     if (allNotesPlayed) {
