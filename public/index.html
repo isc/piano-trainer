@@ -100,15 +100,6 @@
           ></button>
         </div>
 
-        <!-- Instructions pour le mode entraînement -->
-        <article x-show="trainingMode && !trainingComplete" aria-live="polite">
-          <strong>🎯 Mode Entraînement</strong>
-          <p>
-            Répétez chaque mesure <span x-text="targetRepeatCount"></span> fois
-            sans faire d'erreurs.
-          </p>
-        </article>
-
         <!-- Mode entraînement en cours -->
         <article x-show="trainingInfo" aria-live="polite">
           <header>
