@@ -70,11 +70,7 @@ export function midiApp() {
           }, 2000)
         },
         onTrainingProgress: (measureIndex, repeatCount, targetRepeatCount) => {
-          this.updateTrainingDisplay(
-            measureIndex,
-            repeatCount,
-            targetRepeatCount
-          )
+          this.updateTrainingDisplay(measureIndex, repeatCount, targetRepeatCount)
         },
         onTrainingComplete: () => {
           this.showTrainingComplete()
@@ -97,13 +93,9 @@ export function midiApp() {
 
     updateScoreProgress() {
       const total = this.allNotes.reduce((acc, m) => acc + m.notes.length, 0)
-      const completed = this.allNotes.reduce(
-        (acc, m) => acc + m.notes.filter((n) => n.played).length,
-        0
-      )
+      const completed = this.allNotes.reduce((acc, m) => acc + m.notes.filter((n) => n.played).length, 0)
       const currentMeasure =
-        this.allNotes.find((m) => m.notes.some((n) => !n.played))
-          ?.measureIndex || this.allNotes.length - 1
+        this.allNotes.find((m) => m.notes.some((n) => !n.played))?.measureIndex || this.allNotes.length - 1
       const percentage = total > 0 ? Math.round((completed / total) * 100) : 0
 
       if (completed >= total) {
@@ -125,9 +117,7 @@ export function midiApp() {
       this.recordingDuration = 0
 
       this.recordingTimer = setInterval(() => {
-        this.recordingDuration = Math.floor(
-          (Date.now() - this.recordingStartTime) / 1000
-        )
+        this.recordingDuration = Math.floor((Date.now() - this.recordingStartTime) / 1000)
       }, 1000)
     },
 
@@ -137,10 +127,7 @@ export function midiApp() {
       clearInterval(this.recordingTimer)
 
       if (result) {
-        const saveResult = await cassettes.saveCassette(
-          result.name,
-          result.data
-        )
+        const saveResult = await cassettes.saveCassette(result.name, result.data)
 
         if (saveResult.success) {
           alert(`Cassette "${saveResult.name}" sauvegardée avec succès !`)
@@ -157,11 +144,7 @@ export function midiApp() {
 
     async replayCassette() {
       if (!this.selectedCassette) return
-      await cassettes.replayCassette(
-        this.selectedCassette,
-        midi.parseMidiBLE,
-        staff
-      )
+      await cassettes.replayCassette(this.selectedCassette, midi.parseMidiBLE, staff)
     },
 
     async loadMusicXML(event) {
@@ -202,11 +185,7 @@ export function midiApp() {
         this.trainingComplete = false
         this.repeatCount = 0
         const state = musicxml.getTrainingState()
-        this.updateTrainingDisplay(
-          state.currentMeasureIndex,
-          state.repeatCount,
-          state.targetRepeatCount
-        )
+        this.updateTrainingDisplay(state.currentMeasureIndex, state.repeatCount, state.targetRepeatCount)
       } else {
         musicxml.setTrainingMode(false)
         musicxml.resetProgress()

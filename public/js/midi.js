@@ -47,9 +47,7 @@ async function connectBluetooth() {
 
     const server = await state.device.gatt.connect()
     const service = await server.getPrimaryService(MIDI_BLE_UUID)
-    const characteristic = await service.getCharacteristic(
-      '7772e5db-3868-4112-a1a9-f2669d106bf3'
-    )
+    const characteristic = await service.getCharacteristic('7772e5db-3868-4112-a1a9-f2669d106bf3')
 
     await characteristic.startNotifications()
     characteristic.addEventListener('characteristicvaluechanged', (event) => {
@@ -88,16 +86,10 @@ function parseMidiBLE(dataView, isReplay = false) {
         if (callbacks.onNotePlayed) {
           callbacks.onNotePlayed(noteNameStr, note)
         }
-        console.log(
-          `Note ON ${isReplay ? 'replayed' : 'detected'}:`,
-          noteNameStr
-        )
+        console.log(`Note ON ${isReplay ? 'replayed' : 'detected'}:`, noteNameStr)
       }
       if (status === NOTE_OFF) {
-        console.log(
-          `Note OFF ${isReplay ? 'replayed' : 'detected'}:`,
-          noteName(note)
-        )
+        console.log(`Note OFF ${isReplay ? 'replayed' : 'detected'}:`, noteName(note))
       }
     }
   }
@@ -116,9 +108,7 @@ function startRecording() {
   state.recordingDuration = 0
 
   state.recordingTimer = setInterval(() => {
-    state.recordingDuration = Math.floor(
-      (Date.now() - state.recordingStartTime) / 1000
-    )
+    state.recordingDuration = Math.floor((Date.now() - state.recordingStartTime) / 1000)
   }, 1000)
 }
 

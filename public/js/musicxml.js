@@ -81,10 +81,7 @@ async function loadMusicXML(event) {
   try {
     const xmlContent = await file.text()
 
-    if (
-      !xmlContent.includes('score-partwise') &&
-      !xmlContent.includes('score-timewise')
-    ) {
+    if (!xmlContent.includes('score-partwise') && !xmlContent.includes('score-timewise')) {
       alert('Ce fichier ne semble pas être un fichier MusicXML valide')
       return
     }
@@ -228,10 +225,7 @@ function updateMeasureCursor() {
         const svg = noteElements[0].ownerSVGElement
 
         // Create highlight rectangle
-        const rect = document.createElementNS(
-          'http://www.w3.org/2000/svg',
-          'rect'
-        )
+        const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect')
         rect.id = 'measure-highlight-rect'
         rect.setAttribute('x', minX - 10)
         rect.setAttribute('y', minY - 10)
@@ -242,10 +236,7 @@ function updateMeasureCursor() {
         svg.insertBefore(rect, svg.firstChild)
 
         // Create repeat indicators (circles)
-        const indicatorsGroup = document.createElementNS(
-          'http://www.w3.org/2000/svg',
-          'g'
-        )
+        const indicatorsGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g')
         indicatorsGroup.id = 'repeat-indicators'
 
         const centerX = (minX + maxX) / 2
@@ -254,16 +245,12 @@ function updateMeasureCursor() {
         const circleSpacing = 18
 
         for (let i = 0; i < targetRepeatCount; i++) {
-          const circle = document.createElementNS(
-            'http://www.w3.org/2000/svg',
-            'circle'
-          )
+          const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle')
           const offsetX = (i - (targetRepeatCount - 1) / 2) * circleSpacing
           circle.setAttribute('cx', centerX + offsetX)
           circle.setAttribute('cy', circleY)
           circle.setAttribute('r', circleRadius)
-          circle.className.baseVal =
-            i < repeatCount ? 'repeat-indicator filled' : 'repeat-indicator'
+          circle.className.baseVal = i < repeatCount ? 'repeat-indicator filled' : 'repeat-indicator'
           circle.dataset.index = i
           indicatorsGroup.appendChild(circle)
         }
@@ -329,11 +316,7 @@ function jumpToMeasure(measureIndex) {
 
   // Notify callback
   if (callbacks.onTrainingProgress) {
-    callbacks.onTrainingProgress(
-      currentMeasureIndex,
-      repeatCount,
-      targetRepeatCount
-    )
+    callbacks.onTrainingProgress(currentMeasureIndex, repeatCount, targetRepeatCount)
   }
 }
 
@@ -342,8 +325,7 @@ function validatePlayedNote(midiNote) {
   if (currentMeasureIndex >= allNotes.length) return false
 
   const measureData = allNotes[currentMeasureIndex]
-  if (!measureData || !measureData.notes || measureData.notes.length === 0)
-    return false
+  if (!measureData || !measureData.notes || measureData.notes.length === 0) return false
 
   const expectedNote = measureData.notes.find((n) => !n.played)
   if (!expectedNote) return false
@@ -353,11 +335,7 @@ function validatePlayedNote(midiNote) {
   let foundIndex = -1
   for (let i = 0; i < measureData.notes.length; i++) {
     const noteData = measureData.notes[i]
-    if (
-      !noteData.played &&
-      noteData.timestamp === expectedTimestamp &&
-      noteData.midiNumber === midiNote
-    ) {
+    if (!noteData.played && noteData.timestamp === expectedTimestamp && noteData.midiNumber === midiNote) {
       foundIndex = i
       break
     }
@@ -369,8 +347,7 @@ function validatePlayedNote(midiNote) {
     measureData.notes[foundIndex].played = true
 
     // Check if this is the first note of the measure
-    const isFirstNoteOfMeasure =
-      measureData.notes.filter((n) => n.played).length === 1
+    const isFirstNoteOfMeasure = measureData.notes.filter((n) => n.played).length === 1
 
     if (isFirstNoteOfMeasure) {
       // Scroll to score title when first note of first measure is played
@@ -406,11 +383,7 @@ function validatePlayedNote(midiNote) {
           repeatCount++
         }
         if (callbacks.onTrainingProgress) {
-          callbacks.onTrainingProgress(
-            currentMeasureIndex,
-            repeatCount,
-            targetRepeatCount
-          )
+          callbacks.onTrainingProgress(currentMeasureIndex, repeatCount, targetRepeatCount)
         }
 
         if (repeatCount >= targetRepeatCount) {
@@ -424,11 +397,7 @@ function validatePlayedNote(midiNote) {
               currentMeasureIndex++
               updateMeasureCursor()
               if (callbacks.onTrainingProgress) {
-                callbacks.onTrainingProgress(
-                  currentMeasureIndex,
-                  repeatCount,
-                  targetRepeatCount
-                )
+                callbacks.onTrainingProgress(currentMeasureIndex, repeatCount, targetRepeatCount)
               }
             }, 500)
           }
@@ -436,11 +405,7 @@ function validatePlayedNote(midiNote) {
           setTimeout(() => {
             resetMeasureProgress(false)
             if (callbacks.onTrainingProgress) {
-              callbacks.onTrainingProgress(
-                currentMeasureIndex,
-                repeatCount,
-                targetRepeatCount
-              )
+              callbacks.onTrainingProgress(currentMeasureIndex, repeatCount, targetRepeatCount)
             }
           }, 500)
         }
