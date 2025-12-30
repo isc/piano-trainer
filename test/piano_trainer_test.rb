@@ -119,30 +119,24 @@ class PianoTrainerTest < CapybaraTestBase
     begin
       load_score('simple-score.xml', 1, 4)
 
-      # Connect to mock Bluetooth MIDI device
+      # Connect to mock Bluetooth MIDI device and wait for recording button
       click_on 'Scanner Bluetooth MIDI'
-      sleep 0.5
-
-      # Verify recording button appears (indicates successful connection)
       assert_button 'Démarrer enregistrement', wait: 2
+
+      # Start recording
       click_on 'Démarrer enregistrement'
       assert_text 'Enregistrement en cours'
 
       # Simulate MIDI events via custom events
-      midi_data = [
+      [
         [154, 135, 144, 60, 80],  # Note ON C4
         [154, 245, 128, 60, 64],  # Note OFF C4
         [156, 145, 144, 64, 80],  # Note ON E4
         [156, 227, 128, 64, 64],  # Note OFF E4
-      ]
+      ].each { |data| simulate_midi_input(data) }
 
-      midi_data.each do |data|
-        simulate_midi_input(data)
-        sleep 0.1
-      end
-
-      # Wait for all events to be processed
-      sleep 0.3
+      # Give a moment for MIDI events to be recorded
+      sleep 0.2
 
       # Stop recording: accept prompt with cassette name, then accept success alert
       accept_prompt(with: cassette_name) do
@@ -150,8 +144,6 @@ class PianoTrainerTest < CapybaraTestBase
           click_on 'Arrêter enregistrement'
         end
       end
-
-      sleep 0.3
 
       # Fetch the saved cassette and verify it contains valid MIDI data
       response = Net::HTTP.get_response(URI("http://localhost:#{Capybara.current_session.server.port}/cassettes/#{cassette_name}.json"))
