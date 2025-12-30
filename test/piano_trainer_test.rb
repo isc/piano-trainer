@@ -92,9 +92,7 @@ class PianoTrainerTest < CapybaraTestBase
     # Measure 1 should be highlighted by default
     initial_rect_x = page.find('svg rect.measure-click-area.selected')['x'].to_f
 
-    # Click on measure 2 rectangle (measureIndex=1 in 0-based indexing)
-    measure_2_rect = page.all('svg rect.measure-click-area')[1]
-    measure_2_rect.trigger('click')
+    click_measure(2)
 
     # Verify the highlight moved to measure 2
     new_rect_x = page.find('svg rect.measure-click-area.selected')['x'].to_f
@@ -146,6 +144,24 @@ class PianoTrainerTest < CapybaraTestBase
     end
   end
 
+  def test_polyphonic_duplicate_notes_validation
+    load_score('schumann-melodie.xml', 20, 256)
+
+    click_on 'Mode Entraînement'
+    assert_text 'Mode Entraînement Actif'
+
+    # Measure 8 contains polyphonic notes with duplicate stems
+    click_measure(8)
+
+    replay_cassette('polyphonic-duplicate-notes')
+
+    assert_no_text '▶️ Rejeu en cours...'
+
+    # Check repeat indicators: should have 1 filled circle (1 clean repetition)
+    # This verifies that duplicate notes at same timestamp are all validated
+    assert_selector 'svg circle.repeat-indicator.filled', count: 1
+  end
+
   private
 
   def load_score(filename, expected_measures, expected_notes)
@@ -158,6 +174,10 @@ class PianoTrainerTest < CapybaraTestBase
     select name
     click_on 'Rejouer cassette'
     assert_text '▶️ Rejeu en cours...'
+  end
+
+  def click_measure(measure_number)
+    page.all('svg rect.measure-click-area')[measure_number - 1].trigger('click')
   end
 
   # Helper method to display the browser console logs.
