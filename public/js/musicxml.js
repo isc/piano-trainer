@@ -147,7 +147,8 @@ function extractFromSourceMeasures(sourceMeasures) {
 
     measure.verticalSourceStaffEntryContainers.forEach((container) => {
       if (container.staffEntries) {
-        for (const staffEntry of container.staffEntries) {
+        for (let staffIndex = 0; staffIndex < container.staffEntries.length; staffIndex++) {
+          const staffEntry = container.staffEntries[staffIndex]
           if (!staffEntry?.voiceEntries) continue
           for (const voiceEntry of staffEntry.voiceEntries) {
             if (!voiceEntry.notes) continue
@@ -160,6 +161,7 @@ function extractFromSourceMeasures(sourceMeasures) {
                 noteName: noteInfo.noteName,
                 timestamp: measureIndex + voiceEntry.timestamp.realValue,
                 measureIndex: measureIndex,
+                staffLineIndex: staffIndex,
                 played: false,
               })
             }
@@ -391,24 +393,32 @@ function validatePlayedNote(midiNote) {
         const scoreContainer = document.getElementById('score')
         if (scoreContainer) {
           scoreContainer.scrollIntoView({ behavior: 'smooth', block: 'start' })
-          // Store initial Y position
+          // Store initial staff line index from the note data
+          currentStaffLineIndex = noteData.staffLineIndex
+          // Also store the Y position for scroll calculation
           const noteElement = svgNote(noteData.note)
           const bbox = noteElement.getBBox()
           lastStaffY = bbox.y
         }
       } else {
-        // Check if we've moved to a new staff (Y position changed significantly)
-        const noteElement = svgNote(noteData.note)
-        const bbox = noteElement.getBBox()
-        const currentY = bbox.y
+        // Check if we've moved to a new staff line using the stored staff index
+        const noteStaffLineIndex = noteData.staffLineIndex
 
-        // Only scroll if Y position changed by more than 100 pixels
-        // This threshold is high enough to avoid false positives from note positioning
-        // but low enough to detect actual staff line changes (typically 150-200px apart)
-        if (lastStaffY !== null && Math.abs(currentY - lastStaffY) > 100) {
-          // We've moved to a new staff, scroll by the actual difference
-          const staffHeight = Math.abs(currentY - lastStaffY)
-          window.scrollBy({ top: staffHeight, behavior: 'smooth' })
+        // Only scroll if we've actually moved to a different staff line
+        if (currentStaffLineIndex !== null && noteStaffLineIndex !== currentStaffLineIndex) {
+          // We've moved to a new staff line, scroll to bring it into view
+          const noteElement = svgNote(noteData.note)
+          const bbox = noteElement.getBBox()
+          const currentY = bbox.y
+          
+          // Calculate scroll amount based on actual Y position difference
+          if (lastStaffY !== null) {
+            const scrollAmount = currentY - lastStaffY
+            window.scrollBy({ top: scrollAmount, behavior: 'smooth' })
+          }
+          
+          // Update tracking variables
+          currentStaffLineIndex = noteStaffLineIndex
           lastStaffY = currentY
         }
       }
