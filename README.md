@@ -270,31 +270,6 @@ If you're using a Roland FP-30X (or FP-30) keyboard and it doesn't appear in the
 
 This procedure resets the Bluetooth connection state on the keyboard and allows it to be rediscovered by your browser.
 
-```
-piano-trainer/
-├── app.rb                  # Main Sinatra application
-├── public/
-│   ├── index.html         # Main HTML interface
-│   ├── js/                # JavaScript modules
-│   │   ├── app.js         # Alpine.js coordination
-│   │   ├── midi.js        # Bluetooth MIDI & recording
-│   │   ├── musicxml.js    # MusicXML parsing & validation
-│   │   ├── staff.js       # VexFlow rendering
-│   │   ├── cassettes.js   # Cassette management
-│   │   ├── bluetooth_midi_mock.js  # Mock for testing
-│   │   └── utils.js       # Utility functions
-│   ├── styles.css         # Custom styles
-│   ├── cassettes/         # MIDI recordings
-│   └── vendor/            # Third-party libraries
-├── test/
-│   ├── fixtures/          # Test MusicXML files
-│   │   ├── simple-score.xml
-│   │   └── schumann-melodie.xml
-│   ├── piano_trainer_test.rb
-│   └── test_helper.rb
-└── Gemfile                # Ruby dependencies
-```
-
 ## Contributing
 
 ### Guidelines
