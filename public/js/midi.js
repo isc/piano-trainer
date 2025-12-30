@@ -69,7 +69,7 @@ function parseMidiBLE(dataView, isReplay = false) {
 
   if (state.isRecording && !isReplay) {
     const timestamp = Date.now() - state.recordingStartTime
-    state.recordingData.push({ timestamp: timestamp, data: arr })
+    state.recordingData.push({ timestamp: timestamp, data: [...arr] })
   }
 
   // Parse MIDI messages

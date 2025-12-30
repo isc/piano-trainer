@@ -34,6 +34,13 @@ export function midiApp() {
     trainingComplete: false,
     showScoreCompleteModal: false,
 
+    // Test helper: simulate MIDI input
+    __testSimulateMidiInput(dataArray) {
+      const uint8Array = new Uint8Array(dataArray)
+      const dataView = new DataView(uint8Array.buffer)
+      midi.parseMidiBLE(dataView, false)
+    },
+
     init() {
       staff.initStaff()
       this.loadCassettesList()
