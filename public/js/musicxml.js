@@ -11,6 +11,9 @@ let lastStaffY = null
 let measureClickHandlers = new Map()
 let measureClickRectangles = []
 
+// Padding around measure notes for clickable area
+const MEASURE_CLICK_PADDING = 10
+
 let callbacks = {
   onNotesExtracted: null,
   onNoteValidation: null,
@@ -283,7 +286,19 @@ function setupMeasureClickHandlers() {
 
     // Get bounding boxes of all notes in the measure
     const noteElements = measureData.notes.map((n) => svgNote(n.note))
-    const boxes = noteElements.map((el) => el.getBBox())
+    if (noteElements.length === 0) return
+
+    // Get bounding boxes with error handling
+    const boxes = []
+    for (const el of noteElements) {
+      try {
+        if (el && el.getBBox) {
+          boxes.push(el.getBBox())
+        }
+      } catch (error) {
+        console.warn('Failed to get bounding box for note element:', error)
+      }
+    }
 
     if (boxes.length === 0) return
 
@@ -299,14 +314,15 @@ function setupMeasureClickHandlers() {
     const maxY = Math.max(...boxes.map((b) => b.y + b.height))
 
     const svg = noteElements[0].ownerSVGElement
+    if (!svg) return
 
     // Create invisible clickable rectangle
     const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect')
     rect.classList.add('measure-click-area')
-    rect.setAttribute('x', minX - 10)
-    rect.setAttribute('y', minY - 10)
-    rect.setAttribute('width', maxX - minX + 20)
-    rect.setAttribute('height', maxY - minY + 20)
+    rect.setAttribute('x', minX - MEASURE_CLICK_PADDING)
+    rect.setAttribute('y', minY - MEASURE_CLICK_PADDING)
+    rect.setAttribute('width', maxX - minX + MEASURE_CLICK_PADDING * 2)
+    rect.setAttribute('height', maxY - minY + MEASURE_CLICK_PADDING * 2)
     rect.dataset.measureIndex = measureIndex
 
     // Create and store handler
