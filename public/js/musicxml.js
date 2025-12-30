@@ -8,7 +8,7 @@ let targetRepeatCount = 3
 let repeatCount = 0
 let currentRepetitionIsClean = true
 let lastStaffY = null
-let currentStaffLineIndex = null
+let currentSystemIndex = null
 let measureClickRectangles = []
 
 // Padding around measure notes for clickable area
@@ -77,7 +77,7 @@ function resetPlaybackState() {
   repeatCount = 0
   currentRepetitionIsClean = true
   lastStaffY = null
-  currentStaffLineIndex = null
+  currentSystemIndex = null
 }
 
 async function loadMusicXML(event) {
@@ -161,7 +161,6 @@ function extractFromSourceMeasures(sourceMeasures) {
                 noteName: noteInfo.noteName,
                 timestamp: measureIndex + voiceEntry.timestamp.realValue,
                 measureIndex: measureIndex,
-                staffLineIndex: staffIndex,
                 played: false,
               })
             }
@@ -388,37 +387,36 @@ function validatePlayedNote(midiNote) {
     const isFirstNoteOfMeasure = playedCount === matchingIndices.length
 
     if (isFirstNoteOfMeasure) {
+      const noteSystemIndex = getSystemIndexForNote(noteData.note)
+
       // Scroll to score title when first note of first measure is played
       if (currentMeasureIndex === 0) {
         const scoreContainer = document.getElementById('score')
         if (scoreContainer) {
           scoreContainer.scrollIntoView({ behavior: 'smooth', block: 'start' })
-          // Store initial staff line index from the note data
-          currentStaffLineIndex = noteData.staffLineIndex
+          // Store initial system index
+          currentSystemIndex = noteSystemIndex
           // Also store the Y position for scroll calculation
           const noteElement = svgNote(noteData.note)
           const bbox = noteElement.getBBox()
           lastStaffY = bbox.y
         }
       } else {
-        // Check if we've moved to a new staff line using the stored staff index
-        const noteStaffLineIndex = noteData.staffLineIndex
-
-        // Only scroll if we've actually moved to a different staff line
-        if (currentStaffLineIndex !== null && noteStaffLineIndex !== currentStaffLineIndex) {
-          // We've moved to a new staff line, scroll to bring it into view
+        // Only scroll if we've moved to a new visual system (line)
+        if (currentSystemIndex !== null && noteSystemIndex !== currentSystemIndex) {
+          // We've moved to a new system, scroll to bring it into view
           const noteElement = svgNote(noteData.note)
           const bbox = noteElement.getBBox()
           const currentY = bbox.y
-          
+
           // Calculate scroll amount based on actual Y position difference
           if (lastStaffY !== null) {
             const scrollAmount = currentY - lastStaffY
             window.scrollBy({ top: scrollAmount, behavior: 'smooth' })
           }
-          
+
           // Update tracking variables
-          currentStaffLineIndex = noteStaffLineIndex
+          currentSystemIndex = noteSystemIndex
           lastStaffY = currentY
         }
       }
@@ -473,6 +471,35 @@ function validatePlayedNote(midiNote) {
 
 function svgNote(note) {
   return osmdInstance.rules.GNote(note).getSVGGElement()
+}
+
+function getSystemIndexForNote(note) {
+  try {
+    // Navigate up the OSMD hierarchy: note → parentVoiceEntry → parentStaffEntry → parentMeasure
+    const graphicalNote = osmdInstance.rules.GNote(note)
+    const parentMeasure = graphicalNote.parentVoiceEntry.parentStaffEntry.parentMeasure
+
+    // Find which MusicSystem contains this measure (MusicSystems are in the first music page)
+    const musicSystems = osmdInstance.graphic.musicPages[0].MusicSystems
+
+    // Search for the measure in all systems
+    for (let i = 0; i < musicSystems.length; i++) {
+      const system = musicSystems[i]
+      if (!system.graphicalMeasures) continue
+
+      // graphicalMeasures is a 2D array: [staffIndex][measureIndex]
+      for (const measureList of system.graphicalMeasures) {
+        if (measureList?.includes(parentMeasure)) {
+          return i
+        }
+      }
+    }
+
+    return 0
+  } catch (error) {
+    console.warn('Failed to get system index for note:', error)
+    return 0
+  }
 }
 
 function resetProgress() {
