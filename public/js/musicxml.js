@@ -287,6 +287,11 @@ function setupMeasureClickHandlers() {
 
     if (boxes.length === 0) return
 
+    // Add data-measure-index to notes for test compatibility (no click handlers)
+    noteElements.forEach((noteElement) => {
+      noteElement.dataset.measureIndex = measureIndex
+    })
+
     // Calculate combined bounding box
     const minX = Math.min(...boxes.map((b) => b.x))
     const minY = Math.min(...boxes.map((b) => b.y))
@@ -316,6 +321,16 @@ function setupMeasureClickHandlers() {
 }
 
 function removeMeasureClickHandlers() {
+  // Clean up data-measure-index from notes
+  allNotes.forEach((measureData) => {
+    if (measureData && measureData.notes) {
+      measureData.notes.forEach((noteData) => {
+        const noteElement = svgNote(noteData.note)
+        delete noteElement.dataset.measureIndex
+      })
+    }
+  })
+
   // Remove click handlers and rectangles
   measureClickHandlers.forEach((handler, rect) => {
     rect.removeEventListener('click', handler)
