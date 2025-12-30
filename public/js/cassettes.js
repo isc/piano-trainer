@@ -62,7 +62,7 @@ async function saveCassette(name, recordingData) {
   }
 }
 
-async function replayCassette(cassetteFile, midiParser, staffController) {
+async function replayCassette(cassetteFile, midiParser) {
   if (!cassetteFile) return
 
   state.isReplaying = true
@@ -73,12 +73,6 @@ async function replayCassette(cassetteFile, midiParser, staffController) {
   try {
     const response = await fetch(`/${cassetteFile}`)
     const cassette = await response.json()
-
-    // Clear staff before replay
-    if (staffController) {
-      staffController.getStaffState().notes = []
-      staffController.redrawStaff()
-    }
 
     // Replay each MIDI message with proper timing
     for (let i = 0; i < cassette.data.length; i++) {

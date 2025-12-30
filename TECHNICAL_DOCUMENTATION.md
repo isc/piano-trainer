@@ -16,17 +16,17 @@ This document provides a detailed technical overview of the Piano Trainer applic
 │  │ Sinatra API │ │  │ MIDI Processing Engine     │ │  │ Web Bluetooth API   │ │
 │  └─────────────┘ │  └───────────────────────────┘ │  └─────────────────────┘ │
 │  ┌─────────────┐ │  ┌───────────────────────────┐ │  ┌─────────────────────┐ │
-│  │ File System │ │  │ MusicXML Parser           │ │  │ VexFlow             │ │
+│  │ File System │ │  │ MusicXML Parser           │ │  │ OpenSheetMusicDisplay│ │
 │  └─────────────┘ │  └───────────────────────────┘ │  └─────────────────────┘ │
 │  ┌─────────────┐ │  ┌───────────────────────────┐ │  ┌─────────────────────┐ │
-│  │ CORS Middle │ │  │ Note Validation System   │ │  │ OpenSheetMusicDisplay│ │
+│  │ CORS Middle │ │  │ Note Validation System   │ │  │ Alpine.js           │ │
 │  └─────────────┘ │  └───────────────────────────┘ │  └─────────────────────┘ │
 │                 │  ┌───────────────────────────┐ │  ┌─────────────────────┐ │
-│                 │  │ Recording/Playback System │ │  │ Alpine.js           │ │
+│                 │  │ Recording/Playback System │ │  │ Pico CSS            │ │
 │                 │  └───────────────────────────┘ │  └─────────────────────┘ │
-│                 │  ┌───────────────────────────┐ │  ┌─────────────────────┐ │
-│                 │  │ UI State Management       │ │  │ Pico CSS            │ │
-│                 │  └───────────────────────────┘ │  └─────────────────────┘ │
+│                 │  ┌───────────────────────────┐ │
+│                 │  │ UI State Management       │ │
+│                 │  └───────────────────────────┘ │
 └─────────────────┴─────────────────────────────────┴───────────────────────────┘
 ```
 
@@ -82,15 +82,14 @@ Recordings are stored as JSON files in `public/cassettes/` with the following st
 
 ### Modular Architecture
 
-The frontend is organized into five specialized modules, each with a clear responsibility:
+The frontend is organized into four specialized modules, each with a clear responsibility:
 
 ```
 public/js/
-├── app.js         (118 lines) - Alpine.js coordination layer
-├── midi.js        (147 lines) - Bluetooth MIDI & recording
-├── musicxml.js    (282 lines) - MusicXML parsing & validation
-├── staff.js       (103 lines) - VexFlow rendering
-└── cassettes.js   (103 lines) - Cassette management
+├── app.js         - Alpine.js coordination layer
+├── midi.js        - Bluetooth MIDI & recording
+├── musicxml.js    - MusicXML parsing & validation
+└── cassettes.js   - Cassette management
 ```
 
 #### Module Communication
@@ -102,12 +101,10 @@ Modules communicate through a callback system, ensuring loose coupling:
 const midi = initMidi()
 const musicxml = initMusicXML()
 const cassettes = initCassettes()
-const staff = initStaff()
 
 // Set up inter-module communication
 midi.setCallbacks({
   onNotePlayed: (noteName, midiNote) => {
-    staff.addNoteToStaff(noteName)
     musicxml.validatePlayedNote(midiNote)
   }
 })
@@ -332,55 +329,6 @@ function pitchToMidiFromSourceNote(pitch) {
 }
 ```
 
-### Staff Module (`public/js/staff.js`)
-
-Handles VexFlow rendering of the musical staff:
-
-```javascript
-// Module exports
-export function initStaff() {
-  return {
-    initStaff: initStaffInternal,
-    addNoteToStaff,
-    redrawStaff,
-    getStaffState
-  }
-}
-```
-
-#### VexFlow Integration
-
-```javascript
-function initStaffInternal() {
-  const div = document.getElementById('staff');
-  div.innerHTML = '';
-  const renderer = new VexFlow.Renderer(div, VexFlow.Renderer.Backends.SVG);
-  renderer.resize(600, 200);
-  const context = renderer.getContext();
-
-  staffState = {
-    renderer,
-    context,
-    stave: new VexFlow.Stave(10, 40, 580),
-    notes: []
-  };
-
-  staffState.stave.addClef('treble').addTimeSignature('4/4');
-  staffState.stave.setContext(context).draw();
-}
-
-function addNoteToStaff(noteName) {
-  const vexNote = convertToVexFlowNote(noteName);
-  staffState.notes.push(vexNote);
-
-  if (staffState.notes.length > 8) {
-    staffState.notes.shift();
-  }
-
-  redrawStaff();
-}
-```
-
 ### Cassettes Module (`public/js/cassettes.js`)
 
 Manages recording storage and playback:
@@ -433,18 +381,13 @@ async function saveCassette(name, recordingData) {
   }
 }
 
-async function replayCassette(cassetteFile, midiParser, staffController) {
+async function replayCassette(cassetteFile, midiParser) {
   state.isReplaying = true;
   if (callbacks.onReplayStart) callbacks.onReplayStart();
 
   try {
     const response = await fetch(`/${cassetteFile}`);
     const cassette = await response.json();
-
-    if (staffController) {
-      staffController.getStaffState().notes = [];
-      staffController.redrawStaff();
-    }
 
     for (let i = 0; i < cassette.data.length; i++) {
       const message = cassette.data[i];
@@ -615,26 +558,21 @@ noteName(n) {
 
 1. **Input**: Array of recorded MIDI messages with timestamps
 2. **Process**:
-   - Initialize staff display
    - For each message:
      - Calculate delay from previous message
      - Wait for the calculated delay
      - Parse and process the MIDI message
-     - Update visual display
-3. **Output**: Real-time playback of recorded performance
+   - Output: Real-time playback of recorded performance
 
 ## Performance Considerations
 
 ### Memory Management
 
-- **Note Buffer**: Only keeps last 8 notes in the staff display
 - **Recording Data**: Cleared after saving or canceling
 - **MusicXML Processing**: Large scores are processed incrementally
 
 ### Rendering Optimization
 
-- **SVG Rendering**: Uses VexFlow's SVG backend for efficient rendering
-- **Incremental Updates**: Only redraws necessary parts of the staff
 - **CSS Transitions**: Smooth visual feedback without JavaScript animation
 
 ### Error Handling
