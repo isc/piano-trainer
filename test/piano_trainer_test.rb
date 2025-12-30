@@ -119,12 +119,13 @@ class PianoTrainerTest < CapybaraTestBase
       assert_text 'Enregistrement en cours'
 
       # Simulate MIDI events via custom events
-      [
+      midi_events = [
         [154, 135, 144, 60, 80],  # Note ON C4
         [154, 245, 128, 60, 64],  # Note OFF C4
         [156, 145, 144, 64, 80],  # Note ON E4
         [156, 227, 128, 64, 64],  # Note OFF E4
-      ].each { |data| simulate_midi_input(data) }
+      ]
+      midi_events.each { |data| simulate_midi_input(data) }
 
       # Give a moment for MIDI events to be recorded
       sleep 0.1
@@ -135,19 +136,12 @@ class PianoTrainerTest < CapybaraTestBase
         end
       end
 
-      # Verify the saved cassette contains valid MIDI data
-      assert File.exist?(cassette_file), 'Cassette file should exist'
-
-      cassette_data = JSON.parse(File.read(cassette_file))
-      assert cassette_data['data'].length > 0, 'Cassette should contain MIDI events'
-
-      # Verify that each event has non-empty data array
-      cassette_data['data'].each_with_index do |event, index|
-        assert event['data'].is_a?(Array), "Event #{index} should have data array"
-        assert event['data'].length > 0, "Event #{index} should have non-empty data array (bug: array reference not copied)"
-      end
+      # Verify the cassette is served correctly by the server
+      visit "/cassettes/#{cassette_name}.json"
+      cassette_data = JSON.parse(page.find('pre').text)
+      actual_data = cassette_data['data'].map { |event| event['data'] }
+      assert_equal midi_events, actual_data, 'Cassette should contain exact MIDI data'
     ensure
-      # Clean up: delete the test cassette file
       File.delete(cassette_file) if File.exist?(cassette_file)
     end
   end
