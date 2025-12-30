@@ -312,12 +312,6 @@ function attachClickHandler(rect, measureIndex) {
   rect.addEventListener('click', handler)
 }
 
-function addMeasureIndexToNotes(noteElements, measureIndex) {
-  noteElements.forEach((noteElement) => {
-    noteElement.dataset.measureIndex = measureIndex
-  })
-}
-
 function setupMeasureClickHandlers() {
   if (!osmdInstance || allNotes.length === 0) return
 
@@ -331,8 +325,6 @@ function setupMeasureClickHandlers() {
 
     const boxes = getBoundingBoxesForNotes(noteElements)
     if (boxes.length === 0) return
-
-    addMeasureIndexToNotes(noteElements, measureIndex)
 
     const bounds = calculateCombinedBounds(boxes)
 
@@ -348,17 +340,6 @@ function setupMeasureClickHandlers() {
 }
 
 function removeMeasureClickHandlers() {
-  // Clean up data-measure-index from notes
-  allNotes.forEach((measureData) => {
-    if (measureData && measureData.notes) {
-      measureData.notes.forEach((noteData) => {
-        const noteElement = svgNote(noteData.note)
-        delete noteElement.dataset.measureIndex
-      })
-    }
-  })
-
-  // Remove click handlers and rectangles
   measureClickHandlers.forEach((handler, rect) => {
     rect.removeEventListener('click', handler)
     if (rect.parentNode) {
