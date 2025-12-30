@@ -129,7 +129,7 @@ class PianoTrainerTest < CapybaraTestBase
       ].each { |data| simulate_midi_input(data) }
 
       # Give a moment for MIDI events to be recorded
-      sleep 0.2
+      sleep 0.1
 
       accept_prompt(with: cassette_name) do
         accept_alert do
