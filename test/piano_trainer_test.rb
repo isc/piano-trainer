@@ -162,6 +162,28 @@ class PianoTrainerTest < CapybaraTestBase
     assert_selector 'svg circle.repeat-indicator.filled', count: 1
   end
 
+  def test_autoscroll_when_moving_between_visual_systems
+    # Resize window to force more systems (one measure per system)
+    resize_window(600, 1200)
+
+    load_score('schumann-melodie.xml', 20, 256)
+
+    # Capture initial scroll position (should be at top)
+    initial_scroll_y = page.evaluate_script('window.scrollY')
+
+    # Play cassette that goes from measure 0 to measure 1 (different systems)
+    replay_cassette('melodie-2-bars')
+
+    assert_no_text '▶️ Rejeu en cours...', wait: 4
+
+    # Verify that scroll position has changed (scrolled down)
+    final_scroll_y = page.evaluate_script('window.scrollY')
+    assert final_scroll_y > initial_scroll_y, "Page should have scrolled down when moving to next system (initial: #{initial_scroll_y}, final: #{final_scroll_y})"
+
+    # Reset window size
+    resize_window(1400, 1000)
+  end
+
   private
 
   def load_score(filename, expected_measures, expected_notes)
@@ -178,6 +200,10 @@ class PianoTrainerTest < CapybaraTestBase
 
   def click_measure(measure_number)
     page.all('svg rect.measure-click-area')[measure_number - 1].trigger('click')
+  end
+
+  def resize_window(width, height)
+    page.driver.resize(width, height)
   end
 
   # Helper method to display the browser console logs.
