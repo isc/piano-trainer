@@ -167,25 +167,27 @@ class PianoTrainerTest < CapybaraTestBase
     original_width = page.execute_script('return window.innerWidth').to_i
     original_height = page.execute_script('return window.innerHeight').to_i
 
-    # Resize window to force more systems (one measure per system)
-    page.driver.resize(600, 1200)
+    begin
+      # Resize window to force more systems (one measure per system)
+      page.driver.resize(600, 1200)
 
-    load_score('schumann-melodie.xml', 20, 256)
+      load_score('schumann-melodie.xml', 20, 256)
 
-    # Capture initial scroll position (should be at top)
-    initial_scroll_y = page.evaluate_script('window.scrollY')
+      # Capture initial scroll position (should be at top)
+      initial_scroll_y = page.evaluate_script('window.scrollY')
 
-    # Play cassette that goes from measure 0 to measure 1 (different systems)
-    replay_cassette('melodie-2-bars')
+      # Play cassette that goes from measure 0 to measure 1 (different systems)
+      replay_cassette('melodie-2-bars')
 
-    assert_no_text '▶️ Rejeu en cours...', wait: 4
+      assert_no_text '▶️ Rejeu en cours...', wait: 4
 
-    # Verify that scroll position has changed (scrolled down)
-    final_scroll_y = page.evaluate_script('window.scrollY')
-    assert final_scroll_y > initial_scroll_y, "Page should have scrolled down when moving to next system (initial: #{initial_scroll_y}, final: #{final_scroll_y})"
-
-    # Restore original window size for subsequent tests
-    page.driver.resize(original_width, original_height)
+      # Verify that scroll position has changed (scrolled down)
+      final_scroll_y = page.evaluate_script('window.scrollY')
+      assert final_scroll_y > initial_scroll_y, "Page should have scrolled down when moving to next system (initial: #{initial_scroll_y}, final: #{final_scroll_y})"
+    ensure
+      # Always restore original window size for subsequent tests
+      page.driver.resize(original_width, original_height)
+    end
   end
 
   private
