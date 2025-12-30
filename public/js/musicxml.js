@@ -8,6 +8,7 @@ let targetRepeatCount = 3
 let repeatCount = 0
 let currentRepetitionIsClean = true
 let lastStaffY = null
+let currentStaffLineIndex = null
 let measureClickRectangles = []
 
 // Padding around measure notes for clickable area
@@ -76,6 +77,7 @@ function resetPlaybackState() {
   repeatCount = 0
   currentRepetitionIsClean = true
   lastStaffY = null
+  currentStaffLineIndex = null
 }
 
 async function loadMusicXML(event) {
@@ -389,22 +391,23 @@ function validatePlayedNote(midiNote) {
         const scoreContainer = document.getElementById('score')
         if (scoreContainer) {
           scoreContainer.scrollIntoView({ behavior: 'smooth', block: 'start' })
-          // Store initial Y position
+          // Store initial staff line index
           const noteElement = svgNote(noteData.note)
-          const bbox = noteElement.getBBox()
-          lastStaffY = bbox.y
+          currentStaffLineIndex = getStaffLineIndex(noteElement)
         }
       } else {
-        // Check if we've moved to a new staff (Y position changed significantly)
+        // Check if we've moved to a new staff line
         const noteElement = svgNote(noteData.note)
-        const bbox = noteElement.getBBox()
-        const currentY = bbox.y
+        const staffLineIndex = getStaffLineIndex(noteElement)
 
-        if (lastStaffY !== null && Math.abs(currentY - lastStaffY) > 50) {
-          // We've moved to a new staff, scroll by one staff height
-          const staffHeight = Math.abs(currentY - lastStaffY)
-          window.scrollBy({ top: staffHeight, behavior: 'smooth' })
-          lastStaffY = currentY
+        // Only scroll if we've actually moved to a different staff line
+        if (currentStaffLineIndex !== null && staffLineIndex !== currentStaffLineIndex) {
+          // Get the staff line container to calculate proper scroll amount
+          const staffLineElement = getStaffLineElement(noteElement)
+          if (staffLineElement) {
+            staffLineElement.scrollIntoView({ behavior: 'smooth', block: 'start' })
+            currentStaffLineIndex = staffLineIndex
+          }
         }
       }
     }
@@ -458,6 +461,55 @@ function validatePlayedNote(midiNote) {
 
 function svgNote(note) {
   return osmdInstance.rules.GNote(note).getSVGGElement()
+}
+
+// Helper function to get staff line index from a note element
+// Staff lines are determined by the Y position of the parent staff container
+function getStaffLineIndex(noteElement) {
+  // Traverse up to find the staff line container (usually a 'g' element with class 'staffline')
+  let current = noteElement
+  while (current && current.parentElement) {
+    // OSMD typically groups measures and staves in nested 'g' elements
+    // We look for elements that represent distinct visual staff lines
+    if (current.tagName === 'g' && current.getAttribute('class')?.includes('staffline')) {
+      // Calculate a consistent index based on Y position
+      const bbox = current.getBBox()
+      // Round to nearest 100 pixels to group staff lines together
+      return Math.round(bbox.y / 100)
+    }
+    current = current.parentElement
+    
+    // Stop at the root SVG element
+    if (current.tagName === 'svg') {
+      break
+    }
+  }
+  
+  // Fallback: use the note's Y position rounded to nearest 100 pixels
+  const bbox = noteElement.getBBox()
+  return Math.round(bbox.y / 100)
+}
+
+// Helper function to get the staff line container element for scrolling
+function getStaffLineElement(noteElement) {
+  // Try to find a parent element that represents the staff line
+  let current = noteElement
+  while (current && current.parentElement) {
+    if (current.tagName === 'g' && current.getBBox) {
+      const bbox = current.getBBox()
+      // If this container is tall enough, it might be a staff line group
+      if (bbox.height > 50 && bbox.height < 300) {
+        return current
+      }
+    }
+    current = current.parentElement
+    if (current.tagName === 'svg') {
+      break
+    }
+  }
+  
+  // Fallback to the note element itself
+  return noteElement
 }
 
 function resetProgress() {
