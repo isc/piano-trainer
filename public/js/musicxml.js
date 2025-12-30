@@ -292,7 +292,7 @@ function calculateCombinedBounds(boxes) {
   }
 }
 
-function createMeasureRectangle(svg, bounds, measureIndex, isSelected) {
+function createMeasureRectangle(svg, bounds, measureIndex) {
   const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect')
   rect.classList.add('measure-click-area')
   rect.setAttribute('x', bounds.minX - MEASURE_CLICK_PADDING)
@@ -300,10 +300,6 @@ function createMeasureRectangle(svg, bounds, measureIndex, isSelected) {
   rect.setAttribute('width', bounds.maxX - bounds.minX + MEASURE_CLICK_PADDING * 1.5)
   rect.setAttribute('height', bounds.maxY - bounds.minY + MEASURE_CLICK_PADDING * 1.5)
   rect.dataset.measureIndex = measureIndex
-
-  if (isSelected) {
-    rect.classList.add('selected')
-  }
 
   return rect
 }
@@ -341,7 +337,7 @@ function setupMeasureClickHandlers() {
     const svg = noteElements[0].ownerSVGElement
     if (!svg) return
 
-    const rect = createMeasureRectangle(svg, bounds, measureIndex, measureIndex === currentMeasureIndex)
+    const rect = createMeasureRectangle(svg, bounds, measureIndex)
     attachClickHandler(rect, measureIndex)
 
     svg.appendChild(rect)
@@ -374,14 +370,8 @@ function removeMeasureClickHandlers() {
 
 function jumpToMeasure(measureIndex) {
   if (measureIndex < 0 || measureIndex >= allNotes.length) return
-
-  // Reset progress for current measure before jumping
   resetMeasureProgress()
-
-  // Jump to new measure
   currentMeasureIndex = measureIndex
-
-  // Update visual cursor
   updateMeasureCursor()
 
   // Notify callback
