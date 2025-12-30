@@ -163,6 +163,10 @@ class PianoTrainerTest < CapybaraTestBase
   end
 
   def test_autoscroll_when_moving_between_visual_systems
+    # Save original window size (Cuprite default is 1024x768)
+    original_width = page.execute_script('return window.innerWidth').to_i
+    original_height = page.execute_script('return window.innerHeight').to_i
+
     # Resize window to force more systems (one measure per system)
     page.driver.resize(600, 1200)
 
@@ -180,8 +184,8 @@ class PianoTrainerTest < CapybaraTestBase
     final_scroll_y = page.evaluate_script('window.scrollY')
     assert final_scroll_y > initial_scroll_y, "Page should have scrolled down when moving to next system (initial: #{initial_scroll_y}, final: #{final_scroll_y})"
 
-    # Reset window size for subsequent tests
-    page.driver.resize(1400, 1000)
+    # Restore original window size for subsequent tests
+    page.driver.resize(original_width, original_height)
   end
 
   private
