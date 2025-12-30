@@ -153,14 +153,14 @@ class PianoTrainerTest < CapybaraTestBase
         window.prompt.restore = () => { window.prompt = originalPrompt; };
       JS
 
-      click_on 'Arrêter enregistrement'
+      # Accept the success alert that will appear after stopping recording
+      accept_alert do
+        click_on 'Arrêter enregistrement'
+      end
 
       # Restore original prompt
       page.execute_script('window.prompt.restore()')
 
-      # Wait for save confirmation and accept alert
-      sleep 0.3
-      page.driver.browser.switch_to.alert.accept rescue nil
       sleep 0.3
 
       # Fetch the saved cassette and verify it contains valid MIDI data
