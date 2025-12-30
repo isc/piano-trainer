@@ -123,7 +123,7 @@ async function stopRecording() {
 
   const cassetteName = prompt(
     'Nom de la cassette :',
-    `Cassette_${new Date().toISOString().slice(0, 19).replace(/[:-]/g, '')}`
+    `Cassette_${new Date().toISOString().slice(0, 19).replace(/[:-]/g, '')}`,
   )
 
   if (!cassetteName) {
