@@ -10,7 +10,12 @@ require_relative '../app'
 Capybara.app = App
 
 Capybara.register_driver(:cuprite) do |app|
-  Capybara::Cuprite::Driver.new(app, headless: !ENV['DISABLE_HEADLESS'], logger: StringIO.new)
+  Capybara::Cuprite::Driver.new(
+    app,
+    headless: !ENV['DISABLE_HEADLESS'],
+    logger: StringIO.new,
+    browser_options: { 'disable-gpu' => nil }
+  )
 end
 Capybara.default_driver = :cuprite
 Capybara.enable_aria_label = true
@@ -22,5 +27,15 @@ class CapybaraTestBase < Minitest::Test
   def setup
     page.driver.set_cookie('test-env', 'true')
     visit '/'
+  end
+
+  # Helper to simulate MIDI input events
+  def simulate_midi_input(data_array)
+    page.execute_script(<<~JS)
+      const event = new CustomEvent('mock-midi-input', {
+        detail: { data: #{data_array.to_json} }
+      });
+      window.dispatchEvent(event);
+    JS
   end
 end

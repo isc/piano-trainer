@@ -107,10 +107,48 @@ class PianoTrainerTest < CapybaraTestBase
     assert_selector 'svg g.vf-stavenote.played-note', count: 1
   end
 
+  def test_cassette_recording_saves_valid_midi_data
+    cassette_name = 'test-recording'
+    cassette_file = File.join(__dir__, '..', 'public', 'cassettes', "#{cassette_name}.json")
+
+    begin
+      load_score('simple-score.xml', 1, 4)
+      click_on 'Scanner Bluetooth MIDI'
+      assert_button 'Démarrer enregistrement'
+      click_on 'Démarrer enregistrement'
+      assert_text 'Enregistrement en cours'
+
+      # Simulate MIDI events via custom events
+      midi_events = [
+        [154, 135, 144, 60, 80],  # Note ON C4
+        [154, 245, 128, 60, 64],  # Note OFF C4
+        [156, 145, 144, 64, 80],  # Note ON E4
+        [156, 227, 128, 64, 64],  # Note OFF E4
+      ]
+      midi_events.each { |data| simulate_midi_input(data) }
+
+      # Give a moment for MIDI events to be recorded
+      sleep 0.1
+
+      accept_alert do
+        accept_prompt(with: cassette_name) do
+          click_on 'Arrêter enregistrement'
+        end
+      end
+
+      # Verify the cassette is served correctly by the server
+      visit "/cassettes/#{cassette_name}.json"
+      cassette_data = JSON.parse(page.find('pre').text)
+      actual_data = cassette_data['data'].map { |event| event['data'] }
+      assert_equal midi_events, actual_data, 'Cassette should contain exact MIDI data'
+    ensure
+      File.delete(cassette_file) if File.exist?(cassette_file)
+    end
+  end
+
   private
 
   def load_score(filename, expected_measures, expected_notes)
-    visit '/' unless page.has_selector?('main.container')
     attach_file('musicxml-upload', File.expand_path("fixtures/#{filename}", __dir__))
     assert_text "Extraction terminée: #{expected_measures} mesures, #{expected_notes} notes"
     assert_selector 'svg g.vf-stavenote', count: expected_notes
