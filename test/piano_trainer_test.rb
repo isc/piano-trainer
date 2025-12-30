@@ -1,7 +1,4 @@
 require_relative 'test_helper'
-require 'net/http'
-require 'uri'
-require 'json'
 
 class PianoTrainerTest < CapybaraTestBase
   def test_play_simple_score_till_the_end
@@ -112,6 +109,7 @@ class PianoTrainerTest < CapybaraTestBase
 
   def test_cassette_recording_saves_valid_midi_data
     cassette_name = 'test-recording'
+    cassette_file = File.join(__dir__, '..', 'public', 'cassettes', "#{cassette_name}.json")
 
     begin
       load_score('simple-score.xml', 1, 4)
@@ -137,12 +135,10 @@ class PianoTrainerTest < CapybaraTestBase
         end
       end
 
-      # Fetch the saved cassette and verify it contains valid MIDI data
-      response = Net::HTTP.get_response(URI("http://localhost:#{Capybara.current_session.server.port}/cassettes/#{cassette_name}.json"))
+      # Verify the saved cassette contains valid MIDI data
+      assert File.exist?(cassette_file), 'Cassette file should exist'
 
-      assert_equal '200', response.code, 'Cassette file should exist'
-
-      cassette_data = JSON.parse(response.body)
+      cassette_data = JSON.parse(File.read(cassette_file))
       assert cassette_data['data'].length > 0, 'Cassette should contain MIDI events'
 
       # Verify that each event has non-empty data array
@@ -152,7 +148,6 @@ class PianoTrainerTest < CapybaraTestBase
       end
     ensure
       # Clean up: delete the test cassette file
-      cassette_file = File.join(__dir__, '..', 'public', 'cassettes', "#{cassette_name}.json")
       File.delete(cassette_file) if File.exist?(cassette_file)
     end
   end
