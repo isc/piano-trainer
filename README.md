@@ -256,7 +256,17 @@ DISABLE_HEADLESS=1 bundle exec ruby test/piano_trainer_test.rb
 - Edge 90+
 - Opera 76+
 
-## File Structure
+## Troubleshooting
+
+### Roland FP-30X Bluetooth MIDI Connection
+
+If you're using a Roland FP-30X (or FP-30) keyboard and it doesn't appear in the Bluetooth MIDI device list after clicking "Scanner Bluetooth MIDI":
+
+1. On your keyboard, press and hold the **Bluetooth** button together with the **first black key** (F#/Gb), then release both
+2. Press **Bluetooth** again together with the **first white key** (F), then release both
+3. Your keyboard should now reappear in the list of available Bluetooth MIDI devices
+
+This procedure resets the Bluetooth connection state on the keyboard and allows it to be rediscovered by your browser.
 
 ```
 piano-trainer/
