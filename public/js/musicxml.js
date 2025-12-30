@@ -274,68 +274,81 @@ function updateRepeatIndicators() {
   })
 }
 
+function getBoundingBoxesForNotes(noteElements) {
+  const boxes = []
+  for (const el of noteElements) {
+    try {
+      if (el && el.getBBox) {
+        boxes.push(el.getBBox())
+      }
+    } catch (error) {
+      console.warn('Failed to get bounding box for note element:', error)
+    }
+  }
+  return boxes
+}
+
+function calculateCombinedBounds(boxes) {
+  return {
+    minX: Math.min(...boxes.map((b) => b.x)),
+    minY: Math.min(...boxes.map((b) => b.y)),
+    maxX: Math.max(...boxes.map((b) => b.x + b.width)),
+    maxY: Math.max(...boxes.map((b) => b.y + b.height)),
+  }
+}
+
+function createMeasureRectangle(svg, bounds, measureIndex, isSelected) {
+  const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect')
+  rect.classList.add('measure-click-area')
+  rect.setAttribute('x', bounds.minX - MEASURE_CLICK_PADDING)
+  rect.setAttribute('y', bounds.minY - MEASURE_CLICK_PADDING)
+  rect.setAttribute('width', bounds.maxX - bounds.minX + MEASURE_CLICK_PADDING * 1.5)
+  rect.setAttribute('height', bounds.maxY - bounds.minY + MEASURE_CLICK_PADDING * 1.5)
+  rect.dataset.measureIndex = measureIndex
+
+  if (isSelected) {
+    rect.classList.add('selected')
+  }
+
+  return rect
+}
+
+function attachClickHandler(rect, measureIndex) {
+  const handler = () => jumpToMeasure(measureIndex)
+  measureClickHandlers.set(rect, handler)
+  rect.addEventListener('click', handler)
+}
+
+function addMeasureIndexToNotes(noteElements, measureIndex) {
+  noteElements.forEach((noteElement) => {
+    noteElement.dataset.measureIndex = measureIndex
+  })
+}
+
 function setupMeasureClickHandlers() {
   if (!osmdInstance || allNotes.length === 0) return
 
-  // Clear existing handlers first
   removeMeasureClickHandlers()
 
-  // Create clickable rectangles for each measure
   allNotes.forEach((measureData, measureIndex) => {
     if (!measureData || !measureData.notes || measureData.notes.length === 0) return
 
-    // Get bounding boxes of all notes in the measure
     const noteElements = measureData.notes.map((n) => svgNote(n.note))
     if (noteElements.length === 0) return
 
-    // Get bounding boxes with error handling
-    const boxes = []
-    for (const el of noteElements) {
-      try {
-        if (el && el.getBBox) {
-          boxes.push(el.getBBox())
-        }
-      } catch (error) {
-        console.warn('Failed to get bounding box for note element:', error)
-      }
-    }
-
+    const boxes = getBoundingBoxesForNotes(noteElements)
     if (boxes.length === 0) return
 
-    // Add data-measure-index to notes for test compatibility (no click handlers)
-    noteElements.forEach((noteElement) => {
-      noteElement.dataset.measureIndex = measureIndex
-    })
+    addMeasureIndexToNotes(noteElements, measureIndex)
 
-    // Calculate combined bounding box
-    const minX = Math.min(...boxes.map((b) => b.x))
-    const minY = Math.min(...boxes.map((b) => b.y))
-    const maxX = Math.max(...boxes.map((b) => b.x + b.width))
-    const maxY = Math.max(...boxes.map((b) => b.y + b.height))
+    const bounds = calculateCombinedBounds(boxes)
 
     const svg = noteElements[0].ownerSVGElement
     if (!svg) return
 
-    // Create clickable rectangle (serves dual purpose: clickable area + highlight)
-    const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect')
-    rect.classList.add('measure-click-area')
-    rect.setAttribute('x', minX - MEASURE_CLICK_PADDING)
-    rect.setAttribute('y', minY - MEASURE_CLICK_PADDING)
-    rect.setAttribute('width', maxX - minX + MEASURE_CLICK_PADDING * 1.5)
-    rect.setAttribute('height', maxY - minY + MEASURE_CLICK_PADDING * 1.5)
-    rect.dataset.measureIndex = measureIndex
+    const rect = createMeasureRectangle(svg, bounds, measureIndex, measureIndex === currentMeasureIndex)
+    attachClickHandler(rect, measureIndex)
 
-    // Mark as selected if it's the current measure
-    if (measureIndex === currentMeasureIndex) {
-      rect.classList.add('selected')
-    }
-
-    // Create and store handler
-    const handler = () => jumpToMeasure(measureIndex)
-    measureClickHandlers.set(rect, handler)
-    rect.addEventListener('click', handler)
-
-    // Insert after existing content so it's on top and can capture clicks
     svg.appendChild(rect)
     measureClickRectangles.push(rect)
   })
