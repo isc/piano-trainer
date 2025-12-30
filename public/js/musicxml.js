@@ -475,36 +475,22 @@ function svgNote(note) {
 
 function getSystemIndexForNote(note) {
   try {
-    // Get the graphical note object
+    // Navigate up the OSMD hierarchy: note → parentVoiceEntry → parentStaffEntry → parentMeasure
     const graphicalNote = osmdInstance.rules.GNote(note)
+    const parentMeasure = graphicalNote.parentVoiceEntry.parentStaffEntry.parentMeasure
 
-    // Navigate up the hierarchy to get the parent measure
-    const parentVoiceEntry = graphicalNote.parentVoiceEntry
-    if (!parentVoiceEntry) return 0
-
-    const parentStaffEntry = parentVoiceEntry.parentStaffEntry
-    if (!parentStaffEntry) return 0
-
-    const parentMeasure = parentStaffEntry.parentMeasure
-    if (!parentMeasure) return 0
-
-    // Find which MusicSystem contains this measure
-    // MusicSystems are in the first music page
+    // Find which MusicSystem contains this measure (MusicSystems are in the first music page)
     const musicPages = osmdInstance.graphic?.musicPages || osmdInstance.GraphicSheet?.musicPages
-    if (!musicPages || musicPages.length === 0) return 0
-
     const musicSystems = musicPages[0].MusicSystems
-    if (!musicSystems) return 0
 
+    // Search for the measure in all systems
     for (let i = 0; i < musicSystems.length; i++) {
       const system = musicSystems[i]
       if (!system.graphicalMeasures) continue
 
       // graphicalMeasures is a 2D array: [staffIndex][measureIndex]
-      // We need to check if parentMeasure is in any of the staff arrays
-      for (let staffIdx = 0; staffIdx < system.graphicalMeasures.length; staffIdx++) {
-        const measureList = system.graphicalMeasures[staffIdx]
-        if (measureList && measureList.includes(parentMeasure)) {
+      for (const measureList of system.graphicalMeasures) {
+        if (measureList?.includes(parentMeasure)) {
           return i
         }
       }
