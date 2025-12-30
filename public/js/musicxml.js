@@ -161,7 +161,6 @@ function extractFromSourceMeasures(sourceMeasures) {
                 noteName: noteInfo.noteName,
                 timestamp: measureIndex + voiceEntry.timestamp.realValue,
                 measureIndex: measureIndex,
-                staffLineIndex: staffIndex,
                 played: false,
               })
             }
