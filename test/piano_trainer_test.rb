@@ -146,20 +146,16 @@ class PianoTrainerTest < CapybaraTestBase
       # Wait for all events to be processed
       sleep 0.3
 
-      # Stop recording and provide cassette name via JavaScript (to avoid prompt blocking)
+      # Override prompt to automatically provide cassette name
       page.execute_script(<<~JS)
-        const originalPrompt = window.prompt;
+        window._originalPrompt = window.prompt;
         window.prompt = () => '#{cassette_name}';
-        window.prompt.restore = () => { window.prompt = originalPrompt; };
       JS
 
       # Accept the success alert that will appear after stopping recording
       accept_alert do
         click_on 'Arrêter enregistrement'
       end
-
-      # Restore original prompt
-      page.execute_script('window.prompt.restore()')
 
       sleep 0.3
 
@@ -186,7 +182,6 @@ class PianoTrainerTest < CapybaraTestBase
   private
 
   def load_score(filename, expected_measures, expected_notes)
-    visit '/' unless page.has_selector?('main.container')
     attach_file('musicxml-upload', File.expand_path("fixtures/#{filename}", __dir__))
     assert_text "Extraction terminée: #{expected_measures} mesures, #{expected_notes} notes"
     assert_selector 'svg g.vf-stavenote', count: expected_notes
