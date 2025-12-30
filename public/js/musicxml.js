@@ -391,23 +391,25 @@ function validatePlayedNote(midiNote) {
         const scoreContainer = document.getElementById('score')
         if (scoreContainer) {
           scoreContainer.scrollIntoView({ behavior: 'smooth', block: 'start' })
-          // Store initial staff line index
+          // Store initial Y position
           const noteElement = svgNote(noteData.note)
-          currentStaffLineIndex = getStaffLineIndex(noteElement)
+          const bbox = noteElement.getBBox()
+          lastStaffY = bbox.y
         }
       } else {
-        // Check if we've moved to a new staff line
+        // Check if we've moved to a new staff (Y position changed significantly)
         const noteElement = svgNote(noteData.note)
-        const staffLineIndex = getStaffLineIndex(noteElement)
+        const bbox = noteElement.getBBox()
+        const currentY = bbox.y
 
-        // Only scroll if we've actually moved to a different staff line
-        if (currentStaffLineIndex !== null && staffLineIndex !== currentStaffLineIndex) {
-          // Calculate how many staff lines we've moved
-          const staffLinesDelta = staffLineIndex - currentStaffLineIndex
-          // Scroll by the appropriate amount (150 pixels per staff line)
-          const scrollAmount = staffLinesDelta * 150
-          window.scrollBy({ top: scrollAmount, behavior: 'smooth' })
-          currentStaffLineIndex = staffLineIndex
+        // Only scroll if Y position changed by more than 100 pixels
+        // This threshold is high enough to avoid false positives from note positioning
+        // but low enough to detect actual staff line changes (typically 150-200px apart)
+        if (lastStaffY !== null && Math.abs(currentY - lastStaffY) > 100) {
+          // We've moved to a new staff, scroll by the actual difference
+          const staffHeight = Math.abs(currentY - lastStaffY)
+          window.scrollBy({ top: staffHeight, behavior: 'smooth' })
+          lastStaffY = currentY
         }
       }
     }
@@ -461,19 +463,6 @@ function validatePlayedNote(midiNote) {
 
 function svgNote(note) {
   return osmdInstance.rules.GNote(note).getSVGGElement()
-}
-
-// Helper function to get staff line index from a note element
-// Staff lines are determined by the Y position of the parent staff container
-function getStaffLineIndex(noteElement) {
-  // Get the note's Y position
-  const bbox = noteElement.getBBox()
-  const noteY = bbox.y
-  
-  // In OSMD, staff lines are typically spaced 150-200 pixels apart
-  // We round to nearest 150 pixels to group notes on the same staff line
-  // This handles variations in note Y positions within the same staff
-  return Math.round(noteY / 150)
 }
 
 function resetProgress() {
