@@ -48,10 +48,10 @@ export function initMusicXML() {
       currentMeasureIndex = 0
       currentRepetitionIsClean = true
       resetProgress()
-      updateMeasureCursor()
 
       if (enabled) {
         setupMeasureClickHandlers()
+        updateMeasureCursor()
       } else {
         removeMeasureClickHandlers()
       }
