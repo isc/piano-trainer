@@ -146,15 +146,11 @@ class PianoTrainerTest < CapybaraTestBase
       # Wait for all events to be processed
       sleep 0.3
 
-      # Override prompt to automatically provide cassette name
-      page.execute_script(<<~JS)
-        window._originalPrompt = window.prompt;
-        window.prompt = () => '#{cassette_name}';
-      JS
-
-      # Accept the success alert that will appear after stopping recording
-      accept_alert do
-        click_on 'Arrêter enregistrement'
+      # Stop recording: accept prompt with cassette name, then accept success alert
+      accept_prompt(with: cassette_name) do
+        accept_alert do
+          click_on 'Arrêter enregistrement'
+        end
       end
 
       sleep 0.3
