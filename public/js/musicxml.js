@@ -14,6 +14,9 @@ let measureClickRectangles = []
 // Padding around measure notes for clickable area
 const MEASURE_CLICK_PADDING = 15
 
+// Delay in ms before resetting measure progress in training mode
+const TRAINING_RESET_DELAY_MS = 200
+
 let callbacks = {
   onNotesExtracted: null,
   onMeasureCompleted: null,
@@ -440,13 +443,13 @@ function validatePlayedNote(midiNote) {
               currentMeasureIndex++
               updateMeasureCursor()
               callbacks.onTrainingProgress?.(currentMeasureIndex, repeatCount, targetRepeatCount)
-            }, 500)
+            }, TRAINING_RESET_DELAY_MS)
           }
         } else {
           setTimeout(() => {
             resetMeasureProgress(false)
             callbacks.onTrainingProgress?.(currentMeasureIndex, repeatCount, targetRepeatCount)
-          }, 500)
+          }, TRAINING_RESET_DELAY_MS)
         }
       } else {
         if (currentMeasureIndex + 1 < allNotes.length) {
