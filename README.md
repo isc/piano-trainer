@@ -68,11 +68,11 @@ MIDI Device → Web Bluetooth API → MIDI Message Parser → Note Validator →
 
 - `app.rb`: Main Sinatra application with API endpoints
 - `public/index.html`: Main HTML interface
-- `public/js/app.js`: Alpine.js coordination layer (213 lines)
-- `public/js/midi.js`: Bluetooth MIDI & recording (145 lines)
-- `public/js/musicxml.js`: MusicXML parsing & validation (461 lines)
-- `public/js/staff.js`: VexFlow rendering (103 lines)
-- `public/js/cassettes.js`: Cassette management (106 lines)
+- `public/js/app.js`: Alpine.js coordination layer
+- `public/js/midi.js`: Bluetooth MIDI & recording
+- `public/js/musicxml.js`: MusicXML parsing & validation
+- `public/js/staff.js`: VexFlow rendering
+- `public/js/cassettes.js`: Cassette management
 - `public/js/bluetooth_midi_mock.js`: Mock implementation for testing
 - `public/js/utils.js`: Utility functions
 - `public/styles.css`: Custom styling
