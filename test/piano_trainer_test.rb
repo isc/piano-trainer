@@ -44,7 +44,7 @@ class PianoTrainerTest < CapybaraTestBase
     assert_selector 'svg g.vf-stavenote.played-note', count: 0  # After automatic reset (500ms)
     assert_selector 'svg g.vf-stavenote.played-note', minimum: 1, maximum: 3  # During 2nd repetition
 
-    assert_no_text '▶️ Rejeu en cours...', wait: 4
+    assert_no_text '▶️ Rejeu en cours...'
     assert_text 'Félicitations'
     assert_text 'complété toutes les mesures'
   end
@@ -57,7 +57,7 @@ class PianoTrainerTest < CapybaraTestBase
 
     replay_cassette('simple-score-with-mistakes')
 
-    assert_no_text '▶️ Rejeu en cours...', wait: 4
+    assert_no_text '▶️ Rejeu en cours...'
 
     # The cassette has 3 repetitions: clean, dirty (D instead of F), clean
     # Only 2 clean repetitions count, so training should NOT complete
@@ -179,7 +179,7 @@ class PianoTrainerTest < CapybaraTestBase
       # Play cassette that goes from measure 0 to measure 1 (different systems)
       replay_cassette('melodie-2-bars')
 
-      assert_no_text '▶️ Rejeu en cours...', wait: 4
+      assert_no_text '▶️ Rejeu en cours...'
 
       # Verify that scroll position has changed (scrolled down)
       final_scroll_y = page.evaluate_script('window.scrollY')
