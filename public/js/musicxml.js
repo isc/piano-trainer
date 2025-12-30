@@ -480,8 +480,7 @@ function getSystemIndexForNote(note) {
     const parentMeasure = graphicalNote.parentVoiceEntry.parentStaffEntry.parentMeasure
 
     // Find which MusicSystem contains this measure (MusicSystems are in the first music page)
-    const musicPages = osmdInstance.graphic?.musicPages || osmdInstance.GraphicSheet?.musicPages
-    const musicSystems = musicPages[0].MusicSystems
+    const musicSystems = osmdInstance.graphic.musicPages[0].MusicSystems
 
     // Search for the measure in all systems
     for (let i = 0; i < musicSystems.length; i++) {
