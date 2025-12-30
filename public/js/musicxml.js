@@ -16,7 +16,6 @@ const MEASURE_CLICK_PADDING = 15
 
 let callbacks = {
   onNotesExtracted: null,
-  onNoteValidation: null,
   onMeasureCompleted: null,
   onNoteError: null,
   onTrainingProgress: null,
