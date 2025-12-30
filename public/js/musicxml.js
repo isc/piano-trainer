@@ -9,6 +9,7 @@ let repeatCount = 0
 let currentRepetitionIsClean = true
 let lastStaffY = null
 let measureClickHandlers = new Map()
+let measureClickRectangles = []
 
 let callbacks = {
   onNotesExtracted: null,
@@ -274,32 +275,57 @@ function setupMeasureClickHandlers() {
   if (!osmdInstance || allNotes.length === 0) return
 
   // Clear existing handlers first
-  measureClickHandlers.clear()
+  removeMeasureClickHandlers()
 
-  // Add click handlers to all notes
+  // Create invisible clickable rectangles for each measure
   allNotes.forEach((measureData, measureIndex) => {
-    measureData.notes.forEach((noteData) => {
-      const noteElement = svgNote(noteData.note)
-      noteElement.style.cursor = 'pointer'
-      noteElement.dataset.measureIndex = measureIndex
+    if (!measureData || !measureData.notes || measureData.notes.length === 0) return
 
-      // Create and store handler
-      const handler = () => jumpToMeasure(measureIndex)
-      measureClickHandlers.set(noteElement, handler)
-      noteElement.addEventListener('click', handler)
-    })
+    // Get bounding boxes of all notes in the measure
+    const noteElements = measureData.notes.map((n) => svgNote(n.note))
+    const boxes = noteElements.map((el) => el.getBBox())
+
+    if (boxes.length === 0) return
+
+    // Calculate combined bounding box
+    const minX = Math.min(...boxes.map((b) => b.x))
+    const minY = Math.min(...boxes.map((b) => b.y))
+    const maxX = Math.max(...boxes.map((b) => b.x + b.width))
+    const maxY = Math.max(...boxes.map((b) => b.y + b.height))
+
+    const svg = noteElements[0].ownerSVGElement
+
+    // Create invisible clickable rectangle
+    const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect')
+    rect.classList.add('measure-click-area')
+    rect.setAttribute('x', minX - 10)
+    rect.setAttribute('y', minY - 10)
+    rect.setAttribute('width', maxX - minX + 20)
+    rect.setAttribute('height', maxY - minY + 20)
+    rect.dataset.measureIndex = measureIndex
+
+    // Create and store handler
+    const handler = () => jumpToMeasure(measureIndex)
+    measureClickHandlers.set(rect, handler)
+    rect.addEventListener('click', handler)
+
+    // Insert at beginning so it's behind notes
+    svg.insertBefore(rect, svg.firstChild)
+    measureClickRectangles.push(rect)
   })
 }
 
 function removeMeasureClickHandlers() {
-  // Remove click handlers from all notes
-  measureClickHandlers.forEach((handler, noteElement) => {
-    noteElement.style.cursor = ''
-    delete noteElement.dataset.measureIndex
-    noteElement.removeEventListener('click', handler)
+  // Remove click handlers and rectangles
+  measureClickHandlers.forEach((handler, rect) => {
+    rect.removeEventListener('click', handler)
+    if (rect.parentNode) {
+      rect.parentNode.removeChild(rect)
+    }
   })
 
   measureClickHandlers.clear()
+  measureClickRectangles = []
 }
 
 function jumpToMeasure(measureIndex) {

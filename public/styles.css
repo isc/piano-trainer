@@ -59,7 +59,22 @@ svg g.played-note {
 /* Training mode indicators */
 #measure-highlight-rect {
   fill: rgba(59, 130, 246, 0.15);
+  stroke: rgba(59, 130, 246, 0.8);
+  stroke-width: 2;
   rx: 4;
+  pointer-events: none;
+}
+
+/* Invisible clickable areas for measures */
+.measure-click-area {
+  fill: transparent;
+  stroke: none;
+  cursor: pointer;
+  rx: 4;
+}
+
+.measure-click-area:hover {
+  fill: rgba(59, 130, 246, 0.05);
 }
 
 .repeat-indicator {
