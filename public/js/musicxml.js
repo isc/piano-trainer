@@ -51,6 +51,9 @@ export function initMusicXML() {
         updateMeasureCursor()
       } else {
         removeMeasureClickHandlers()
+        // Clean up repeat indicators
+        const existingIndicators = document.getElementById('repeat-indicators')
+        existingIndicators?.remove()
       }
     },
     jumpToMeasure: (measureIndex) => jumpToMeasure(measureIndex),
@@ -220,7 +223,7 @@ function updateMeasureCursor() {
           const noteElements = measureData.notes.map((n) => svgNote(n.note))
           const svg = noteElements[0]?.ownerSVGElement
           if (svg) {
-            createRepeatIndicators(measureData, svg)
+            createRepeatIndicators(noteElements, svg)
           }
         }
       }
@@ -228,9 +231,8 @@ function updateMeasureCursor() {
   }
 }
 
-function createRepeatIndicators(measureData, svg) {
-  const noteElements = measureData.notes.map((n) => svgNote(n.note))
-  const boxes = noteElements.map((el) => el.getBBox())
+function createRepeatIndicators(noteElements, svg) {
+  const boxes = getBoundingBoxesForNotes(noteElements)
 
   if (boxes.length === 0) return
 
