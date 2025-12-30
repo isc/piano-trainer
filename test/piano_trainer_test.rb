@@ -114,68 +114,75 @@ class PianoTrainerTest < CapybaraTestBase
     # Note: setup() already calls visit '/' and sets test-env cookie
     # The cookie triggers automatic loading of Bluetooth mock in midi.js
 
-    # Wait for cassettes to load
-    assert_selector 'select option', text: 'simple-score-wrong-order', wait: 5
-
-    # Load score
-    attach_file('musicxml-upload', File.expand_path('fixtures/simple-score.xml', __dir__))
-    assert_text 'Extraction terminée: 1 mesures, 4 notes'
-
-    # Connect to mock Bluetooth MIDI device
-    click_on 'Scanner Bluetooth MIDI'
-    sleep 0.5
-
-    # Verify recording button appears (indicates successful connection)
-    assert_button 'Démarrer enregistrement', wait: 2
-    click_on 'Démarrer enregistrement'
-    assert_text 'Enregistrement en cours'
-
-    # Simulate MIDI events via custom events
-    midi_data = [
-      [154, 135, 144, 60, 80],  # Note ON C4
-      [154, 245, 128, 60, 64],  # Note OFF C4
-      [156, 145, 144, 64, 80],  # Note ON E4
-      [156, 227, 128, 64, 64],  # Note OFF E4
-    ]
-
-    midi_data.each do |data|
-      simulate_midi_input(data)
-      sleep 0.1
-    end
-
-    # Wait for all events to be processed
-    sleep 0.3
-
-    # Stop recording and provide cassette name via JavaScript (to avoid prompt blocking)
     cassette_name = "test-recording-#{Time.now.to_i}"
-    page.execute_script(<<~JS)
-      const originalPrompt = window.prompt;
-      window.prompt = () => '#{cassette_name}';
-      window.prompt.restore = () => { window.prompt = originalPrompt; };
-    JS
 
-    click_on 'Arrêter enregistrement'
+    begin
+      # Wait for cassettes to load
+      assert_selector 'select option', text: 'simple-score-wrong-order', wait: 5
 
-    # Restore original prompt
-    page.execute_script('window.prompt.restore()')
+      # Load score
+      attach_file('musicxml-upload', File.expand_path('fixtures/simple-score.xml', __dir__))
+      assert_text 'Extraction terminée: 1 mesures, 4 notes'
 
-    # Wait for save confirmation and accept alert
-    sleep 0.3
-    page.driver.browser.switch_to.alert.accept rescue nil
-    sleep 0.3
+      # Connect to mock Bluetooth MIDI device
+      click_on 'Scanner Bluetooth MIDI'
+      sleep 0.5
 
-    # Fetch the saved cassette and verify it contains valid MIDI data
-    response = Net::HTTP.get_response(URI("http://localhost:#{Capybara.current_session.server.port}/cassettes/#{cassette_name}.json"))
+      # Verify recording button appears (indicates successful connection)
+      assert_button 'Démarrer enregistrement', wait: 2
+      click_on 'Démarrer enregistrement'
+      assert_text 'Enregistrement en cours'
 
-    assert_equal '200', response.code, 'Cassette file should exist'
+      # Simulate MIDI events via custom events
+      midi_data = [
+        [154, 135, 144, 60, 80],  # Note ON C4
+        [154, 245, 128, 60, 64],  # Note OFF C4
+        [156, 145, 144, 64, 80],  # Note ON E4
+        [156, 227, 128, 64, 64],  # Note OFF E4
+      ]
 
-    cassette_data = JSON.parse(response.body)
-    assert cassette_data['data'].length > 0, 'Cassette should contain MIDI events'
+      midi_data.each do |data|
+        simulate_midi_input(data)
+        sleep 0.1
+      end
 
-    # Verify that each event has non-empty data array
-    cassette_data['data'].each_with_index do |event, index|
-      assert event['data'].is_a?(Array), "Event #{index} should have data array"
-      assert event['data'].length > 0, "Event #{index} should have non-empty data array (bug: array reference not copied)"
+      # Wait for all events to be processed
+      sleep 0.3
+
+      # Stop recording and provide cassette name via JavaScript (to avoid prompt blocking)
+      page.execute_script(<<~JS)
+        const originalPrompt = window.prompt;
+        window.prompt = () => '#{cassette_name}';
+        window.prompt.restore = () => { window.prompt = originalPrompt; };
+      JS
+
+      click_on 'Arrêter enregistrement'
+
+      # Restore original prompt
+      page.execute_script('window.prompt.restore()')
+
+      # Wait for save confirmation and accept alert
+      sleep 0.3
+      page.driver.browser.switch_to.alert.accept rescue nil
+      sleep 0.3
+
+      # Fetch the saved cassette and verify it contains valid MIDI data
+      response = Net::HTTP.get_response(URI("http://localhost:#{Capybara.current_session.server.port}/cassettes/#{cassette_name}.json"))
+
+      assert_equal '200', response.code, 'Cassette file should exist'
+
+      cassette_data = JSON.parse(response.body)
+      assert cassette_data['data'].length > 0, 'Cassette should contain MIDI events'
+
+      # Verify that each event has non-empty data array
+      cassette_data['data'].each_with_index do |event, index|
+        assert event['data'].is_a?(Array), "Event #{index} should have data array"
+        assert event['data'].length > 0, "Event #{index} should have non-empty data array (bug: array reference not copied)"
+      end
+    ensure
+      # Clean up: delete the test cassette file
+      cassette_file = File.join(__dir__, '..', 'public', 'cassettes', "#{cassette_name}.json")
+      File.delete(cassette_file) if File.exist?(cassette_file)
     end
   end
 
