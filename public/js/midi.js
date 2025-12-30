@@ -10,12 +10,12 @@ let state = {
   recordingData: [],
   recordingStartTime: null,
   recordingDuration: 0,
-  recordingTimer: null
+  recordingTimer: null,
 }
 
 let callbacks = {
   onNotePlayed: null,
-  onNoteValidation: null
+  onNoteValidation: null,
 }
 
 export function initMidi() {
@@ -26,7 +26,7 @@ export function initMidi() {
     startRecording,
     stopRecording,
     setCallbacks,
-    state
+    state,
   }
 }
 
@@ -42,17 +42,15 @@ async function connectBluetooth() {
 
   try {
     state.device = await navigator.bluetooth.requestDevice({
-      filters: [{ services: [MIDI_BLE_UUID] }]
+      filters: [{ services: [MIDI_BLE_UUID] }],
     })
 
     const server = await state.device.gatt.connect()
     const service = await server.getPrimaryService(MIDI_BLE_UUID)
-    const characteristic = await service.getCharacteristic(
-      '7772e5db-3868-4112-a1a9-f2669d106bf3'
-    )
+    const characteristic = await service.getCharacteristic('7772e5db-3868-4112-a1a9-f2669d106bf3')
 
     await characteristic.startNotifications()
-    characteristic.addEventListener('characteristicvaluechanged', event => {
+    characteristic.addEventListener('characteristicvaluechanged', (event) => {
       parseMidiBLE(event.target.value)
     })
 
@@ -91,10 +89,7 @@ function parseMidiBLE(dataView, isReplay = false) {
         console.log(`Note ON ${isReplay ? 'replayed' : 'detected'}:`, noteNameStr)
       }
       if (status === NOTE_OFF) {
-        console.log(
-          `Note OFF ${isReplay ? 'replayed' : 'detected'}:`,
-          noteName(note)
-        )
+        console.log(`Note OFF ${isReplay ? 'replayed' : 'detected'}:`, noteName(note))
       }
     }
   }
@@ -113,9 +108,7 @@ function startRecording() {
   state.recordingDuration = 0
 
   state.recordingTimer = setInterval(() => {
-    state.recordingDuration = Math.floor(
-      (Date.now() - state.recordingStartTime) / 1000
-    )
+    state.recordingDuration = Math.floor((Date.now() - state.recordingStartTime) / 1000)
   }, 1000)
 }
 
@@ -130,7 +123,7 @@ async function stopRecording() {
 
   const cassetteName = prompt(
     'Nom de la cassette :',
-    `Cassette_${new Date().toISOString().slice(0, 19).replace(/[:-]/g, '')}`
+    `Cassette_${new Date().toISOString().slice(0, 19).replace(/[:-]/g, '')}`,
   )
 
   if (!cassetteName) {
@@ -140,7 +133,7 @@ async function stopRecording() {
 
   return {
     name: cassetteName,
-    data: state.recordingData
+    data: state.recordingData,
   }
 }
 

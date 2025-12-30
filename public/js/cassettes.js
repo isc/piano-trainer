@@ -1,12 +1,12 @@
 let state = {
   cassettes: [],
   selectedCassette: '',
-  isReplaying: false
+  isReplaying: false,
 }
 
 let callbacks = {
   onReplayStart: null,
-  onReplayEnd: null
+  onReplayEnd: null,
 }
 
 export function initCassettes() {
@@ -15,7 +15,7 @@ export function initCassettes() {
     saveCassette,
     replayCassette,
     setCallbacks,
-    getState: () => state
+    getState: () => state,
   }
 }
 
@@ -42,8 +42,8 @@ async function saveCassette(name, recordingData) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         name: name,
-        data: recordingData
-      })
+        data: recordingData,
+      }),
     })
 
     if (response.ok) {
@@ -55,7 +55,10 @@ async function saveCassette(name, recordingData) {
     }
   } catch (error) {
     console.error('Erreur lors de la sauvegarde:', error)
-    return { success: false, error: 'Erreur lors de la sauvegarde de la cassette' }
+    return {
+      success: false,
+      error: 'Erreur lors de la sauvegarde de la cassette',
+    }
   }
 }
 
@@ -84,7 +87,7 @@ async function replayCassette(cassetteFile, midiParser, staffController) {
       if (i > 0) {
         const delay = message.timestamp - cassette.data[i - 1].timestamp
         if (delay > 0) {
-          await new Promise(resolve => setTimeout(resolve, delay))
+          await new Promise((resolve) => setTimeout(resolve, delay))
         }
       }
 
