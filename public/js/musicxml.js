@@ -8,7 +8,6 @@ let targetRepeatCount = 3
 let repeatCount = 0
 let currentRepetitionIsClean = true
 let lastStaffY = null
-let measureClickHandlers = new Map()
 let measureClickRectangles = []
 
 // Padding around measure notes for clickable area
@@ -304,12 +303,6 @@ function createMeasureRectangle(svg, bounds, measureIndex) {
   return rect
 }
 
-function attachClickHandler(rect, measureIndex) {
-  const handler = () => jumpToMeasure(measureIndex)
-  measureClickHandlers.set(rect, handler)
-  rect.addEventListener('click', handler)
-}
-
 function setupMeasureClickHandlers() {
   if (!osmdInstance || allNotes.length === 0) return
 
@@ -330,7 +323,7 @@ function setupMeasureClickHandlers() {
     if (!svg) return
 
     const rect = createMeasureRectangle(svg, bounds, measureIndex)
-    attachClickHandler(rect, measureIndex)
+    rect.addEventListener('click', () => jumpToMeasure(measureIndex))
 
     svg.appendChild(rect)
     measureClickRectangles.push(rect)
@@ -338,14 +331,12 @@ function setupMeasureClickHandlers() {
 }
 
 function removeMeasureClickHandlers() {
-  measureClickHandlers.forEach((handler, rect) => {
-    rect.removeEventListener('click', handler)
+  measureClickRectangles.forEach((rect) => {
     if (rect.parentNode) {
       rect.parentNode.removeChild(rect)
     }
   })
 
-  measureClickHandlers.clear()
   measureClickRectangles = []
 }
 
