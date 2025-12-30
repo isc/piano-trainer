@@ -202,11 +202,6 @@ function resetMeasureProgress(resetRepeatCount = true) {
 function updateMeasureCursor() {
   if (!osmdInstance) return
 
-  // Remove existing highlight rectangle (from older versions)
-  const existingHighlight = document.getElementById('measure-highlight-rect')
-  if (existingHighlight) {
-    existingHighlight.remove()
-  }
   // Remove existing repeat indicators before creating new ones
   const existingIndicators = document.getElementById('repeat-indicators')
   if (existingIndicators) {
