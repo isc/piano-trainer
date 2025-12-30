@@ -77,6 +77,11 @@ svg g.played-note {
   fill: rgba(59, 130, 246, 0.05);
 }
 
+/* Make notes pass through clicks in training mode so clicks reach the measure rectangles below */
+svg g.vf-stavenote[data-measure-index] {
+  pointer-events: none;
+}
+
 .repeat-indicator {
   stroke: rgba(59, 130, 246, 0.8);
   stroke-width: 2;

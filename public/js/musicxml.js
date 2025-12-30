@@ -13,6 +13,7 @@ let measureClickRectangles = []
 
 // Padding around measure notes for clickable area
 const MEASURE_CLICK_PADDING = 10
+const MEASURE_CLICK_LEFT_OFFSET = 20 // Extra offset to the left to cover bar lines
 
 let callbacks = {
   onNotesExtracted: null,
@@ -319,9 +320,9 @@ function setupMeasureClickHandlers() {
     // Create invisible clickable rectangle
     const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect')
     rect.classList.add('measure-click-area')
-    rect.setAttribute('x', minX - MEASURE_CLICK_PADDING)
+    rect.setAttribute('x', minX - MEASURE_CLICK_PADDING - MEASURE_CLICK_LEFT_OFFSET)
     rect.setAttribute('y', minY - MEASURE_CLICK_PADDING)
-    rect.setAttribute('width', maxX - minX + MEASURE_CLICK_PADDING * 2)
+    rect.setAttribute('width', maxX - minX + MEASURE_CLICK_PADDING * 2 + MEASURE_CLICK_LEFT_OFFSET)
     rect.setAttribute('height', maxY - minY + MEASURE_CLICK_PADDING * 2)
     rect.dataset.measureIndex = measureIndex
 
