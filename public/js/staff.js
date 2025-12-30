@@ -2,7 +2,7 @@ let staffState = {
   renderer: null,
   context: null,
   stave: null,
-  notes: []
+  notes: [],
 }
 
 export function initStaff() {
@@ -10,7 +10,7 @@ export function initStaff() {
     initStaff: initStaffInternal,
     addNoteToStaff,
     redrawStaff,
-    getStaffState
+    getStaffState,
   }
 }
 
@@ -25,7 +25,7 @@ function initStaffInternal() {
     renderer,
     context,
     stave: new VexFlow.Stave(10, 40, 580),
-    notes: []
+    notes: [],
   }
 
   staffState.stave.addClef('treble').addTimeSignature('4/4')
@@ -62,11 +62,11 @@ function drawNotesWithVexFlow5(savedNotes) {
   try {
     initStaffInternal()
 
-    const vfNotes = savedNotes.map(noteData => {
+    const vfNotes = savedNotes.map((noteData) => {
       const note = new VexFlow.StaveNote({
         clef: 'treble',
         keys: noteData.keys,
-        duration: 'q'
+        duration: 'q',
       })
 
       if (noteData.accidental) {
@@ -80,7 +80,7 @@ function drawNotesWithVexFlow5(savedNotes) {
       const voice = new VexFlow.Voice({ num_beats: 4, beat_value: 4 })
       voice.setStrict(false)
 
-      vfNotes.forEach(note => {
+      vfNotes.forEach((note) => {
         note.setStave(staffState.stave)
         voice.addTickable(note)
       })

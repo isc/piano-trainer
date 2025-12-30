@@ -10,12 +10,12 @@ let state = {
   recordingData: [],
   recordingStartTime: null,
   recordingDuration: 0,
-  recordingTimer: null
+  recordingTimer: null,
 }
 
 let callbacks = {
   onNotePlayed: null,
-  onNoteValidation: null
+  onNoteValidation: null,
 }
 
 export function initMidi() {
@@ -26,7 +26,7 @@ export function initMidi() {
     startRecording,
     stopRecording,
     setCallbacks,
-    state
+    state,
   }
 }
 
@@ -42,7 +42,7 @@ async function connectBluetooth() {
 
   try {
     state.device = await navigator.bluetooth.requestDevice({
-      filters: [{ services: [MIDI_BLE_UUID] }]
+      filters: [{ services: [MIDI_BLE_UUID] }],
     })
 
     const server = await state.device.gatt.connect()
@@ -52,7 +52,7 @@ async function connectBluetooth() {
     )
 
     await characteristic.startNotifications()
-    characteristic.addEventListener('characteristicvaluechanged', event => {
+    characteristic.addEventListener('characteristicvaluechanged', (event) => {
       parseMidiBLE(event.target.value)
     })
 
@@ -88,7 +88,10 @@ function parseMidiBLE(dataView, isReplay = false) {
         if (callbacks.onNotePlayed) {
           callbacks.onNotePlayed(noteNameStr, note)
         }
-        console.log(`Note ON ${isReplay ? 'replayed' : 'detected'}:`, noteNameStr)
+        console.log(
+          `Note ON ${isReplay ? 'replayed' : 'detected'}:`,
+          noteNameStr
+        )
       }
       if (status === NOTE_OFF) {
         console.log(
@@ -140,7 +143,7 @@ async function stopRecording() {
 
   return {
     name: cassetteName,
-    data: state.recordingData
+    data: state.recordingData,
   }
 }
 
