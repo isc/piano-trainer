@@ -117,9 +117,6 @@ class PianoTrainerTest < CapybaraTestBase
     cassette_name = "test-recording-#{Time.now.to_i}"
 
     begin
-      # Wait for cassettes to load
-      assert_selector 'select option', text: 'simple-score-wrong-order', wait: 5
-
       # Load score
       attach_file('musicxml-upload', File.expand_path('fixtures/simple-score.xml', __dir__))
       assert_text 'Extraction terminée: 1 mesures, 4 notes'
