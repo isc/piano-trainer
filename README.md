@@ -68,11 +68,13 @@ MIDI Device → Web Bluetooth API → MIDI Message Parser → Note Validator →
 
 - `app.rb`: Main Sinatra application with API endpoints
 - `public/index.html`: Main HTML interface
-- `public/js/app.js`: Alpine.js coordination layer (118 lines)
-- `public/js/midi.js`: Bluetooth MIDI & recording (147 lines)
-- `public/js/musicxml.js`: MusicXML parsing & validation (282 lines)
+- `public/js/app.js`: Alpine.js coordination layer (213 lines)
+- `public/js/midi.js`: Bluetooth MIDI & recording (145 lines)
+- `public/js/musicxml.js`: MusicXML parsing & validation (461 lines)
 - `public/js/staff.js`: VexFlow rendering (103 lines)
-- `public/js/cassettes.js`: Cassette management (103 lines)
+- `public/js/cassettes.js`: Cassette management (106 lines)
+- `public/js/bluetooth_midi_mock.js`: Mock implementation for testing
+- `public/js/utils.js`: Utility functions
 - `public/styles.css`: Custom styling
 - `test/piano_trainer_test.rb`: Test suite
 
@@ -86,7 +88,7 @@ MIDI Device → Web Bluetooth API → MIDI Message Parser → Note Validator →
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/piano-trainer.git
+git clone git@github.com:isc/piano-trainer.git
 cd piano-trainer
 
 # Install Ruby dependencies
@@ -278,7 +280,9 @@ piano-trainer/
 │   │   ├── midi.js        # Bluetooth MIDI & recording
 │   │   ├── musicxml.js    # MusicXML parsing & validation
 │   │   ├── staff.js       # VexFlow rendering
-│   │   └── cassettes.js   # Cassette management
+│   │   ├── cassettes.js   # Cassette management
+│   │   ├── bluetooth_midi_mock.js  # Mock for testing
+│   │   └── utils.js       # Utility functions
 │   ├── styles.css         # Custom styles
 │   ├── cassettes/         # MIDI recordings
 │   └── vendor/            # Third-party libraries
