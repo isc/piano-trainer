@@ -220,44 +220,46 @@ function updateMeasureCursor() {
       if (currentRect) {
         currentRect.classList.add('selected')
 
-        // Create repeat indicators
         const measureData = allNotes[currentMeasureIndex]
         if (measureData && measureData.notes && measureData.notes.length > 0) {
           const noteElements = measureData.notes.map((n) => svgNote(n.note))
-          const boxes = noteElements.map((el) => el.getBBox())
-
-          if (boxes.length > 0) {
-            const minX = Math.min(...boxes.map((b) => b.x))
-            const maxX = Math.max(...boxes.map((b) => b.x + b.width))
-            const minY = Math.min(...boxes.map((b) => b.y))
-
-            const svg = noteElements[0].ownerSVGElement
-
-            const indicatorsGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g')
-            indicatorsGroup.id = 'repeat-indicators'
-
-            const centerX = (minX + maxX) / 2
-            const circleY = minY - 40
-            const circleRadius = 6
-            const circleSpacing = 18
-
-            for (let i = 0; i < targetRepeatCount; i++) {
-              const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle')
-              const offsetX = (i - (targetRepeatCount - 1) / 2) * circleSpacing
-              circle.setAttribute('cx', centerX + offsetX)
-              circle.setAttribute('cy', circleY)
-              circle.setAttribute('r', circleRadius)
-              circle.className.baseVal = i < repeatCount ? 'repeat-indicator filled' : 'repeat-indicator'
-              circle.dataset.index = i
-              indicatorsGroup.appendChild(circle)
-            }
-
-            svg.appendChild(indicatorsGroup)
+          const svg = noteElements[0]?.ownerSVGElement
+          if (svg) {
+            createRepeatIndicators(measureData, svg)
           }
         }
       }
     }
   }
+}
+
+function createRepeatIndicators(measureData, svg) {
+  const noteElements = measureData.notes.map((n) => svgNote(n.note))
+  const boxes = noteElements.map((el) => el.getBBox())
+
+  if (boxes.length === 0) return
+
+  const bounds = calculateCombinedBounds(boxes)
+  const centerX = (bounds.minX + bounds.maxX) / 2
+  const circleY = bounds.minY - 40
+  const circleRadius = 6
+  const circleSpacing = 18
+
+  const indicatorsGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g')
+  indicatorsGroup.id = 'repeat-indicators'
+
+  for (let i = 0; i < targetRepeatCount; i++) {
+    const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle')
+    const offsetX = (i - (targetRepeatCount - 1) / 2) * circleSpacing
+    circle.setAttribute('cx', centerX + offsetX)
+    circle.setAttribute('cy', circleY)
+    circle.setAttribute('r', circleRadius)
+    circle.className.baseVal = i < repeatCount ? 'repeat-indicator filled' : 'repeat-indicator'
+    circle.dataset.index = i
+    indicatorsGroup.appendChild(circle)
+  }
+
+  svg.appendChild(indicatorsGroup)
 }
 
 function updateRepeatIndicators() {
