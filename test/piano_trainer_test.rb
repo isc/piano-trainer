@@ -111,19 +111,12 @@ class PianoTrainerTest < CapybaraTestBase
   end
 
   def test_cassette_recording_saves_valid_midi_data
-    # Note: setup() already calls visit '/' and sets test-env cookie
-    # The cookie triggers automatic loading of Bluetooth mock in midi.js
-
-    cassette_name = "test-recording-#{Time.now.to_i}"
+    cassette_name = 'test-recording'
 
     begin
       load_score('simple-score.xml', 1, 4)
-
-      # Connect to mock Bluetooth MIDI device and wait for recording button
       click_on 'Scanner Bluetooth MIDI'
-      assert_button 'Démarrer enregistrement', wait: 2
-
-      # Start recording
+      assert_button 'Démarrer enregistrement'
       click_on 'Démarrer enregistrement'
       assert_text 'Enregistrement en cours'
 
@@ -138,7 +131,6 @@ class PianoTrainerTest < CapybaraTestBase
       # Give a moment for MIDI events to be recorded
       sleep 0.2
 
-      # Stop recording: accept prompt with cassette name, then accept success alert
       accept_prompt(with: cassette_name) do
         accept_alert do
           click_on 'Arrêter enregistrement'
