@@ -111,7 +111,8 @@ class PianoTrainerTest < CapybaraTestBase
   end
 
   def test_cassette_recording_saves_valid_midi_data
-    visit '/'
+    # Note: setup() already calls visit '/' and sets test-env cookie
+    # The cookie triggers automatic loading of Bluetooth mock in midi.js
 
     # Wait for cassettes to load
     assert_selector 'select option', text: 'simple-score-wrong-order', wait: 5
@@ -120,43 +121,30 @@ class PianoTrainerTest < CapybaraTestBase
     attach_file('musicxml-upload', File.expand_path('fixtures/simple-score.xml', __dir__))
     assert_text 'Extraction terminée: 1 mesures, 4 notes'
 
-    # Select cassette BEFORE starting recording (select is hidden during recording)
-    select 'simple-score-wrong-order'
+    # Connect to mock Bluetooth MIDI device
+    click_on 'Scanner Bluetooth MIDI'
+    sleep 0.5
 
-    # Simulate Bluetooth connection by modifying the button visibility
-    # Remove x-show condition to make recording button visible
-    page.execute_script(<<~JS)
-      const recordButton = Array.from(document.querySelectorAll('button')).find(
-        btn => btn.textContent.includes('Démarrer enregistrement')
-      );
-      if (recordButton) {
-        recordButton.removeAttribute('x-show');
-        recordButton.style.display = '';
-      }
-    JS
-    assert_button 'Démarrer enregistrement'
-
-    # Start recording
+    # Verify recording button appears (indicates successful connection)
+    assert_button 'Démarrer enregistrement', wait: 2
     click_on 'Démarrer enregistrement'
     assert_text 'Enregistrement en cours'
 
-    # Simulate MIDI events using test helper
-    page.execute_script(<<~JS)
-      const app = document.querySelector('[x-data]')._x_dataStack[0];
-      const midiData = [
-        [154, 135, 144, 60, 80],  // Note ON C4
-        [154, 245, 128, 60, 64],  // Note OFF C4
-        [156, 145, 144, 64, 80],  // Note ON E4
-        [156, 227, 128, 64, 64]   // Note OFF E4
-      ];
+    # Simulate MIDI events via custom events
+    midi_data = [
+      [154, 135, 144, 60, 80],  # Note ON C4
+      [154, 245, 128, 60, 64],  # Note OFF C4
+      [156, 145, 144, 64, 80],  # Note ON E4
+      [156, 227, 128, 64, 64],  # Note OFF E4
+    ]
 
-      midiData.forEach((data, index) => {
-        setTimeout(() => app.__testSimulateMidiInput(data), index * 100);
-      });
-    JS
+    midi_data.each do |data|
+      simulate_midi_input(data)
+      sleep 0.1
+    end
 
-    # Wait for MIDI events to be processed
-    sleep 1
+    # Wait for all events to be processed
+    sleep 0.3
 
     # Stop recording and provide cassette name via JavaScript (to avoid prompt blocking)
     cassette_name = "test-recording-#{Time.now.to_i}"

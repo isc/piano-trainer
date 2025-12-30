@@ -1,7 +1,12 @@
+import { isTestEnv } from './utils.js'
+import mockBluetooth from './bluetooth_midi_mock.js'
+
 const NOTE_ON = 144
 const NOTE_OFF = 128
 const MIDI_BLE_UUID = '03b80e5a-ede8-4b33-a751-6ce34ec4c700'
 const NOTE_NAMES = 'C C# D D# E F F# G G# A A# B'.split(' ')
+
+const bluetoothApi = isTestEnv() ? mockBluetooth : navigator.bluetooth
 
 let state = {
   bluetoothConnected: false,
@@ -35,13 +40,13 @@ function setCallbacks(cbs) {
 }
 
 async function connectBluetooth() {
-  if (!navigator.bluetooth) {
+  if (!bluetoothApi) {
     console.error('Web Bluetooth API non supportée')
     return
   }
 
   try {
-    state.device = await navigator.bluetooth.requestDevice({
+    state.device = await bluetoothApi.requestDevice({
       filters: [{ services: [MIDI_BLE_UUID] }],
     })
 
