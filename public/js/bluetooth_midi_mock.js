@@ -1,8 +1,8 @@
 const mockBluetooth = {
-  requestDevice: async (opts) => {
+  requestDevice: async (_opts) => {
     function FakeCharacteristic() {
       this._listeners = {}
-      this._mockMidiEvents = []
+      this._windowListener = null
     }
 
     FakeCharacteristic.prototype.startNotifications = function () {
@@ -10,26 +10,34 @@ const mockBluetooth = {
     }
 
     FakeCharacteristic.prototype.addEventListener = function (event, cb) {
-      this._listeners[event] = cb
+      // Support multiple listeners per event type
+      if (!this._listeners[event]) {
+        this._listeners[event] = []
+      }
+      this._listeners[event].push(cb)
 
-      if (event === 'characteristicvaluechanged') {
-        // Listen for custom events to trigger MIDI data
-        window.addEventListener('mock-midi-input', (e) => {
+      if (event === 'characteristicvaluechanged' && !this._windowListener) {
+        // Store the listener reference to prevent memory leaks
+        this._windowListener = (e) => {
           const dataArray = e.detail.data
           const uint8Array = new Uint8Array(dataArray)
           const value = new DataView(uint8Array.buffer)
-          cb({ target: { value } })
-        })
+          // Call all registered listeners
+          this._listeners[event].forEach((listener) => {
+            listener({ target: { value } })
+          })
+        }
+        window.addEventListener('mock-midi-input', this._windowListener)
       }
     }
 
     function FakeService() {}
-    FakeService.prototype.getCharacteristic = function (uuid) {
+    FakeService.prototype.getCharacteristic = function (_uuid) {
       return Promise.resolve(new FakeCharacteristic())
     }
 
     function FakeServer() {}
-    FakeServer.prototype.getPrimaryService = function (uuid) {
+    FakeServer.prototype.getPrimaryService = function (_uuid) {
       return Promise.resolve(new FakeService())
     }
 
