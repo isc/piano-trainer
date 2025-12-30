@@ -56,16 +56,7 @@ svg g.played-note {
   }
 }
 
-/* Training mode indicators */
-#measure-highlight-rect {
-  fill: rgba(59, 130, 246, 0.15);
-  stroke: rgba(59, 130, 246, 0.8);
-  stroke-width: 2;
-  rx: 4;
-  pointer-events: none;
-}
-
-/* Invisible clickable areas for measures */
+/* Clickable areas for measures in training mode */
 .measure-click-area {
   fill: transparent;
   stroke: none;
@@ -77,9 +68,11 @@ svg g.played-note {
   fill: rgba(59, 130, 246, 0.05);
 }
 
-/* Make notes pass through clicks in training mode so clicks reach the measure rectangles below */
-svg g.vf-stavenote[data-measure-index] {
-  pointer-events: none;
+/* Selected (current) measure in training mode */
+.measure-click-area.selected {
+  fill: rgba(59, 130, 246, 0.15);
+  stroke: rgba(59, 130, 246, 0.8);
+  stroke-width: 2;
 }
 
 .repeat-indicator {

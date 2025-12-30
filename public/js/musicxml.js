@@ -203,7 +203,7 @@ function resetMeasureProgress(resetRepeatCount = true) {
 function updateMeasureCursor() {
   if (!osmdInstance) return
 
-  // Remove existing highlight rectangle and repeat indicators
+  // Remove existing highlight rectangle and repeat indicators (legacy cleanup)
   const existingHighlight = document.getElementById('measure-highlight-rect')
   if (existingHighlight) {
     existingHighlight.remove()
@@ -214,53 +214,50 @@ function updateMeasureCursor() {
   }
 
   if (trainingMode && currentMeasureIndex < allNotes.length) {
-    const measureData = allNotes[currentMeasureIndex]
-    if (measureData && measureData.notes && measureData.notes.length > 0) {
-      // Get bounding boxes of all notes in the measure
-      const noteElements = measureData.notes.map((n) => svgNote(n.note))
-      const boxes = noteElements.map((el) => el.getBBox())
+    // Remove 'selected' class from all measure rectangles
+    measureClickRectangles.forEach((rect) => {
+      rect.classList.remove('selected')
+    })
 
-      if (boxes.length > 0) {
-        // Calculate combined bounding box
-        const minX = Math.min(...boxes.map((b) => b.x))
-        const minY = Math.min(...boxes.map((b) => b.y))
-        const maxX = Math.max(...boxes.map((b) => b.x + b.width))
-        const maxY = Math.max(...boxes.map((b) => b.y + b.height))
+    // Add 'selected' class to current measure rectangle
+    const currentRect = measureClickRectangles[currentMeasureIndex]
+    if (currentRect) {
+      currentRect.classList.add('selected')
 
-        const svg = noteElements[0].ownerSVGElement
+      // Create repeat indicators
+      const measureData = allNotes[currentMeasureIndex]
+      if (measureData && measureData.notes && measureData.notes.length > 0) {
+        const noteElements = measureData.notes.map((n) => svgNote(n.note))
+        const boxes = noteElements.map((el) => el.getBBox())
 
-        // Create highlight rectangle
-        const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect')
-        rect.id = 'measure-highlight-rect'
-        rect.setAttribute('x', minX - 10)
-        rect.setAttribute('y', minY - 10)
-        rect.setAttribute('width', maxX - minX + 20)
-        rect.setAttribute('height', maxY - minY + 20)
+        if (boxes.length > 0) {
+          const minX = Math.min(...boxes.map((b) => b.x))
+          const maxX = Math.max(...boxes.map((b) => b.x + b.width))
+          const minY = Math.min(...boxes.map((b) => b.y))
 
-        // Insert at beginning so it's behind notes
-        svg.insertBefore(rect, svg.firstChild)
+          const svg = noteElements[0].ownerSVGElement
 
-        // Create repeat indicators (circles)
-        const indicatorsGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g')
-        indicatorsGroup.id = 'repeat-indicators'
+          const indicatorsGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g')
+          indicatorsGroup.id = 'repeat-indicators'
 
-        const centerX = (minX + maxX) / 2
-        const circleY = minY - 40
-        const circleRadius = 6
-        const circleSpacing = 18
+          const centerX = (minX + maxX) / 2
+          const circleY = minY - 40
+          const circleRadius = 6
+          const circleSpacing = 18
 
-        for (let i = 0; i < targetRepeatCount; i++) {
-          const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle')
-          const offsetX = (i - (targetRepeatCount - 1) / 2) * circleSpacing
-          circle.setAttribute('cx', centerX + offsetX)
-          circle.setAttribute('cy', circleY)
-          circle.setAttribute('r', circleRadius)
-          circle.className.baseVal = i < repeatCount ? 'repeat-indicator filled' : 'repeat-indicator'
-          circle.dataset.index = i
-          indicatorsGroup.appendChild(circle)
+          for (let i = 0; i < targetRepeatCount; i++) {
+            const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle')
+            const offsetX = (i - (targetRepeatCount - 1) / 2) * circleSpacing
+            circle.setAttribute('cx', centerX + offsetX)
+            circle.setAttribute('cy', circleY)
+            circle.setAttribute('r', circleRadius)
+            circle.className.baseVal = i < repeatCount ? 'repeat-indicator filled' : 'repeat-indicator'
+            circle.dataset.index = i
+            indicatorsGroup.appendChild(circle)
+          }
+
+          svg.appendChild(indicatorsGroup)
         }
-
-        svg.appendChild(indicatorsGroup)
       }
     }
   }
@@ -281,7 +278,7 @@ function setupMeasureClickHandlers() {
   // Clear existing handlers first
   removeMeasureClickHandlers()
 
-  // Create invisible clickable rectangles for each measure
+  // Create clickable rectangles for each measure
   allNotes.forEach((measureData, measureIndex) => {
     if (!measureData || !measureData.notes || measureData.notes.length === 0) return
 
@@ -317,7 +314,7 @@ function setupMeasureClickHandlers() {
     const svg = noteElements[0].ownerSVGElement
     if (!svg) return
 
-    // Create invisible clickable rectangle
+    // Create clickable rectangle (serves dual purpose: clickable area + highlight)
     const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect')
     rect.classList.add('measure-click-area')
     rect.setAttribute('x', minX - MEASURE_CLICK_PADDING - MEASURE_CLICK_LEFT_OFFSET)
@@ -326,13 +323,18 @@ function setupMeasureClickHandlers() {
     rect.setAttribute('height', maxY - minY + MEASURE_CLICK_PADDING * 2)
     rect.dataset.measureIndex = measureIndex
 
+    // Mark as selected if it's the current measure
+    if (measureIndex === currentMeasureIndex) {
+      rect.classList.add('selected')
+    }
+
     // Create and store handler
     const handler = () => jumpToMeasure(measureIndex)
     measureClickHandlers.set(rect, handler)
     rect.addEventListener('click', handler)
 
-    // Insert at beginning so it's behind notes
-    svg.insertBefore(rect, svg.firstChild)
+    // Insert after existing content so it's on top and can capture clicks
+    svg.appendChild(rect)
     measureClickRectangles.push(rect)
   })
 }
