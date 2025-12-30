@@ -360,22 +360,28 @@ function validatePlayedNote(midiNote) {
 
   const expectedTimestamp = expectedNote.timestamp
 
-  let foundIndex = -1
+  // Find all notes at the expected timestamp with the matching MIDI number
+  const matchingIndices = []
   for (let i = 0; i < measureData.notes.length; i++) {
     const noteData = measureData.notes[i]
     if (!noteData.played && noteData.timestamp === expectedTimestamp && noteData.midiNumber === midiNote) {
-      foundIndex = i
-      break
+      matchingIndices.push(i)
     }
   }
 
-  if (foundIndex !== -1) {
-    const noteData = measureData.notes[foundIndex]
-    svgNote(noteData.note).classList.add('played-note')
-    measureData.notes[foundIndex].played = true
+  if (matchingIndices.length > 0) {
+    // Validate ALL matching notes (handles polyphonic notes with same pitch)
+    matchingIndices.forEach((index) => {
+      const noteData = measureData.notes[index]
+      svgNote(noteData.note).classList.add('played-note')
+      measureData.notes[index].played = true
+    })
+    // Use the first note for scroll calculations
+    const noteData = measureData.notes[matchingIndices[0]]
 
-    // Check if this is the first note of the measure
-    const isFirstNoteOfMeasure = measureData.notes.filter((n) => n.played).length === 1
+    // Check if this was the first timestamp of the measure (could be multiple notes)
+    const playedCount = measureData.notes.filter((n) => n.played).length
+    const isFirstNoteOfMeasure = playedCount === matchingIndices.length
 
     if (isFirstNoteOfMeasure) {
       // Scroll to score title when first note of first measure is played
