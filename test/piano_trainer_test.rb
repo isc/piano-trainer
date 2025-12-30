@@ -117,9 +117,7 @@ class PianoTrainerTest < CapybaraTestBase
     cassette_name = "test-recording-#{Time.now.to_i}"
 
     begin
-      # Load score
-      attach_file('musicxml-upload', File.expand_path('fixtures/simple-score.xml', __dir__))
-      assert_text 'Extraction terminée: 1 mesures, 4 notes'
+      load_score('simple-score.xml', 1, 4)
 
       # Connect to mock Bluetooth MIDI device
       click_on 'Scanner Bluetooth MIDI'
