@@ -20,7 +20,6 @@ let state = {
 
 let callbacks = {
   onNotePlayed: null,
-  onNoteValidation: null,
 }
 
 export function initMidi() {

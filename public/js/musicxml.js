@@ -8,11 +8,13 @@ let targetRepeatCount = 3
 let repeatCount = 0
 let currentRepetitionIsClean = true
 let lastStaffY = null
-let measureClickHandlers = new Map()
+let measureClickRectangles = []
+
+// Padding around measure notes for clickable area
+const MEASURE_CLICK_PADDING = 15
 
 let callbacks = {
   onNotesExtracted: null,
-  onNoteValidation: null,
   onMeasureCompleted: null,
   onNoteError: null,
   onTrainingProgress: null,
@@ -29,7 +31,6 @@ export function initMusicXML() {
     clearScore,
     setCallbacks,
     getOsmdInstance: () => osmdInstance,
-    getAllNotes: () => allNotes,
     getNotesByMeasure: () => allNotes,
     getTrainingState: () => ({
       trainingMode,
@@ -44,12 +45,15 @@ export function initMusicXML() {
       currentMeasureIndex = 0
       currentRepetitionIsClean = true
       resetProgress()
-      updateMeasureCursor()
 
       if (enabled) {
         setupMeasureClickHandlers()
+        updateMeasureCursor()
       } else {
         removeMeasureClickHandlers()
+        // Clean up repeat indicators
+        const existingIndicators = document.getElementById('repeat-indicators')
+        existingIndicators?.remove()
       }
     },
     jumpToMeasure: (measureIndex) => jumpToMeasure(measureIndex),
@@ -198,67 +202,61 @@ function resetMeasureProgress(resetRepeatCount = true) {
 function updateMeasureCursor() {
   if (!osmdInstance) return
 
-  // Remove existing highlight rectangle and repeat indicators
-  const existingHighlight = document.getElementById('measure-highlight-rect')
-  if (existingHighlight) {
-    existingHighlight.remove()
-  }
+  // Remove existing repeat indicators before creating new ones
   const existingIndicators = document.getElementById('repeat-indicators')
-  if (existingIndicators) {
-    existingIndicators.remove()
-  }
+  existingIndicators?.remove()
 
   if (trainingMode && currentMeasureIndex < allNotes.length) {
-    const measureData = allNotes[currentMeasureIndex]
-    if (measureData && measureData.notes && measureData.notes.length > 0) {
-      // Get bounding boxes of all notes in the measure
-      const noteElements = measureData.notes.map((n) => svgNote(n.note))
-      const boxes = noteElements.map((el) => el.getBBox())
+    // Remove 'selected' class from all measure rectangles
+    measureClickRectangles.forEach((rect) => {
+      rect.classList.remove('selected')
+    })
 
-      if (boxes.length > 0) {
-        // Calculate combined bounding box
-        const minX = Math.min(...boxes.map((b) => b.x))
-        const minY = Math.min(...boxes.map((b) => b.y))
-        const maxX = Math.max(...boxes.map((b) => b.x + b.width))
-        const maxY = Math.max(...boxes.map((b) => b.y + b.height))
+    // Add 'selected' class to current measure rectangle
+    if (currentMeasureIndex < measureClickRectangles.length) {
+      const currentRect = measureClickRectangles[currentMeasureIndex]
+      if (currentRect) {
+        currentRect.classList.add('selected')
 
-        const svg = noteElements[0].ownerSVGElement
-
-        // Create highlight rectangle
-        const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect')
-        rect.id = 'measure-highlight-rect'
-        rect.setAttribute('x', minX - 10)
-        rect.setAttribute('y', minY - 10)
-        rect.setAttribute('width', maxX - minX + 20)
-        rect.setAttribute('height', maxY - minY + 20)
-
-        // Insert at beginning so it's behind notes
-        svg.insertBefore(rect, svg.firstChild)
-
-        // Create repeat indicators (circles)
-        const indicatorsGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g')
-        indicatorsGroup.id = 'repeat-indicators'
-
-        const centerX = (minX + maxX) / 2
-        const circleY = minY - 40
-        const circleRadius = 6
-        const circleSpacing = 18
-
-        for (let i = 0; i < targetRepeatCount; i++) {
-          const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle')
-          const offsetX = (i - (targetRepeatCount - 1) / 2) * circleSpacing
-          circle.setAttribute('cx', centerX + offsetX)
-          circle.setAttribute('cy', circleY)
-          circle.setAttribute('r', circleRadius)
-          circle.className.baseVal = i < repeatCount ? 'repeat-indicator filled' : 'repeat-indicator'
-          circle.dataset.index = i
-          indicatorsGroup.appendChild(circle)
+        const measureData = allNotes[currentMeasureIndex]
+        if (measureData && measureData.notes && measureData.notes.length > 0) {
+          const noteElements = measureData.notes.map((n) => svgNote(n.note))
+          const svg = noteElements[0]?.ownerSVGElement
+          if (svg) {
+            createRepeatIndicators(noteElements, svg)
+          }
         }
-
-        svg.appendChild(indicatorsGroup)
       }
     }
   }
+}
+
+function createRepeatIndicators(noteElements, svg) {
+  const boxes = getBoundingBoxesForNotes(noteElements)
+
+  if (boxes.length === 0) return
+
+  const bounds = calculateCombinedBounds(boxes)
+  const centerX = (bounds.minX + bounds.maxX) / 2
+  const circleY = bounds.minY - 40
+  const circleRadius = 6
+  const circleSpacing = 18
+
+  const indicatorsGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g')
+  indicatorsGroup.id = 'repeat-indicators'
+
+  for (let i = 0; i < targetRepeatCount; i++) {
+    const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle')
+    const offsetX = (i - (targetRepeatCount - 1) / 2) * circleSpacing
+    circle.setAttribute('cx', centerX + offsetX)
+    circle.setAttribute('cy', circleY)
+    circle.setAttribute('r', circleRadius)
+    circle.className.baseVal = i < repeatCount ? 'repeat-indicator filled' : 'repeat-indicator'
+    circle.dataset.index = i
+    indicatorsGroup.appendChild(circle)
+  }
+
+  svg.appendChild(indicatorsGroup)
 }
 
 function updateRepeatIndicators() {
@@ -270,54 +268,84 @@ function updateRepeatIndicators() {
   })
 }
 
+function getBoundingBoxesForNotes(noteElements) {
+  const boxes = []
+  for (const el of noteElements) {
+    try {
+      if (el && el.getBBox) {
+        boxes.push(el.getBBox())
+      }
+    } catch (error) {
+      console.warn('Failed to get bounding box for note element:', error)
+    }
+  }
+  return boxes
+}
+
+function calculateCombinedBounds(boxes) {
+  return {
+    minX: Math.min(...boxes.map((b) => b.x)),
+    minY: Math.min(...boxes.map((b) => b.y)),
+    maxX: Math.max(...boxes.map((b) => b.x + b.width)),
+    maxY: Math.max(...boxes.map((b) => b.y + b.height)),
+  }
+}
+
+function createMeasureRectangle(svg, bounds, measureIndex) {
+  const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect')
+  rect.classList.add('measure-click-area')
+  rect.setAttribute('x', bounds.minX - MEASURE_CLICK_PADDING)
+  rect.setAttribute('y', bounds.minY - MEASURE_CLICK_PADDING)
+  rect.setAttribute('width', bounds.maxX - bounds.minX + MEASURE_CLICK_PADDING * 1.5)
+  rect.setAttribute('height', bounds.maxY - bounds.minY + MEASURE_CLICK_PADDING * 1.5)
+  rect.dataset.measureIndex = measureIndex
+
+  return rect
+}
+
 function setupMeasureClickHandlers() {
   if (!osmdInstance || allNotes.length === 0) return
 
-  // Clear existing handlers first
-  measureClickHandlers.clear()
+  removeMeasureClickHandlers()
 
-  // Add click handlers to all notes
   allNotes.forEach((measureData, measureIndex) => {
-    measureData.notes.forEach((noteData) => {
-      const noteElement = svgNote(noteData.note)
-      noteElement.style.cursor = 'pointer'
-      noteElement.dataset.measureIndex = measureIndex
+    if (!measureData || !measureData.notes || measureData.notes.length === 0) return
 
-      // Create and store handler
-      const handler = () => jumpToMeasure(measureIndex)
-      measureClickHandlers.set(noteElement, handler)
-      noteElement.addEventListener('click', handler)
-    })
+    const noteElements = measureData.notes.map((n) => svgNote(n.note))
+    if (noteElements.length === 0) return
+
+    const boxes = getBoundingBoxesForNotes(noteElements)
+    if (boxes.length === 0) return
+
+    const bounds = calculateCombinedBounds(boxes)
+
+    const svg = noteElements[0].ownerSVGElement
+    if (!svg) return
+
+    const rect = createMeasureRectangle(svg, bounds, measureIndex)
+    rect.addEventListener('click', () => jumpToMeasure(measureIndex))
+
+    svg.appendChild(rect)
+    measureClickRectangles.push(rect)
   })
 }
 
 function removeMeasureClickHandlers() {
-  // Remove click handlers from all notes
-  measureClickHandlers.forEach((handler, noteElement) => {
-    noteElement.style.cursor = ''
-    delete noteElement.dataset.measureIndex
-    noteElement.removeEventListener('click', handler)
+  measureClickRectangles.forEach((rect) => {
+    rect.parentNode?.removeChild(rect)
   })
 
-  measureClickHandlers.clear()
+  measureClickRectangles = []
 }
 
 function jumpToMeasure(measureIndex) {
   if (measureIndex < 0 || measureIndex >= allNotes.length) return
-
-  // Reset progress for current measure before jumping
   resetMeasureProgress()
-
-  // Jump to new measure
   currentMeasureIndex = measureIndex
-
-  // Update visual cursor
   updateMeasureCursor()
 
   // Notify callback
-  if (callbacks.onTrainingProgress) {
-    callbacks.onTrainingProgress(currentMeasureIndex, repeatCount, targetRepeatCount)
-  }
+  callbacks.onTrainingProgress?.(currentMeasureIndex, repeatCount, targetRepeatCount)
 }
 
 function validatePlayedNote(midiNote) {
@@ -382,40 +410,30 @@ function validatePlayedNote(midiNote) {
         if (currentRepetitionIsClean) {
           repeatCount++
         }
-        if (callbacks.onTrainingProgress) {
-          callbacks.onTrainingProgress(currentMeasureIndex, repeatCount, targetRepeatCount)
-        }
+        callbacks.onTrainingProgress?.(currentMeasureIndex, repeatCount, targetRepeatCount)
 
         if (repeatCount >= targetRepeatCount) {
           if (currentMeasureIndex + 1 >= allNotes.length) {
-            if (callbacks.onTrainingComplete) {
-              callbacks.onTrainingComplete()
-            }
+            callbacks.onTrainingComplete?.()
           } else {
             setTimeout(() => {
               resetMeasureProgress()
               currentMeasureIndex++
               updateMeasureCursor()
-              if (callbacks.onTrainingProgress) {
-                callbacks.onTrainingProgress(currentMeasureIndex, repeatCount, targetRepeatCount)
-              }
+              callbacks.onTrainingProgress?.(currentMeasureIndex, repeatCount, targetRepeatCount)
             }, 500)
           }
         } else {
           setTimeout(() => {
             resetMeasureProgress(false)
-            if (callbacks.onTrainingProgress) {
-              callbacks.onTrainingProgress(currentMeasureIndex, repeatCount, targetRepeatCount)
-            }
+            callbacks.onTrainingProgress?.(currentMeasureIndex, repeatCount, targetRepeatCount)
           }, 500)
         }
       } else {
         if (currentMeasureIndex + 1 < allNotes.length) {
           currentMeasureIndex++
         } else {
-          if (callbacks.onMeasureCompleted) {
-            callbacks.onMeasureCompleted(currentMeasureIndex)
-          }
+          callbacks.onMeasureCompleted?.(currentMeasureIndex)
         }
       }
     }
@@ -425,8 +443,8 @@ function validatePlayedNote(midiNote) {
       currentRepetitionIsClean = false
     }
     const expectedNote = measureData.notes.find((n) => !n.played)
-    if (expectedNote && callbacks.onNoteError) {
-      callbacks.onNoteError(expectedNote.noteName, noteName(midiNote))
+    if (expectedNote) {
+      callbacks.onNoteError?.(expectedNote.noteName, noteName(midiNote))
     }
     return false
   }

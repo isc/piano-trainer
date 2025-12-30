@@ -56,10 +56,23 @@ svg g.played-note {
   }
 }
 
-/* Training mode indicators */
-#measure-highlight-rect {
-  fill: rgba(59, 130, 246, 0.15);
+/* Clickable areas for measures in training mode */
+.measure-click-area {
+  fill: transparent;
+  stroke: none;
+  cursor: pointer;
   rx: 4;
+}
+
+.measure-click-area:hover {
+  fill: rgba(59, 130, 246, 0.05);
+}
+
+/* Selected (current) measure in training mode */
+.measure-click-area.selected {
+  fill: rgba(59, 130, 246, 0.15);
+  stroke: rgba(59, 130, 246, 0.8);
+  stroke-width: 2;
 }
 
 .repeat-indicator {

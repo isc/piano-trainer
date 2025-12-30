@@ -34,8 +34,8 @@ class PianoTrainerTest < CapybaraTestBase
     click_on 'Mode Entraînement'
     assert_text 'Mode Entraînement Actif'
 
-    # Verify measure highlight rectangle is present in training mode
-    assert_selector 'svg rect#measure-highlight-rect'
+    # Verify measure rectangles are present in training mode
+    assert_selector 'svg rect.measure-click-area.selected'
 
     replay_cassette('simple-score-3-repeats')
 
@@ -90,15 +90,15 @@ class PianoTrainerTest < CapybaraTestBase
     click_on 'Mode Entraînement'
 
     # Measure 1 should be highlighted by default
-    initial_rect_x = page.find('svg rect#measure-highlight-rect')['x'].to_f
+    initial_rect_x = page.find('svg rect.measure-click-area.selected')['x'].to_f
 
-    # Click on a note in measure 2 (measureIndex=1 in 0-based indexing)
-    measure_2_note = page.first('svg g.vf-stavenote[data-measure-index="1"]')
-    measure_2_note.trigger('click')
+    # Click on measure 2 rectangle (measureIndex=1 in 0-based indexing)
+    measure_2_rect = page.all('svg rect.measure-click-area')[1]
+    measure_2_rect.trigger('click')
 
-    # Verify the highlight rectangle moved to measure 2
-    new_rect_x = page.find('svg rect#measure-highlight-rect')['x'].to_f
-    assert new_rect_x != initial_rect_x, "Highlight rectangle should have moved"
+    # Verify the highlight moved to measure 2
+    new_rect_x = page.find('svg rect.measure-click-area.selected')['x'].to_f
+    assert new_rect_x != initial_rect_x, "Highlight should have moved"
 
     # Play first note of measure 2 (A4 = MIDI 69)
     replay_cassette('melodie-measure-2-first-note')
