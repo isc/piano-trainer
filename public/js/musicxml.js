@@ -201,9 +201,7 @@ function updateMeasureCursor() {
 
   // Remove existing repeat indicators before creating new ones
   const existingIndicators = document.getElementById('repeat-indicators')
-  if (existingIndicators) {
-    existingIndicators.remove()
-  }
+  existingIndicators?.remove()
 
   if (trainingMode && currentMeasureIndex < allNotes.length) {
     // Remove 'selected' class from all measure rectangles
@@ -332,9 +330,7 @@ function setupMeasureClickHandlers() {
 
 function removeMeasureClickHandlers() {
   measureClickRectangles.forEach((rect) => {
-    if (rect.parentNode) {
-      rect.parentNode.removeChild(rect)
-    }
+    rect.parentNode?.removeChild(rect)
   })
 
   measureClickRectangles = []
@@ -347,9 +343,7 @@ function jumpToMeasure(measureIndex) {
   updateMeasureCursor()
 
   // Notify callback
-  if (callbacks.onTrainingProgress) {
-    callbacks.onTrainingProgress(currentMeasureIndex, repeatCount, targetRepeatCount)
-  }
+  callbacks.onTrainingProgress?.(currentMeasureIndex, repeatCount, targetRepeatCount)
 }
 
 function validatePlayedNote(midiNote) {
@@ -414,40 +408,30 @@ function validatePlayedNote(midiNote) {
         if (currentRepetitionIsClean) {
           repeatCount++
         }
-        if (callbacks.onTrainingProgress) {
-          callbacks.onTrainingProgress(currentMeasureIndex, repeatCount, targetRepeatCount)
-        }
+        callbacks.onTrainingProgress?.(currentMeasureIndex, repeatCount, targetRepeatCount)
 
         if (repeatCount >= targetRepeatCount) {
           if (currentMeasureIndex + 1 >= allNotes.length) {
-            if (callbacks.onTrainingComplete) {
-              callbacks.onTrainingComplete()
-            }
+            callbacks.onTrainingComplete?.()
           } else {
             setTimeout(() => {
               resetMeasureProgress()
               currentMeasureIndex++
               updateMeasureCursor()
-              if (callbacks.onTrainingProgress) {
-                callbacks.onTrainingProgress(currentMeasureIndex, repeatCount, targetRepeatCount)
-              }
+              callbacks.onTrainingProgress?.(currentMeasureIndex, repeatCount, targetRepeatCount)
             }, 500)
           }
         } else {
           setTimeout(() => {
             resetMeasureProgress(false)
-            if (callbacks.onTrainingProgress) {
-              callbacks.onTrainingProgress(currentMeasureIndex, repeatCount, targetRepeatCount)
-            }
+            callbacks.onTrainingProgress?.(currentMeasureIndex, repeatCount, targetRepeatCount)
           }, 500)
         }
       } else {
         if (currentMeasureIndex + 1 < allNotes.length) {
           currentMeasureIndex++
         } else {
-          if (callbacks.onMeasureCompleted) {
-            callbacks.onMeasureCompleted(currentMeasureIndex)
-          }
+          callbacks.onMeasureCompleted?.(currentMeasureIndex)
         }
       }
     }
@@ -457,8 +441,8 @@ function validatePlayedNote(midiNote) {
       currentRepetitionIsClean = false
     }
     const expectedNote = measureData.notes.find((n) => !n.played)
-    if (expectedNote && callbacks.onNoteError) {
-      callbacks.onNoteError(expectedNote.noteName, noteName(midiNote))
+    if (expectedNote) {
+      callbacks.onNoteError?.(expectedNote.noteName, noteName(midiNote))
     }
     return false
   }
