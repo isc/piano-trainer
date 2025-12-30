@@ -7,26 +7,14 @@
     <!-- https://unpkg.com/@picocss/pico@latest/css/pico.min.css -->
     <link rel="stylesheet" href="vendor/pico.2.1.1min.css" />
     <link rel="stylesheet" href="styles.css" />
-    <script>
-      const originalStructuredClone = globalThis.structuredClone
-      globalThis.structuredClone = function (obj) {
-        try {
-          return originalStructuredClone(obj)
-        } catch (e) {
-          return JSON.parse(JSON.stringify(obj))
-        }
-      }
-    </script>
-    <!-- https://unpkg.com/vexflow@5.0.0/build/cjs/vexflow.js -->
-    <script src="vendor/vexflow.5.0.0.js"></script>
-    <!-- https://cdn.jsdelivr.net/npm/opensheetmusicdisplay@1.8.5/build/opensheetmusicdisplay.min.js -->
-    <script src="vendor/opensheetmusicdisplay.1.8.5.min.js"></script>
     <!-- Load modules before Alpine -->
     <script type="module">
       import { midiApp } from './js/app.js'
       window.midiApp = midiApp
       console.log('Piano Trainer: midiApp loaded and available globally')
     </script>
+    <!-- https://cdn.jsdelivr.net/npm/opensheetmusicdisplay@1.8.5/build/opensheetmusicdisplay.min.js -->
+    <script src="vendor/opensheetmusicdisplay.1.8.5.min.js"></script>
     <!-- https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js -->
     <script defer src="vendor/alpinejs.3.14.9.min.js"></script>
   </head>
@@ -147,7 +135,6 @@
           ></div>
         </article>
 
-        <div id="staff" class="staff-container"></div>
       </div>
     </main>
   </body>

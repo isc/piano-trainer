@@ -1,13 +1,11 @@
 import { initMidi } from './midi.js'
 import { initMusicXML } from './musicxml.js'
 import { initCassettes } from './cassettes.js'
-import { initStaff } from './staff.js'
 
 export function midiApp() {
   const midi = initMidi()
   const musicxml = initMusicXML()
   const cassettes = initCassettes()
-  const staff = initStaff()
 
   return {
     bluetoothConnected: false,
@@ -35,12 +33,10 @@ export function midiApp() {
     showScoreCompleteModal: false,
 
     init() {
-      staff.initStaff()
       this.loadCassettesList()
 
       midi.setCallbacks({
         onNotePlayed: (noteName, midiNote) => {
-          staff.addNoteToStaff(noteName)
           musicxml.validatePlayedNote(midiNote)
         },
       })
@@ -144,7 +140,7 @@ export function midiApp() {
 
     async replayCassette() {
       if (!this.selectedCassette) return
-      await cassettes.replayCassette(this.selectedCassette, midi.parseMidiBLE, staff)
+      await cassettes.replayCassette(this.selectedCassette, midi.parseMidiBLE)
     },
 
     async loadMusicXML(event) {

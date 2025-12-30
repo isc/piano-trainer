@@ -42,7 +42,6 @@ A web-based piano training application that helps musicians practice by connecti
 
 ### Frontend
 - **Libraries**:
-  - `VexFlow`: Music notation rendering
   - `OpenSheetMusicDisplay`: MusicXML visualization
   - `Alpine.js`: Reactive UI framework
   - `Pico CSS`: Lightweight CSS framework
@@ -71,7 +70,6 @@ MIDI Device → Web Bluetooth API → MIDI Message Parser → Note Validator →
 - `public/js/app.js`: Alpine.js coordination layer
 - `public/js/midi.js`: Bluetooth MIDI & recording
 - `public/js/musicxml.js`: MusicXML parsing & validation
-- `public/js/staff.js`: VexFlow rendering
 - `public/js/cassettes.js`: Cassette management
 - `public/js/bluetooth_midi_mock.js`: Mock implementation for testing
 - `public/js/utils.js`: Utility functions
@@ -292,7 +290,6 @@ This procedure resets the Bluetooth connection state on the keyboard and allows 
 
 ## Credits
 
-- **VexFlow**: Music notation rendering
 - **OpenSheetMusicDisplay**: MusicXML visualization
 - **Alpine.js**: Reactive UI framework
 - **Pico CSS**: Lightweight styling
