@@ -17,6 +17,7 @@ export function midiApp() {
     recordingDuration: 0,
     recordingTimer: null,
     isReplaying: false,
+    replayEnded: false,
     cassettes: [],
     selectedCassette: '',
     trainingMode: false,
@@ -76,9 +77,11 @@ export function midiApp() {
       cassettes.setCallbacks({
         onReplayStart: () => {
           this.isReplaying = true
+          this.replayEnded = false
         },
         onReplayEnd: () => {
           this.isReplaying = false
+          this.replayEnded = true
         },
       })
 
