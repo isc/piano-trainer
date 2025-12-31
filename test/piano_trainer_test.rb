@@ -3,7 +3,7 @@ require_relative 'test_helper'
 class PianoTrainerTest < CapybaraTestBase
   def test_play_simple_score_till_the_end
     load_score('simple-score.xml', 1, 4)
-    replay_cassette('oh-when-the-saints')
+    replay_cassette('oh-when-the-saints', wait_for_end: false)
     assert_text 'Partition terminée'
   end
 
@@ -11,7 +11,7 @@ class PianoTrainerTest < CapybaraTestBase
     load_score('schumann-melodie.xml', 20, 256)
     assert_no_selector 'svg g.vf-stavenote.played-note'
 
-    replay_cassette('melodie-2-bars')
+    replay_cassette('melodie-2-bars', wait_for_end: false)
 
     assert_selector 'svg g.vf-stavenote.played-note', count: 5
     assert first('svg g.vf-stavenote')[:class].include?('played-note')
@@ -23,7 +23,6 @@ class PianoTrainerTest < CapybaraTestBase
 
     replay_cassette('simple-score-wrong-order')
 
-    assert_no_text '▶️ Rejeu en cours...'
     assert_selector 'svg g.vf-stavenote.played-note', count: 3
     assert_no_text 'Partition terminée'
   end
@@ -37,14 +36,14 @@ class PianoTrainerTest < CapybaraTestBase
     # Verify measure rectangles are present in training mode
     assert_selector 'svg rect.measure-click-area.selected'
 
-    replay_cassette('simple-score-3-repeats')
+    replay_cassette('simple-score-3-repeats', wait_for_end: false)
 
     # Verify visual transitions during playback
     assert_selector 'svg g.vf-stavenote.played-note', count: 4  # After 1st repetition
     assert_selector 'svg g.vf-stavenote.played-note', count: 0  # After automatic reset (500ms)
     assert_selector 'svg g.vf-stavenote.played-note', minimum: 1, maximum: 3  # During 2nd repetition
 
-    assert_no_text '▶️ Rejeu en cours...'
+    assert_text '✅ Rejeu terminé'
     assert_text 'Félicitations'
     assert_text 'complété toutes les mesures'
   end
@@ -56,8 +55,6 @@ class PianoTrainerTest < CapybaraTestBase
     assert_text 'Mode Entraînement Actif'
 
     replay_cassette('simple-score-with-mistakes')
-
-    assert_no_text '▶️ Rejeu en cours...'
 
     # The cassette has 3 repetitions: clean, dirty (D instead of F), clean
     # Only 2 clean repetitions count, so training should NOT complete
@@ -155,21 +152,18 @@ class PianoTrainerTest < CapybaraTestBase
 
     replay_cassette('polyphonic-duplicate-notes')
 
-    assert_no_text '▶️ Rejeu en cours...'
-
     # Check repeat indicators: should have 1 filled circle (1 clean repetition)
     # This verifies that duplicate notes at same timestamp are all validated
     assert_selector 'svg circle.repeat-indicator.filled', count: 1
   end
 
   def test_autoscroll_when_moving_between_visual_systems
-    # Save original window size (Cuprite default is 1024x768)
-    original_width = page.execute_script('return window.innerWidth').to_i
-    original_height = page.execute_script('return window.innerHeight').to_i
+    # Save original window size
+    original_size = page.current_window.size
 
     begin
       # Resize window to force more systems (one measure per system)
-      page.driver.resize(600, 1200)
+      page.current_window.resize_to(600, 1200)
 
       load_score('schumann-melodie.xml', 20, 256)
 
@@ -179,14 +173,12 @@ class PianoTrainerTest < CapybaraTestBase
       # Play cassette that goes from measure 0 to measure 1 (different systems)
       replay_cassette('melodie-2-bars')
 
-      assert_no_text '▶️ Rejeu en cours...'
-
       # Verify that scroll position has changed (scrolled down)
       final_scroll_y = page.evaluate_script('window.scrollY')
       assert final_scroll_y > initial_scroll_y, "Page should have scrolled down when moving to next system (initial: #{initial_scroll_y}, final: #{final_scroll_y})"
     ensure
       # Always restore original window size for subsequent tests
-      page.driver.resize(original_width, original_height)
+      page.current_window.resize_to(*original_size)
     end
   end
 
@@ -198,10 +190,10 @@ class PianoTrainerTest < CapybaraTestBase
     assert_selector 'svg g.vf-stavenote', count: expected_notes
   end
 
-  def replay_cassette(name)
+  def replay_cassette(name, wait_for_end: true)
     select name
     click_on 'Rejouer cassette'
-    assert_text '▶️ Rejeu en cours...'
+    assert_text '✅ Rejeu terminé' if wait_for_end
   end
 
   def click_measure(measure_number)
