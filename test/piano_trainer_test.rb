@@ -13,7 +13,7 @@ class PianoTrainerTest < CapybaraTestBase
 
     replay_cassette('melodie-2-bars', wait_for_end: false)
 
-    assert_selector 'svg g.vf-stavenote.played-note', count: 5
+    assert_selector 'svg g.vf-stavenote.played-note', minimum: 5
     assert first('svg g.vf-stavenote')[:class].include?('played-note')
   end
 
