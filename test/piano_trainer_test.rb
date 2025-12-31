@@ -43,7 +43,7 @@ class PianoTrainerTest < CapybaraTestBase
     assert_selector 'svg g.vf-stavenote.played-note', count: 0  # After automatic reset (500ms)
     assert_selector 'svg g.vf-stavenote.played-note', minimum: 1, maximum: 3  # During 2nd repetition
 
-    assert_text '✅ Rejeu terminé'
+    assert_text 'Rejeu terminé'
     assert_text 'Félicitations'
     assert_text 'complété toutes les mesures'
   end
@@ -193,7 +193,7 @@ class PianoTrainerTest < CapybaraTestBase
   def replay_cassette(name, wait_for_end: true)
     select name
     click_on 'Rejouer cassette'
-    assert_text '✅ Rejeu terminé' if wait_for_end
+    assert_text 'Rejeu terminé' if wait_for_end
   end
 
   def click_measure(measure_number)
