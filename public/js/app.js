@@ -9,6 +9,7 @@ export function midiApp() {
 
   return {
     bluetoothConnected: false,
+    midiDeviceName: null,
     device: null,
     osmdInstance: null,
     allNotes: [],
@@ -31,8 +32,12 @@ export function midiApp() {
     trainingComplete: false,
     showScoreCompleteModal: false,
 
-    init() {
+    async init() {
       this.loadCassettesList()
+
+      // Auto-connect to MIDI device silently
+      await midi.connectMIDI({ silent: true, autoSelectFirst: true })
+      this.syncMidiState()
 
       midi.setCallbacks({
         onNotePlayed: (noteName, midiNote) => {
@@ -82,7 +87,10 @@ export function midiApp() {
       })
 
       window.addEventListener('beforeunload', () => {
-        if (this.device) this.device.gatt.disconnect()
+        // Clean up MIDI connection if exists
+        if (midi.state.midiInput) {
+          midi.state.midiInput.onmidimessage = null
+        }
       })
     },
 
@@ -100,9 +108,14 @@ export function midiApp() {
       }
     },
 
-    async scanBluetooth() {
-      await midi.connectBluetooth()
-      this.bluetoothConnected = midi.state.bluetoothConnected
+    syncMidiState() {
+      this.bluetoothConnected = midi.state.midiConnected
+      this.midiDeviceName = midi.state.device?.name || null
+    },
+
+    async connectMIDI() {
+      await midi.connectMIDI()
+      this.syncMidiState()
     },
 
     startRecording() {
@@ -139,7 +152,7 @@ export function midiApp() {
 
     async replayCassette() {
       if (!this.selectedCassette) return
-      await cassettes.replayCassette(this.selectedCassette, midi.parseMidiBLE)
+      await cassettes.replayCassette(this.selectedCassette, midi.parseMidiMessage)
     },
 
     async loadMusicXML(event) {

@@ -1,15 +1,21 @@
 import { isTestEnv } from './utils.js'
-import mockBluetooth from './bluetooth_midi_mock.js'
+import mockMIDI from './midi_mock.js'
 
 const NOTE_ON = 144
 const NOTE_OFF = 128
-const MIDI_BLE_UUID = '03b80e5a-ede8-4b33-a751-6ce34ec4c700'
 const NOTE_NAMES = 'C C# D D# E F F# G G# A A# B'.split(' ')
 
-const bluetoothApi = isTestEnv() ? mockBluetooth : navigator.bluetooth
-
 let state = {
-  bluetoothConnected: false,
+  midiConnected: false,
+  // Keep bluetoothConnected as alias for backward compatibility
+  get bluetoothConnected() {
+    return this.midiConnected
+  },
+  set bluetoothConnected(val) {
+    this.midiConnected = val
+  },
+  midiAccess: null,
+  midiInput: null,
   device: null,
   isRecording: false,
   recordingData: [],
@@ -24,8 +30,8 @@ let callbacks = {
 
 export function initMidi() {
   return {
-    connectBluetooth,
-    parseMidiBLE,
+    connectMIDI,
+    parseMidiMessage,
     noteName,
     startRecording,
     stopRecording,
@@ -38,64 +44,117 @@ function setCallbacks(cbs) {
   callbacks = { ...callbacks, ...cbs }
 }
 
-async function connectBluetooth() {
-  if (!bluetoothApi) {
-    console.error('Web Bluetooth API non supportée')
+async function connectMIDI(options = {}) {
+  const { silent = false, autoSelectFirst = false } = options
+
+  if (isTestEnv()) {
+    return connectMIDIMock()
+  }
+
+  if (!navigator.requestMIDIAccess) {
+    console.error('Web MIDI API non supportée')
+    if (!silent) alert('Web MIDI API non supportée par ce navigateur')
     return
   }
 
   try {
-    state.device = await bluetoothApi.requestDevice({
-      filters: [{ services: [MIDI_BLE_UUID] }],
-    })
+    state.midiAccess = await navigator.requestMIDIAccess()
 
-    const server = await state.device.gatt.connect()
-    const service = await server.getPrimaryService(MIDI_BLE_UUID)
-    const characteristic = await service.getCharacteristic('7772e5db-3868-4112-a1a9-f2669d106bf3')
+    // Get available MIDI inputs
+    const inputs = Array.from(state.midiAccess.inputs.values())
 
-    await characteristic.startNotifications()
-    characteristic.addEventListener('characteristicvaluechanged', (event) => {
-      parseMidiBLE(event.target.value)
-    })
+    if (inputs.length === 0) {
+      console.log('Aucun périphérique MIDI trouvé')
+      if (!silent) alert('Aucun périphérique MIDI trouvé. Connectez un clavier MIDI et réessayez.')
+      return
+    }
 
-    state.bluetoothConnected = true
-    console.log('Bluetooth MIDI connected')
+    // If only one input or autoSelectFirst, use the first one
+    if (inputs.length === 1 || autoSelectFirst) {
+      selectMIDIInput(inputs[0])
+    } else {
+      // Show selection dialog
+      const inputNames = inputs.map((input, i) => `${i + 1}. ${input.name || 'Périphérique inconnu'}`).join('\n')
+      const choice = prompt(`Plusieurs périphériques MIDI trouvés:\n${inputNames}\n\nEntrez le numéro (1-${inputs.length}):`, '1')
+
+      if (choice) {
+        const index = parseInt(choice, 10) - 1
+        if (index >= 0 && index < inputs.length) {
+          selectMIDIInput(inputs[index])
+        } else {
+          if (!silent) alert('Choix invalide')
+          return
+        }
+      } else {
+        return // User cancelled
+      }
+    }
+
+    // Listen for device changes and auto-reconnect
+    state.midiAccess.onstatechange = (event) => {
+      console.log('MIDI device state change:', event.port.name, event.port.state)
+      if (event.port.state === 'disconnected' && event.port === state.midiInput) {
+        state.midiConnected = false
+        state.midiInput = null
+        console.log('MIDI device disconnected')
+      } else if (event.port.state === 'connected' && event.port.type === 'input' && !state.midiConnected) {
+        // Auto-connect to newly connected device
+        console.log('New MIDI device detected, auto-connecting:', event.port.name)
+        selectMIDIInput(event.port)
+      }
+    }
   } catch (e) {
-    console.error('Erreur Bluetooth: ' + e)
+    console.error('Erreur MIDI:', e)
+    if (!silent) alert('Erreur lors de la connexion MIDI: ' + e.message)
   }
 }
 
-function parseMidiBLE(dataView, isReplay = false) {
-  let arr = []
-  for (let k = 0; k < dataView.byteLength; k++) {
-    arr.push(dataView.getUint8(k))
+function selectMIDIInput(input) {
+  state.midiInput = input
+  state.device = { name: input.name } // For compatibility with existing code
+
+  input.onmidimessage = (event) => {
+    parseMidiMessage(event.data)
   }
 
+  state.midiConnected = true
+  console.log('MIDI connected:', input.name)
+}
+
+async function connectMIDIMock() {
+  // Use mock for testing
+  mockMIDI.connect((data) => {
+    parseMidiMessage(data)
+  })
+  state.midiConnected = true
+  state.device = { name: 'Mock MIDI Keyboard' }
+  console.log('Mock MIDI connected')
+}
+
+// Parse standard MIDI messages (from Web MIDI API)
+function parseMidiMessage(data, isReplay = false) {
   if (state.isRecording && !isReplay) {
     const timestamp = Date.now() - state.recordingStartTime
-    state.recordingData.push({ timestamp: timestamp, data: [...arr] })
+    state.recordingData.push({ timestamp, data: Array.from(data) })
   }
 
-  // Parse MIDI messages
-  arr.shift() // Remove header
-  while (arr.length) {
-    arr.shift() // Remove timestamp bytes
-    const status = arr.shift()
-    const note = arr.shift()
-    const velocity = arr.shift()
+  const status = data[0]
+  const note = data[1]
+  const velocity = data[2]
 
-    if (status >= 128 && status <= 239) {
-      if (status === NOTE_ON && velocity > 0 && note < 128) {
-        const noteNameStr = noteName(note)
-        if (callbacks.onNotePlayed) {
-          callbacks.onNotePlayed(noteNameStr, note)
-        }
-        console.log(`Note ON ${isReplay ? 'replayed' : 'detected'}:`, noteNameStr)
-      }
-      if (status === NOTE_OFF) {
-        console.log(`Note OFF ${isReplay ? 'replayed' : 'detected'}:`, noteName(note))
-      }
+  // Note On: status 144-159 (0x90-0x9F)
+  // Note Off: status 128-143 (0x80-0x8F)
+  const statusType = status & 0xf0
+
+  if (statusType === NOTE_ON && velocity > 0 && note < 128) {
+    const noteNameStr = noteName(note)
+    if (callbacks.onNotePlayed) {
+      callbacks.onNotePlayed(noteNameStr, note)
     }
+    console.log(`Note ON ${isReplay ? 'replayed' : 'detected'}:`, noteNameStr)
+  }
+  if (statusType === NOTE_OFF || (statusType === NOTE_ON && velocity === 0)) {
+    console.log(`Note OFF ${isReplay ? 'replayed' : 'detected'}:`, noteName(note))
   }
 }
 
@@ -141,4 +200,4 @@ async function stopRecording() {
   }
 }
 
-export { NOTE_ON, NOTE_OFF, MIDI_BLE_UUID, NOTE_NAMES, noteName }
+export { NOTE_ON, NOTE_OFF, NOTE_NAMES, noteName }

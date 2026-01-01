@@ -5,7 +5,7 @@ A web-based piano training application that helps musicians practice by connecti
 ## Features
 
 ### Core Functionality
-- **MIDI Bluetooth Connection**: Connect wireless MIDI devices via Web Bluetooth API
+- **MIDI Connection**: Connect MIDI devices via Web MIDI API (USB or Bluetooth)
 - **Real-time Note Display**: Visual feedback showing played notes on a musical staff
 - **MusicXML Support**: Load and display sheet music in MusicXML format
 - **Interactive Practice**: Highlights notes as you play and validates accuracy
@@ -56,7 +56,7 @@ A web-based piano training application that helps musicians practice by connecti
 ### Data Flow
 
 ```
-MIDI Device → Web Bluetooth API → MIDI Message Parser → Note Validator → Visual Feedback
+MIDI Device → Web MIDI API → MIDI Message Parser → Note Validator → Visual Feedback
                           ↓
                      MusicXML Loader → Score Renderer → Note Extractor
                           ↓
@@ -68,10 +68,10 @@ MIDI Device → Web Bluetooth API → MIDI Message Parser → Note Validator →
 - `app.rb`: Main Sinatra application with API endpoints
 - `public/index.html`: Main HTML interface
 - `public/js/app.js`: Alpine.js coordination layer
-- `public/js/midi.js`: Bluetooth MIDI & recording
+- `public/js/midi.js`: Web MIDI API & recording
 - `public/js/musicxml.js`: MusicXML parsing & validation
 - `public/js/cassettes.js`: Cassette management
-- `public/js/bluetooth_midi_mock.js`: Mock implementation for testing
+- `public/js/midi_mock.js`: Mock implementation for testing
 - `public/js/utils.js`: Utility functions
 - `public/styles.css`: Custom styling
 - `test/piano_trainer_test.rb`: Test suite
@@ -103,9 +103,9 @@ The application will be available at `http://localhost:4567`
 ### Basic Workflow
 
 1. **Connect MIDI Device**:
-   - Click "Scanner Bluetooth MIDI"
-   - Select your MIDI device from the list
-   - Grant Bluetooth permissions
+   - Click "Connecter clavier MIDI"
+   - Select your MIDI device from the list (if multiple devices are connected)
+   - Grant MIDI permissions if prompted
 
 2. **Load Sheet Music**:
    - Click "Charger partition MusicXML"
@@ -208,15 +208,12 @@ The application handles standard MIDI messages:
 - **Note Number**: 0-127 (MIDI note range)
 - **Velocity**: 0-127 (how hard the note is played)
 
-### Bluetooth MIDI Format
+### MIDI Message Format
 
-The application parses BLE MIDI messages which include:
-
-- Header byte (154-157)
-- Timestamp bytes
-- Status byte (Note On/Off)
-- Note number
-- Velocity
+Standard MIDI format (3 bytes):
+- Status byte (Note On: 144/0x90, Note Off: 128/0x80)
+- Note number (0-127)
+- Velocity (0-127)
 
 ## Development
 
@@ -246,7 +243,7 @@ DISABLE_HEADLESS=1 bundle exec ruby test/piano_trainer_test.rb
 
 ### Required Features
 
-- **Web Bluetooth API**: Chrome 56+, Edge 79+, Opera 43+
+- **Web MIDI API**: Chrome 43+, Edge 79+, Opera 30+
 - **ES6 Modules**: Modern browsers
 - **Fetch API**: Modern browsers
 
@@ -258,15 +255,24 @@ DISABLE_HEADLESS=1 bundle exec ruby test/piano_trainer_test.rb
 
 ## Troubleshooting
 
+### No MIDI Device Found
+
+If no MIDI device appears when clicking "Connecter clavier MIDI":
+
+1. Ensure your MIDI keyboard is connected (USB) or paired (Bluetooth) with your computer
+2. Check that your browser supports Web MIDI API (Chrome, Edge, Opera)
+3. Grant MIDI permissions when prompted by the browser
+
 ### Roland FP-30X Bluetooth MIDI Connection
 
-If you're using a Roland FP-30X (or FP-30) keyboard and it doesn't appear in the Bluetooth MIDI device list after clicking "Scanner Bluetooth MIDI":
+If you're using a Roland FP-30X (or FP-30) keyboard via Bluetooth and it doesn't appear:
 
-1. On your keyboard, press and hold the **Bluetooth** button together with the **first black key** (F#/Gb), then release both
-2. Press **Bluetooth** again together with the **first white key** (F), then release both
-3. Your keyboard should now reappear in the list of available Bluetooth MIDI devices
+1. First, pair the keyboard with your operating system's Bluetooth settings
+2. On your keyboard, press and hold the **Bluetooth** button together with the **first black key** (F#/Gb), then release both
+3. Press **Bluetooth** again together with the **first white key** (F), then release both
+4. Re-pair the keyboard in your OS settings, then refresh the web page
 
-This procedure resets the Bluetooth connection state on the keyboard and allows it to be rediscovered by your browser.
+This procedure resets the Bluetooth connection state on the keyboard.
 
 ## Contributing
 

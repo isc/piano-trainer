@@ -21,13 +21,17 @@
   <body>
     <main class="container">
       <div>
-        <!-- Connexion Bluetooth et sélection de cassettes -->
+        <!-- Connexion MIDI et sélection de cassettes -->
         <div class="controls-row">
           <button
-            @click="scanBluetooth"
-            x-text="'Scanner Bluetooth MIDI'"
+            @click="connectMIDI"
+            x-text="'Connecter clavier MIDI'"
             x-show="!bluetoothConnected"
           ></button>
+
+          <span x-show="bluetoothConnected" class="midi-status">
+            🎹 <span x-text="midiDeviceName || 'Clavier MIDI'"></span>
+          </span>
 
           <select x-model="selectedCassette" @change="loadCassettesList()" x-show="!isRecording">
             <option value="">Choisir une cassette...</option>
