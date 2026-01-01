@@ -116,15 +116,9 @@
         <div id="score" class="score-container" x-show="!!osmdInstance"></div>
 
         <article
-          x-show="scoreTitle != null || scoreComposer != null"
+          x-show="scoreProgress != null || errorMessage != null"
           aria-live="polite"
         >
-          <header x-show="scoreTitle != null">
-            <strong x-text="scoreTitle || ''"></strong>
-            <small x-show="scoreComposer != null">
-              | <span x-text="scoreComposer || ''"></span
-            ></small>
-          </header>
           <div class="score-progress" x-text="scoreProgress || ''"></div>
 
           <div aria-live="polite">

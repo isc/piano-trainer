@@ -10,6 +10,7 @@
       <credit-words>Schumann</credit-words>
     </credit>
   <identification>
+    <creator type="composer">Schumann</creator>
     <encoding>
       <supports element="accidental" type="yes" />
       <supports element="transpose" type="yes" />
@@ -19,7 +20,7 @@
   </identification>
   <part-list>
     <score-part id="P1">
-      <part-name>Track 1</part-name>
+      <part-name>Piano</part-name>
     </score-part>
   </part-list>
   <part id="P1">

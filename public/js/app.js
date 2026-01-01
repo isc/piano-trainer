@@ -25,8 +25,6 @@ export function midiApp() {
     repeatCount: 0,
 
     // UI states
-    scoreTitle: null,
-    scoreComposer: null,
     scoreProgress: null,
     extractionStatus: null,
     errorMessage: null,
@@ -46,8 +44,6 @@ export function midiApp() {
         onNotesExtracted: (notes, metadata) => {
           console.log('onNotesExtracted called with notes:', notes.length)
           this.allNotes = notes
-          this.scoreTitle = metadata?.title || undefined
-          this.scoreComposer = metadata?.composer || undefined
           const totalNotes = notes.reduce((acc, m) => acc + m.notes.length, 0)
           this.extractionStatus = `✅ Extraction terminée: ${notes.length} mesures, ${totalNotes} notes`
           this.scoreProgress = `Mesure: 1/${notes.length} | Progression: 0/${totalNotes} (0%)`
@@ -167,8 +163,6 @@ export function midiApp() {
       this.osmdInstance = null
       this.allNotes = []
       this.trainingMode = false
-      this.scoreTitle = null
-      this.scoreComposer = null
       this.scoreProgress = null
       this.extractionStatus = null
       this.errorMessage = null
