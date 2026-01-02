@@ -21,14 +21,6 @@ const mockMIDI = {
   disconnect: () => {
     messageCallback = null
   },
-
-  // Utility to send test MIDI messages
-  sendTestNote: (note, velocity = 100, channel = 0) => {
-    const noteOn = new Uint8Array([0x90 | channel, note, velocity])
-    if (messageCallback) {
-      messageCallback(noteOn)
-    }
-  },
 }
 
 export default mockMIDI
