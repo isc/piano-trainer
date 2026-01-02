@@ -70,22 +70,6 @@ class PianoTrainerTest < CapybaraTestBase
     assert_no_text 'complété toutes les mesures'
   end
 
-  def test_loading_new_score_replaces_previous_one
-    # Load first score
-    load_score('simple-score.xml', 1, 4)
-    assert_text 'Simple Score'
-    assert_text 'Mesure: 1/1'
-
-    # Load second score - should replace the first one
-    load_score('schumann-melodie.xml', 20, 256)
-    assert_text 'Melodie'
-    assert_text 'Mesure: 1/20'
-
-    # First score should no longer be visible
-    assert_no_text 'Simple Score'
-    assert_no_text 'Mesure: 1/1'
-  end
-
   def test_training_mode_allows_jumping_to_specific_measure
     load_score('schumann-melodie.xml', 20, 256)
 

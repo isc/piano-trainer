@@ -97,14 +97,6 @@ async function loadMusicXML(event) {
       return
     }
 
-    // Clear previous score before loading new one
-    if (osmdInstance) {
-      const scoreContainer = document.getElementById('score')
-      if (scoreContainer) {
-        scoreContainer.innerHTML = ''
-      }
-    }
-
     await renderMusicXML(xmlContent)
   } catch (error) {
     console.error('Erreur lors du chargement du MusicXML:', error)
