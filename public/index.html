@@ -29,9 +29,9 @@
             x-show="!bluetoothConnected"
           ></button>
 
-          <span x-show="bluetoothConnected">
+          <strong x-show="bluetoothConnected">
             🎹 <span x-text="midiDeviceName || 'Clavier MIDI'"></span>
-          </span>
+          </strong>
 
           <select x-model="selectedCassette" @change="loadCassettesList()" x-show="!isRecording">
             <option value="">Choisir une cassette...</option>
@@ -48,13 +48,13 @@
             ▶️ Rejouer cassette
           </button>
 
-          <span x-show="isReplaying">
+          <strong x-show="isReplaying">
             ▶️ Rejeu en cours...
-          </span>
+          </strong>
 
-          <span x-show="replayEnded">
+          <strong x-show="replayEnded">
             ✅ Rejeu terminé
-          </span>
+          </strong>
         </div>
 
         <!-- Contrôles d'enregistrement -->
@@ -71,11 +71,11 @@
             ⏹️ Arrêter enregistrement
           </button>
 
-          <span x-show="isRecording">
+          <strong x-show="isRecording">
             🔴 Enregistrement en cours... (<span x-text="recordingDuration"
               >0</span
             >s)
-          </span>
+          </strong>
         </div>
 
         <!-- Upload et affichage de partition MusicXML -->
