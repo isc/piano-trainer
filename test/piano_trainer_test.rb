@@ -108,8 +108,6 @@ class PianoTrainerTest < CapybaraTestBase
 
     begin
       load_score('simple-score.xml', 1, 4)
-      # MIDI is auto-connected, verify recording button is available
-      assert_button 'Démarrer enregistrement'
       click_on 'Démarrer enregistrement'
       assert_text 'Enregistrement en cours'
 
