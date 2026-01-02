@@ -27,7 +27,7 @@ class LibraryTest < CapybaraTestBase
 
   def test_clicking_score_navigates_to_score_page
     fill_in 'Rechercher une partition', with: 'Air on the G String'
-    find('tbody tr', text: 'Air on the G String').click
+    click_link 'Air on the G String'
 
     assert_current_path %r{/score\.html\?url=}
     assert_text 'Bibliotheque' # Back link

@@ -39,11 +39,10 @@
         </thead>
         <tbody>
           <template x-for="score in filteredScores" :key="score.file">
-            <tr
-              @click="window.location.href = 'score.html?url=' + encodeURIComponent(getScoreUrl(score))"
-              style="cursor: pointer"
-            >
-              <td x-text="score.title"></td>
+            <tr>
+              <td>
+                <a :href="'score.html?url=' + encodeURIComponent(getScoreUrl(score))" x-text="score.title"></a>
+              </td>
               <td x-text="score.composer"></td>
             </tr>
           </template>
