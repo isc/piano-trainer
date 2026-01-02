@@ -21,13 +21,17 @@
   <body>
     <main class="container">
       <div>
-        <!-- Connexion Bluetooth et sélection de cassettes -->
+        <!-- Connexion MIDI et sélection de cassettes -->
         <div class="controls-row">
           <button
-            @click="scanBluetooth"
-            x-text="'Scanner Bluetooth MIDI'"
+            @click="connectMIDI"
+            x-text="'Connecter clavier MIDI'"
             x-show="!bluetoothConnected"
           ></button>
+
+          <strong x-show="bluetoothConnected">
+            🎹 <span x-text="midiDeviceName || 'Clavier MIDI'"></span>
+          </strong>
 
           <select x-model="selectedCassette" @change="loadCassettesList()" x-show="!isRecording">
             <option value="">Choisir une cassette...</option>
@@ -44,13 +48,13 @@
             ▶️ Rejouer cassette
           </button>
 
-          <span x-show="isReplaying" class="replay-status">
+          <strong x-show="isReplaying">
             ▶️ Rejeu en cours...
-          </span>
+          </strong>
 
-          <span x-show="replayEnded" class="replay-status">
+          <strong x-show="replayEnded">
             ✅ Rejeu terminé
-          </span>
+          </strong>
         </div>
 
         <!-- Contrôles d'enregistrement -->
@@ -67,11 +71,11 @@
             ⏹️ Arrêter enregistrement
           </button>
 
-          <span x-show="isRecording" class="recording-status">
+          <strong x-show="isRecording">
             🔴 Enregistrement en cours... (<span x-text="recordingDuration"
               >0</span
             >s)
-          </span>
+          </strong>
         </div>
 
         <!-- Upload et affichage de partition MusicXML -->
@@ -135,5 +139,19 @@
 
       </div>
     </main>
+
+    <dialog id="noMidiModal" x-bind:open="!navigator.requestMIDIAccess">
+      <article>
+        <header>
+          <button aria-label="Close" rel="prev" onclick="noMidiModal.close()"></button>
+          <p><strong>Web MIDI non supporté</strong></p>
+        </header>
+        <p>
+          Votre navigateur ne supporte pas Web MIDI API.
+          Essayez avec <a href="https://caniuse.com/?search=web%20midi">un autre navigateur</a>
+          (Chrome, Edge ou Opera).
+        </p>
+      </article>
+    </dialog>
   </body>
 </html>

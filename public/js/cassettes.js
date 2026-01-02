@@ -86,8 +86,7 @@ async function replayCassette(cassetteFile, midiParser) {
       }
 
       const uint8Array = new Uint8Array(message.data)
-      const dataView = new DataView(uint8Array.buffer)
-      midiParser(dataView, true)
+      midiParser(uint8Array, true)
     }
   } catch (error) {
     console.error('Erreur lors du rejeu:', error)

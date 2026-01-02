@@ -108,17 +108,15 @@ class PianoTrainerTest < CapybaraTestBase
 
     begin
       load_score('simple-score.xml', 1, 4)
-      click_on 'Scanner Bluetooth MIDI'
-      assert_button 'Démarrer enregistrement'
       click_on 'Démarrer enregistrement'
       assert_text 'Enregistrement en cours'
 
-      # Simulate MIDI events via custom events
+      # Simulate MIDI events via custom events (standard MIDI format: 3 bytes)
       midi_events = [
-        [154, 135, 144, 60, 80],  # Note ON C4
-        [154, 245, 128, 60, 64],  # Note OFF C4
-        [156, 145, 144, 64, 80],  # Note ON E4
-        [156, 227, 128, 64, 64],  # Note OFF E4
+        [144, 60, 80],  # Note ON C4
+        [128, 60, 64],  # Note OFF C4
+        [144, 64, 80],  # Note ON E4
+        [128, 64, 64],  # Note OFF E4
       ]
       midi_events.each { |data| simulate_midi_input(data) }
 
