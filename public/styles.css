@@ -1,5 +1,6 @@
-.score-container {
+#score {
   background-color: white;
+  border-radius: var(--pico-border-radius);
 }
 
 svg g.played-note .vf-notehead path {

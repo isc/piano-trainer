@@ -56,15 +56,13 @@
         </article>
       </dialog>
 
-      <div id="score" class="score-container" x-show="!!osmdInstance"></div>
+      <section id="score" x-show="!!osmdInstance"></section>
 
-      <article x-show="scoreProgress != null || errorMessage != null" aria-live="polite">
+      <article x-show="scoreProgress != null || errorMessage != null">
         <div class="score-progress" x-text="scoreProgress || ''"></div>
-
-        <div aria-live="polite">
+        <div>
           <small x-text="extractionStatus || ''"></small>
         </div>
-
         <div x-show="errorMessage != null" class="error-message" x-text="errorMessage" x-transition></div>
       </article>
 
@@ -76,13 +74,10 @@
             <option :value="cassette.file" x-text="cassette.name"></option>
           </template>
         </select>
-
         <button @click="replayCassette" x-show="selectedCassette && !isReplaying && !isRecording" class="secondary">
           ▶️ Rejouer cassette
         </button>
-
         <strong x-show="isReplaying"> ▶️ Rejeu en cours... </strong>
-
         <strong x-show="replayEnded"> ✅ Rejeu terminé </strong>
       </div>
 
@@ -91,9 +86,7 @@
         <button @click="startRecording" x-show="!isRecording && !isReplaying && bluetoothConnected" class="contrast">
           🔴 Démarrer enregistrement
         </button>
-
         <button @click="stopRecording" x-show="isRecording" class="secondary">⏹️ Arrêter enregistrement</button>
-
         <strong x-show="isRecording">
           🔴 Enregistrement en cours... (<span x-text="recordingDuration">0</span>s)
         </strong>
