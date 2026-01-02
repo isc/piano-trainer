@@ -29,7 +29,7 @@
             x-show="!bluetoothConnected"
           ></button>
 
-          <span x-show="bluetoothConnected" class="midi-status">
+          <span x-show="bluetoothConnected">
             🎹 <span x-text="midiDeviceName || 'Clavier MIDI'"></span>
           </span>
 
@@ -48,11 +48,11 @@
             ▶️ Rejouer cassette
           </button>
 
-          <span x-show="isReplaying" class="replay-status">
+          <span x-show="isReplaying">
             ▶️ Rejeu en cours...
           </span>
 
-          <span x-show="replayEnded" class="replay-status">
+          <span x-show="replayEnded">
             ✅ Rejeu terminé
           </span>
         </div>
@@ -71,7 +71,7 @@
             ⏹️ Arrêter enregistrement
           </button>
 
-          <span x-show="isRecording" class="recording-status">
+          <span x-show="isRecording">
             🔴 Enregistrement en cours... (<span x-text="recordingDuration"
               >0</span
             >s)

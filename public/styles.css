@@ -5,21 +5,6 @@
   margin: 1rem 0;
 }
 
-.recording-status {
-  color: var(--del-color);
-  font-weight: bold;
-}
-
-.replay-status {
-  color: var(--primary-color);
-  font-weight: bold;
-}
-
-.midi-status {
-  color: var(--ins-color);
-  font-weight: bold;
-}
-
 .staff-container {
   margin: 1.5rem 0;
   background-color: white;
