@@ -9,7 +9,6 @@ let state = {
   midiConnected: false,
   midiAccess: null,
   midiInput: null,
-  device: null,
   isRecording: false,
   recordingData: [],
   recordingStartTime: null,
@@ -104,7 +103,6 @@ async function connectMIDI(options = {}) {
 
 function selectMIDIInput(input) {
   state.midiInput = input
-  state.device = { name: input.name } // For compatibility with existing code
 
   input.onmidimessage = (event) => {
     parseMidiMessage(event.data)
@@ -119,8 +117,8 @@ async function connectMIDIMock() {
   mockMIDI.connect((data) => {
     parseMidiMessage(data)
   })
+  state.midiInput = { name: 'Mock MIDI Keyboard' }
   state.midiConnected = true
-  state.device = { name: 'Mock MIDI Keyboard' }
   console.log('Mock MIDI connected')
 }
 

@@ -10,7 +10,6 @@ export function midiApp() {
   return {
     bluetoothConnected: false,
     midiDeviceName: null,
-    device: null,
     osmdInstance: null,
     allNotes: [],
     isRecording: false,
@@ -103,7 +102,7 @@ export function midiApp() {
 
     syncMidiState() {
       this.bluetoothConnected = midi.state.midiConnected
-      this.midiDeviceName = midi.state.device?.name || null
+      this.midiDeviceName = midi.state.midiInput?.name || null
     },
 
     async connectMIDI() {
