@@ -11,7 +11,6 @@
     <script type="module">
       import { midiApp } from './js/app.js'
       window.midiApp = midiApp
-      console.log('Piano Trainer: midiApp loaded and available globally')
     </script>
     <!-- https://cdn.jsdelivr.net/npm/opensheetmusicdisplay@1.8.5/build/opensheetmusicdisplay.min.js -->
     <script src="vendor/opensheetmusicdisplay.1.8.5.min.js"></script>
@@ -25,24 +24,21 @@
           <li><a href="index.html">&larr; Bibliotheque</a></li>
         </ul>
       </nav>
-      <section class="grid">
-        <div>
-          <button @click="connectMIDI" x-text="'Connecter clavier MIDI'" x-show="!bluetoothConnected"></button>
-          <strong x-show="bluetoothConnected"> 🎹 <span x-text="midiDeviceName || 'Clavier MIDI'"></span> </strong>
-        </div>
-        <div>
-          <label for="musicxml-upload">📄 Charger partition MusicXML</label>
-          <input type="file" accept=".xml,.musicxml,.mxl" @change="loadMusicXML($event)" id="musicxml-upload" />
-        </div>
-        <div>
-          <button
-            @click="toggleTrainingMode"
-            x-show="!!osmdInstance"
-            x-text="trainingMode ? '🔄 Mode Entraînement Actif' : '🎯 Mode Entraînement'"
-            :aria-pressed="trainingMode"
-          ></button>
-        </div>
+      <section>
+        <button @click="connectMIDI" x-text="'Connecter clavier MIDI'" x-show="!bluetoothConnected"></button>
+        <strong x-show="bluetoothConnected"> 🎹 <span x-text="midiDeviceName || 'Clavier MIDI'"></span> </strong>
+        <button
+          @click="toggleTrainingMode"
+          x-show="!!osmdInstance"
+          x-text="trainingMode ? '🔄 Mode Entraînement Actif' : '🎯 Mode Entraînement'"
+          :aria-pressed="trainingMode"
+        ></button>
       </section>
+
+      <article x-show="!osmdInstance">
+        <label for="musicxml-upload">📄 Charger partition MusicXML</label>
+        <input type="file" accept=".xml,.musicxml,.mxl" @change="loadMusicXML($event)" id="musicxml-upload" />
+      </article>
 
       <article x-show="trainingComplete" class="success">
         <header>
