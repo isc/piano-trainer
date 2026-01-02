@@ -7,13 +7,6 @@ const NOTE_NAMES = 'C C# D D# E F F# G G# A A# B'.split(' ')
 
 let state = {
   midiConnected: false,
-  // Keep bluetoothConnected as alias for backward compatibility
-  get bluetoothConnected() {
-    return this.midiConnected
-  },
-  set bluetoothConnected(val) {
-    this.midiConnected = val
-  },
   midiAccess: null,
   midiInput: null,
   device: null,
