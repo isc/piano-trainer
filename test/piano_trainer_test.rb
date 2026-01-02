@@ -1,6 +1,11 @@
 require_relative 'test_helper'
 
 class PianoTrainerTest < CapybaraTestBase
+  def setup
+    page.driver.set_cookie('test-env', 'true')
+    visit '/score.html'
+  end
+
   def test_play_simple_score_till_the_end
     load_score('simple-score.xml', 1, 4)
     replay_cassette('oh-when-the-saints', wait_for_end: false)

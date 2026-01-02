@@ -24,11 +24,6 @@ class CapybaraTestBase < Minitest::Test
   include Capybara::DSL
   include Capybara::Minitest::Assertions
 
-  def setup
-    page.driver.set_cookie('test-env', 'true')
-    visit '/'
-  end
-
   # Helper to simulate MIDI input events
   def simulate_midi_input(data_array)
     page.execute_script(<<~JS)

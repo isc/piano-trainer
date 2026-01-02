@@ -84,6 +84,13 @@ export function midiApp() {
           this.replayEnded = true
         },
       })
+
+      // Check URL parameter for score to load (after callbacks are set)
+      const urlParams = new URLSearchParams(window.location.search)
+      const scoreUrl = urlParams.get('url')
+      if (scoreUrl) {
+        await this.loadScoreFromURL(scoreUrl)
+      }
     },
 
     updateScoreProgress() {
@@ -152,8 +159,22 @@ export function midiApp() {
       await musicxml.loadMusicXML(event)
       this.osmdInstance = musicxml.getOsmdInstance()
       this.allNotes = musicxml.getNotesByMeasure()
+      await this.requestWakeLock()
+    },
 
-      // Activer le wake lock pour empêcher la mise en veille
+    async loadScoreFromURL(url) {
+      await musicxml.loadFromURL(url)
+      this.osmdInstance = musicxml.getOsmdInstance()
+
+      // Wait for Alpine to update DOM (show #score container), then render
+      await this.$nextTick()
+      await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)))
+      musicxml.renderScore()
+      this.allNotes = musicxml.getNotesByMeasure()
+      await this.requestWakeLock()
+    },
+
+    async requestWakeLock() {
       if ('wakeLock' in navigator) {
         try {
           await navigator.wakeLock.request('screen')
