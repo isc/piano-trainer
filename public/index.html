@@ -139,5 +139,19 @@
 
       </div>
     </main>
+
+    <dialog id="noMidiModal" x-bind:open="!navigator.requestMIDIAccess">
+      <article>
+        <header>
+          <button aria-label="Close" rel="prev" onclick="noMidiModal.close()"></button>
+          <p><strong>Web MIDI non supporté</strong></p>
+        </header>
+        <p>
+          Votre navigateur ne supporte pas Web MIDI API.
+          Essayez avec <a href="https://caniuse.com/?search=web%20midi">un autre navigateur</a>
+          (Chrome, Edge ou Opera).
+        </p>
+      </article>
+    </dialog>
   </body>
 </html>
