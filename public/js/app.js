@@ -85,13 +85,6 @@ export function midiApp() {
           this.replayEnded = true
         },
       })
-
-      window.addEventListener('beforeunload', () => {
-        // Clean up MIDI connection if exists
-        if (midi.state.midiInput) {
-          midi.state.midiInput.onmidimessage = null
-        }
-      })
     },
 
     updateScoreProgress() {
