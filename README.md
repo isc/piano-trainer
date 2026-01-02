@@ -5,6 +5,7 @@ A web-based piano training application that helps musicians practice by connecti
 ## Features
 
 ### Core Functionality
+- **Score Library**: Browse and search 70 public domain classical music scores
 - **MIDI Connection**: Connect MIDI devices via Web MIDI API (USB or Bluetooth)
 - **Real-time Note Display**: Visual feedback showing played notes on a musical staff
 - **MusicXML Support**: Load and display sheet music in MusicXML format
@@ -66,15 +67,21 @@ MIDI Device → Web MIDI API → MIDI Message Parser → Note Validator → Visu
 ### Key Files
 
 - `app.rb`: Main Sinatra application with API endpoints
-- `public/index.html`: Main HTML interface
+- `public/index.html`: Score library page with search and filtering
+- `public/score.html`: Score practice page
+- `public/data/scores.json`: Index of 70 available scores
+- `public/scores/`: Directory with 70 MusicXML files (1.6MB)
 - `public/js/app.js`: Alpine.js coordination layer
+- `public/js/library.js`: Library page state and filtering
 - `public/js/midi.js`: Web MIDI API & recording
 - `public/js/musicxml.js`: MusicXML parsing & validation
 - `public/js/cassettes.js`: Cassette management
 - `public/js/midi_mock.js`: Mock implementation for testing
 - `public/js/utils.js`: Utility functions
 - `public/styles.css`: Custom styling
-- `test/piano_trainer_test.rb`: Test suite
+- `test/piano_trainer_test.rb`: Piano trainer tests
+- `test/library_test.rb`: Library page tests
+- `Rakefile`: Test runner configuration
 
 ## Setup & Installation
 
@@ -102,40 +109,63 @@ The application will be available at `http://localhost:4567`
 
 ### Basic Workflow
 
-1. **Connect MIDI Device**:
+1. **Browse Score Library** (Home page: `/`):
+   - View all 70 available public domain scores
+   - Search by title or composer
+   - Click a score to load it for practice
+
+2. **Connect MIDI Device**:
    - Click "Connecter clavier MIDI"
    - Select your MIDI device from the list (if multiple devices are connected)
    - Grant MIDI permissions if prompted
 
-2. **Load Sheet Music**:
-   - Click "Charger partition MusicXML"
-   - Select a MusicXML file from your computer
+3. **Load Sheet Music**:
+   - From the library: Click any score to automatically load it
+   - Or manually upload: Click "Charger partition MusicXML" to select a file from your computer
    - The sheet music will be displayed
 
-3. **Practice Mode**:
+4. **Practice Mode**:
    - Play notes on your MIDI keyboard
    - The system highlights correct notes in green
    - Incorrect notes show error messages
    - Progress is tracked in real-time
 
-4. **Recording**:
+5. **Recording**:
    - Click "Démarrer enregistrement" to start recording
    - Play your performance
    - Click "Arrêter enregistrement" to stop
    - Enter a name for your recording
 
-5. **Playback**:
+6. **Playback**:
    - Select a recording from the dropdown
    - Click "Rejouer cassette" to play it back
 
+### Score Library
+
+The application includes 70 public domain classical music scores ready to practice:
+
+- **Composers**: Bach, Beethoven, Chopin, Debussy, Mozart, Schumann, and more
+- **Styles**: Sonatas, nocturnes, waltzes, preludes, minuets, variations
+- **Search**: Filter by title or composer name
+- **Direct Loading**: Click any score to instantly load and practice it
+- **Local Storage**: All scores served from local `public/scores/` directory (1.6MB)
+
+Available scores include popular pieces like:
+- Moonlight Sonata (3 versions)
+- Fur Elise (multiple arrangements)
+- Canon in D
+- Clair de Lune
+- And 65 more classical masterpieces
+
 ### Advanced Features
 
-- **Modular Architecture**: Clean separation of concerns with 5 specialized JavaScript modules
+- **Modular Architecture**: Clean separation of concerns with 6 specialized JavaScript modules
 - **Note Validation**: The system checks if you're playing the correct notes from the sheet music
 - **Progress Tracking**: Shows which notes you've played correctly and what's next
 - **Error Feedback**: Displays what note was expected vs. what you played
 - **Completion Detection**: Shows a celebration message when you complete a piece
 - **Callback System**: Loose coupling between modules via event callbacks
+- **URL Loading**: Load scores programmatically with `score.html?url=<score_url>`
 
 ## API Documentation
 
@@ -184,10 +214,28 @@ Saves a new MIDI recording.
 
 The application extracts musical information from MusicXML files:
 
-1. **Note Extraction**: Parses pitch, duration, and timing information
-2. **Measure Analysis**: Organizes notes by measure
-3. **Validation**: Converts to MIDI note numbers for comparison
-4. **Visualization**: Renders sheet music with OpenSheetMusicDisplay
+1. **Score Discovery**: Indexes scores in `public/data/scores.json` for library browsing
+2. **Note Extraction**: Parses pitch, duration, and timing information
+3. **Measure Analysis**: Organizes notes by measure
+4. **Validation**: Converts to MIDI note numbers for comparison
+5. **Visualization**: Renders sheet music with OpenSheetMusicDisplay
+
+### Score Index Format
+
+`public/data/scores.json` contains metadata for all available scores:
+
+```json
+{
+  "baseUrl": "/scores/",
+  "scores": [
+    {
+      "title": "Score Title",
+      "composer": "Composer Name",
+      "file": "score-filename.mxl"
+    }
+  ]
+}
+```
 
 ### Supported MusicXML Elements
 
@@ -220,15 +268,21 @@ Standard MIDI format (3 bytes):
 ### Running Tests
 
 ```bash
-# Run the test suite
+# Run all tests (16 tests, 75 assertions)
+bundle exec rake test
+
+# Or run individual test files
 bundle exec ruby test/piano_trainer_test.rb
+bundle exec ruby test/library_test.rb
 
 # Run with UI (non-headless)
-DISABLE_HEADLESS=1 bundle exec ruby test/piano_trainer_test.rb
+DISABLE_HEADLESS=1 bundle exec rake test
 ```
 
 ### Test Files
 
+- `test/piano_trainer_test.rb`: 10 tests for core piano training features
+- `test/library_test.rb`: 6 tests for score library functionality
 - `test/fixtures/simple-score.xml`: Basic 4-note test score
 - `test/fixtures/schumann-melodie.xml`: Complex multi-part score (256 notes)
 - `public/cassettes/*.json`: Various cassette files for playback testing
