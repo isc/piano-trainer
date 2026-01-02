@@ -1,49 +1,16 @@
-.controls-row {
-  display: flex;
-  gap: 1rem;
-  align-items: center;
-  margin: 1rem 0;
-}
-
-.staff-container {
-  margin: 1.5rem 0;
-  background-color: white;
-  padding: 1rem;
-  border: 1px solid var(--border-color);
-  border-radius: var(--border-radius);
-}
-
 .score-container {
   margin: 1.5rem 0;
   background-color: white;
-  padding: 1rem;
-  border: 1px solid var(--border-color);
-  border-radius: var(--border-radius);
-  min-height: 300px;
   overflow-x: auto;
-}
 
-.score-container svg {
-  max-width: 100%;
-  height: auto;
-}
-
-.btn-record {
-  background-color: var(--del-color);
-}
-
-.btn-stop {
-  background-color: var(--ins-color);
-}
-
-.btn-replay {
-  background-color: var(--primary-color);
-}
-
-svg g.played-note {
-  .vf-notehead path {
-    fill: #22c55e;
+  svg {
+    max-width: 100%;
+    height: auto;
   }
+}
+
+svg g.played-note .vf-notehead path {
+  fill: #22c55e;
 }
 
 /* Clickable areas for measures in training mode */
@@ -52,25 +19,25 @@ svg g.played-note {
   stroke: none;
   cursor: pointer;
   rx: 4;
-}
 
-.measure-click-area:hover {
-  fill: rgba(59, 130, 246, 0.05);
-}
+  &:hover {
+    fill: rgba(59, 130, 246, 0.05);
+  }
 
-/* Selected (current) measure in training mode */
-.measure-click-area.selected {
-  fill: rgba(59, 130, 246, 0.15);
-  stroke: rgba(59, 130, 246, 0.8);
-  stroke-width: 2;
+  /* Selected (current) measure in training mode */
+  &.selected {
+    fill: rgba(59, 130, 246, 0.15);
+    stroke: rgba(59, 130, 246, 0.8);
+    stroke-width: 2;
+  }
 }
 
 .repeat-indicator {
   stroke: rgba(59, 130, 246, 0.8);
   stroke-width: 2;
   fill: none;
-}
 
-.repeat-indicator.filled {
-  fill: rgba(59, 130, 246, 0.8);
+  &.filled {
+    fill: rgba(59, 130, 246, 0.8);
+  }
 }
