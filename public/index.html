@@ -22,16 +22,10 @@
     <main class="container">
       <div>
         <!-- Connexion MIDI et sélection de cassettes -->
-        <div class="controls-row">
-          <button
-            @click="connectMIDI"
-            x-text="'Connecter clavier MIDI'"
-            x-show="!bluetoothConnected"
-          ></button>
+        <div class="grid">
+          <button @click="connectMIDI" x-text="'Connecter clavier MIDI'" x-show="!bluetoothConnected"></button>
 
-          <strong x-show="bluetoothConnected">
-            🎹 <span x-text="midiDeviceName || 'Clavier MIDI'"></span>
-          </strong>
+          <strong x-show="bluetoothConnected"> 🎹 <span x-text="midiDeviceName || 'Clavier MIDI'"></span> </strong>
 
           <select x-model="selectedCassette" @change="loadCassettesList()" x-show="!isRecording">
             <option value="">Choisir une cassette...</option>
@@ -40,54 +34,34 @@
             </template>
           </select>
 
-          <button
-            @click="replayCassette"
-            x-show="selectedCassette && !isReplaying && !isRecording"
-            class="btn-replay"
-          >
+          <button @click="replayCassette" x-show="selectedCassette && !isReplaying && !isRecording" class="secondary">
             ▶️ Rejouer cassette
           </button>
 
-          <strong x-show="isReplaying">
-            ▶️ Rejeu en cours...
-          </strong>
+          <strong x-show="isReplaying"> ▶️ Rejeu en cours... </strong>
 
-          <strong x-show="replayEnded">
-            ✅ Rejeu terminé
-          </strong>
+          <strong x-show="replayEnded"> ✅ Rejeu terminé </strong>
         </div>
 
         <!-- Contrôles d'enregistrement -->
-        <div class="controls-row">
-          <button
-            @click="startRecording"
-            x-show="!isRecording && !isReplaying && bluetoothConnected"
-            class="btn-record"
-          >
+        <div class="grid">
+          <button @click="startRecording" x-show="!isRecording && !isReplaying && bluetoothConnected" class="contrast">
             🔴 Démarrer enregistrement
           </button>
 
-          <button @click="stopRecording" x-show="isRecording" class="btn-stop">
-            ⏹️ Arrêter enregistrement
-          </button>
+          <button @click="stopRecording" x-show="isRecording" class="secondary">⏹️ Arrêter enregistrement</button>
 
           <strong x-show="isRecording">
-            🔴 Enregistrement en cours... (<span x-text="recordingDuration"
-              >0</span
-            >s)
+            🔴 Enregistrement en cours... (<span x-text="recordingDuration">0</span>s)
           </strong>
         </div>
 
         <!-- Upload et affichage de partition MusicXML -->
-        <div class="controls-row">
-          <label for="musicxml-upload">📄 Charger partition MusicXML</label>
-          <input
-            type="file"
-            accept=".xml,.musicxml,.mxl"
-            @change="loadMusicXML($event)"
-            id="musicxml-upload"
-          />
-
+        <div class="grid">
+          <div>
+            <label for="musicxml-upload">📄 Charger partition MusicXML</label>
+            <input type="file" accept=".xml,.musicxml,.mxl" @change="loadMusicXML($event)" id="musicxml-upload" />
+          </div>
           <button
             @click="toggleTrainingMode"
             x-show="!!osmdInstance"
@@ -102,9 +76,7 @@
             <strong>🎉 Félicitations !</strong>
           </header>
           <p>Vous avez complété toutes les mesures du morceau !</p>
-          <button @click="toggleTrainingMode">
-            Quitter le mode entraînement
-          </button>
+          <button @click="toggleTrainingMode">Quitter le mode entraînement</button>
         </article>
 
         <!-- Partition terminée - Modal -->
@@ -119,24 +91,15 @@
 
         <div id="score" class="score-container" x-show="!!osmdInstance"></div>
 
-        <article
-          x-show="scoreProgress != null || errorMessage != null"
-          aria-live="polite"
-        >
+        <article x-show="scoreProgress != null || errorMessage != null" aria-live="polite">
           <div class="score-progress" x-text="scoreProgress || ''"></div>
 
           <div aria-live="polite">
             <small x-text="extractionStatus || ''"></small>
           </div>
 
-          <div
-            x-show="errorMessage != null"
-            class="error-message"
-            x-text="errorMessage"
-            x-transition
-          ></div>
+          <div x-show="errorMessage != null" class="error-message" x-text="errorMessage" x-transition></div>
         </article>
-
       </div>
     </main>
 
@@ -147,8 +110,8 @@
           <p><strong>Web MIDI non supporté</strong></p>
         </header>
         <p>
-          Votre navigateur ne supporte pas Web MIDI API.
-          Essayez avec <a href="https://caniuse.com/?search=web%20midi">un autre navigateur</a>
+          Votre navigateur ne supporte pas Web MIDI API. Essayez avec
+          <a href="https://caniuse.com/?search=web%20midi">un autre navigateur</a>
           (Chrome, Edge ou Opera).
         </p>
       </article>
