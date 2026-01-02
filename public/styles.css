@@ -1,12 +1,6 @@
 .score-container {
   margin: 1.5rem 0;
   background-color: white;
-  overflow-x: auto;
-
-  svg {
-    max-width: 100%;
-    height: auto;
-  }
 }
 
 svg g.played-note .vf-notehead path {
