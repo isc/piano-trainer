@@ -197,7 +197,7 @@ function extractFromSourceMeasures(sourceMeasures) {
                 measureIndex: measureIndex,
                 active: false,
                 played: false,
-                isTieContinuation: isTieContinuation,
+                isTieContinuation,
               })
             }
           }
