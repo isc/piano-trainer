@@ -11,7 +11,6 @@ export function midiApp() {
     bluetoothConnected: false,
     midiDeviceName: null,
     osmdInstance: null,
-    allNotes: [],
     isRecording: false,
     recordingStartTime: null,
     recordingDuration: 0,
@@ -46,12 +45,8 @@ export function midiApp() {
       })
 
       musicxml.setCallbacks({
-        onNotesExtracted: (notes, metadata) => {
-          console.log('onNotesExtracted called with notes:', notes.length)
-          this.allNotes = notes
-        },
         onMeasureCompleted: (measureIndex) => {
-          if (!this.trainingMode && measureIndex >= this.allNotes.length - 1) {
+          if (!this.trainingMode) {
             this.showScoreComplete()
           }
         },
@@ -139,7 +134,6 @@ export function midiApp() {
       // Load the MusicXML file (this will trigger callbacks that set the state)
       await musicxml.loadMusicXML(event)
       this.osmdInstance = musicxml.getOsmdInstance()
-      this.allNotes = musicxml.getNotesByMeasure()
       await this.requestWakeLock()
     },
 
@@ -151,7 +145,6 @@ export function midiApp() {
       await this.$nextTick()
       await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)))
       musicxml.renderScore()
-      this.allNotes = musicxml.getNotesByMeasure()
       await this.requestWakeLock()
     },
 
@@ -168,7 +161,6 @@ export function midiApp() {
     clearScore() {
       musicxml.clearScore()
       this.osmdInstance = null
-      this.allNotes = []
       this.trainingMode = false
       this.errorMessage = null
       const trainingInfo = document.getElementById('training-info')
