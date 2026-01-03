@@ -1,5 +1,5 @@
 /* Full-width score section to maximize measures per staff */
-main > #score {
+#score {
   width: 100vw;
   margin-left: calc(-50vw + 50%);
   background-color: white;
