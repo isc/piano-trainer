@@ -25,7 +25,6 @@ export function midiApp() {
     repeatCount: 0,
 
     // UI states
-    scoreProgress: null,
     errorMessage: null,
     trainingComplete: false,
     showScoreCompleteModal: false,
@@ -50,14 +49,10 @@ export function midiApp() {
         onNotesExtracted: (notes, metadata) => {
           console.log('onNotesExtracted called with notes:', notes.length)
           this.allNotes = notes
-          const totalNotes = notes.reduce((acc, m) => acc + m.notes.length, 0)
-          this.scoreProgress = `Mesure: 1/${notes.length} | Progression: 0/${totalNotes} (0%)`
         },
         onMeasureCompleted: (measureIndex) => {
           if (!this.trainingMode && measureIndex >= this.allNotes.length - 1) {
             this.showScoreComplete()
-          } else {
-            this.updateScoreProgress()
           }
         },
         onNoteError: (expected, played) => {
@@ -90,20 +85,6 @@ export function midiApp() {
       const scoreUrl = urlParams.get('url')
       if (scoreUrl) {
         await this.loadScoreFromURL(scoreUrl)
-      }
-    },
-
-    updateScoreProgress() {
-      const total = this.allNotes.reduce((acc, m) => acc + m.notes.length, 0)
-      const completed = this.allNotes.reduce((acc, m) => acc + m.notes.filter((n) => n.played).length, 0)
-      const currentMeasure =
-        this.allNotes.find((m) => m.notes.some((n) => !n.played))?.measureIndex || this.allNotes.length - 1
-      const percentage = total > 0 ? Math.round((completed / total) * 100) : 0
-
-      if (completed >= total) {
-        this.scoreProgress = `🎉 Partition terminée ! (${total}/${total} notes - 100%)`
-      } else {
-        this.scoreProgress = `Mesure: ${currentMeasure + 1}/${this.allNotes.length} | Progression: ${completed}/${total} (${percentage}%)`
       }
     },
 
@@ -189,7 +170,6 @@ export function midiApp() {
       this.osmdInstance = null
       this.allNotes = []
       this.trainingMode = false
-      this.scoreProgress = null
       this.errorMessage = null
       const trainingInfo = document.getElementById('training-info')
       if (trainingInfo) trainingInfo.remove()
