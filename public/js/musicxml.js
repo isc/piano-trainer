@@ -40,7 +40,6 @@ export function initMusicXML() {
     clearScore,
     setCallbacks,
     getOsmdInstance: () => osmdInstance,
-    getNotesByMeasure: () => allNotes,
     getTrainingState: () => ({
       trainingMode,
       currentMeasureIndex,
