@@ -18,9 +18,9 @@ This document provides a detailed technical overview of the Piano Trainer applic
 │  ┌─────────────┐ │  ┌───────────────────────────┐ │  ┌─────────────────────┐ │
 │  │ File System │ │  │ MusicXML Parser           │ │  │ OpenSheetMusicDisplay│ │
 │  └─────────────┘ │  └───────────────────────────┘ │  └─────────────────────┘ │
-│  ┌─────────────┐ │  ┌───────────────────────────┐ │  ┌─────────────────────┐ │
-│  │ CORS Middle │ │  │ Note Validation System   │ │  │ Alpine.js           │ │
-│  └─────────────┘ │  └───────────────────────────┘ │  └─────────────────────┘ │
+│                 │  ┌───────────────────────────┐ │  ┌─────────────────────┐ │
+│                 │  │ Note Validation System   │ │  │ Alpine.js           │ │
+│                 │  └───────────────────────────┘ │  └─────────────────────┘ │
 │                 │  ┌───────────────────────────┐ │  ┌─────────────────────┐ │
 │                 │  │ Recording/Playback System │ │  │ Pico CSS            │ │
 │                 │  └───────────────────────────┘ │  └─────────────────────┘ │
@@ -46,16 +46,7 @@ This document provides a detailed technical overview of the Piano Trainer applic
    end
    ```
 
-2. **CORS Middleware**:
-   ```ruby
-   before do
-     response.headers['Access-Control-Allow-Origin'] = '*'
-     response.headers['Access-Control-Allow-Methods'] = 'GET, POST, OPTIONS'
-     response.headers['Access-Control-Allow-Headers'] = 'Content-Type'
-   end
-   ```
-
-3. **API Endpoints**:
+2. **API Endpoints**:
    - `GET /api/cassettes`: Lists all MIDI recordings
    - `POST /api/cassettes`: Saves a new MIDI recording
    - `GET /`: Serves the main HTML page
@@ -613,10 +604,6 @@ end
 ```
 
 ## Security Considerations
-
-### CORS
-- Open CORS policy (`Access-Control-Allow-Origin: *`) for development
-- Should be restricted in production to specific domains
 
 ### File Uploads
 - MusicXML files are processed client-side

@@ -17,7 +17,6 @@ A web-based piano training application that helps musicians practice by connecti
 #### 1. Backend (Ruby/Sinatra)
 - **API Endpoints**: RESTful API for managing MIDI recordings (cassettes)
 - **File Management**: Stores recordings as JSON files
-- **CORS Support**: Enables cross-origin requests from the frontend
 
 #### 2. Frontend (JavaScript/HTML/CSS)
 - **MIDI Processing**: Parses MIDI messages from Bluetooth devices
