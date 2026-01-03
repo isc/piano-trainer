@@ -21,7 +21,6 @@ const MEASURE_CLICK_PADDING = 15
 const TRAINING_RESET_DELAY_MS = 200
 
 let callbacks = {
-  onNotesExtracted: null,
   onScoreCompleted: null,
   onNoteError: null,
   onTrainingProgress: null,
@@ -163,14 +162,6 @@ function extractNotesFromScore() {
 
   const sheet = osmdInstance.Sheet
   extractFromSourceMeasures(sheet.SourceMeasures)
-
-  if (callbacks.onNotesExtracted) {
-    console.log('Calling onNotesExtracted callback')
-    callbacks.onNotesExtracted(allNotes, {
-      title: sheet.Title?.text || '',
-      composer: sheet.Composer || '',
-    })
-  }
 }
 
 function extractFromSourceMeasures(sourceMeasures) {
