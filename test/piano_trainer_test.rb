@@ -100,14 +100,18 @@ class PianoTrainerTest < CapybaraTestBase
       click_on 'Démarrer enregistrement'
       assert_text 'Enregistrement en cours'
 
-      # Simulate MIDI events via custom events (standard MIDI format: 3 bytes)
-      midi_events = [
+      # Simulate MIDI events via custom events
+      simulate_midi_input("ON C4")
+      simulate_midi_input("OFF C4")
+      simulate_midi_input("ON E4")
+      simulate_midi_input("OFF E4")
+
+      expected_midi_events = [
         [144, 60, 80],  # Note ON C4
         [128, 60, 64],  # Note OFF C4
         [144, 64, 80],  # Note ON E4
         [128, 64, 64],  # Note OFF E4
       ]
-      midi_events.each { |data| simulate_midi_input(data) }
 
       # Give a moment for MIDI events to be recorded
       sleep 0.1
@@ -122,7 +126,7 @@ class PianoTrainerTest < CapybaraTestBase
       visit "/cassettes/#{cassette_name}.json"
       cassette_data = JSON.parse(page.find('pre').text)
       actual_data = cassette_data['data'].map { |event| event['data'] }
-      assert_equal midi_events, actual_data, 'Cassette should contain exact MIDI data'
+      assert_equal expected_midi_events, actual_data, 'Cassette should contain exact MIDI data'
     ensure
       File.delete(cassette_file) if File.exist?(cassette_file)
     end
@@ -153,21 +157,21 @@ class PianoTrainerTest < CapybaraTestBase
     # Both notes have the same timestamp and must be played together
 
     # Play C4 (Note ON)
-    simulate_midi_input([144, 60, 80])
+    simulate_midi_input("ON C4")
 
     # The note should be highlighted while held
     assert_selector 'svg g.vf-stavenote.active-note', count: 1
 
     # Release C4 without having played E5 (Note OFF)
-    simulate_midi_input([128, 60, 64])
+    simulate_midi_input("OFF C4")
 
     # The note should no longer be highlighted (not validated)
     assert_no_selector 'svg g.vf-stavenote.active-note'
     assert_no_selector 'svg g.vf-stavenote.played-note'
 
     # Now play E5 alone (Note ON then OFF)
-    simulate_midi_input([144, 76, 80])
-    simulate_midi_input([128, 76, 64])
+    simulate_midi_input("ON E5")
+    simulate_midi_input("OFF E5")
 
     # Still no notes should be validated because they weren't held together
     assert_no_selector 'svg g.vf-stavenote.played-note'
@@ -181,16 +185,16 @@ class PianoTrainerTest < CapybaraTestBase
     load_score('tied-notes.xml', 2, 3)
 
     # Play G4 and HOLD it (don't release yet)
-    simulate_midi_input([144, 67, 80])  # Note ON G4
+    simulate_midi_input("ON G4")
     assert_selector 'svg g.vf-stavenote.played-note', count: 1
 
     # While holding G4, play F4 - both G4 tie-continuation and F4 should validate together
-    simulate_midi_input([144, 65, 80])  # Note ON F4
+    simulate_midi_input("ON F4")
     assert_selector 'svg g.vf-stavenote.played-note', count: 3
 
     # Now release both notes
-    simulate_midi_input([128, 67, 64])  # Note OFF G4
-    simulate_midi_input([128, 65, 64])  # Note OFF F4
+    simulate_midi_input("OFF G4")
+    simulate_midi_input("OFF F4")
 
     assert_text 'Partition terminée'
   end
