@@ -21,8 +21,7 @@ const MEASURE_CLICK_PADDING = 15
 const TRAINING_RESET_DELAY_MS = 200
 
 let callbacks = {
-  onNotesExtracted: null,
-  onMeasureCompleted: null,
+  onScoreCompleted: null,
   onNoteError: null,
   onTrainingProgress: null,
   onTrainingComplete: null,
@@ -41,7 +40,6 @@ export function initMusicXML() {
     clearScore,
     setCallbacks,
     getOsmdInstance: () => osmdInstance,
-    getNotesByMeasure: () => allNotes,
     getTrainingState: () => ({
       trainingMode,
       currentMeasureIndex,
@@ -163,14 +161,6 @@ function extractNotesFromScore() {
 
   const sheet = osmdInstance.Sheet
   extractFromSourceMeasures(sheet.SourceMeasures)
-
-  if (callbacks.onNotesExtracted) {
-    console.log('Calling onNotesExtracted callback')
-    callbacks.onNotesExtracted(allNotes, {
-      title: sheet.Title?.text || '',
-      composer: sheet.Composer || '',
-    })
-  }
 }
 
 function extractFromSourceMeasures(sourceMeasures) {
@@ -555,7 +545,7 @@ function handleNoteValidated(measureData, noteData, validatedCount) {
       if (currentMeasureIndex + 1 < allNotes.length) {
         currentMeasureIndex++
       } else {
-        callbacks.onMeasureCompleted?.(currentMeasureIndex)
+        callbacks.onScoreCompleted?.(currentMeasureIndex)
       }
     }
   }
