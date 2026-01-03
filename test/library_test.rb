@@ -31,7 +31,6 @@ class LibraryTest < CapybaraTestBase
 
     assert_current_path %r{/score\.html\?url=}
     assert_text 'Bibliotheque' # Back link
-    assert_text(/Extraction terminée: \d+ mesures, \d+ notes/)
     assert_selector 'svg g.vf-stavenote', minimum: 1
   end
 

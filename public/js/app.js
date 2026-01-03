@@ -26,7 +26,6 @@ export function midiApp() {
 
     // UI states
     scoreProgress: null,
-    extractionStatus: null,
     errorMessage: null,
     trainingComplete: false,
     showScoreCompleteModal: false,
@@ -52,9 +51,7 @@ export function midiApp() {
           console.log('onNotesExtracted called with notes:', notes.length)
           this.allNotes = notes
           const totalNotes = notes.reduce((acc, m) => acc + m.notes.length, 0)
-          this.extractionStatus = `✅ Extraction terminée: ${notes.length} mesures, ${totalNotes} notes`
           this.scoreProgress = `Mesure: 1/${notes.length} | Progression: 0/${totalNotes} (0%)`
-          console.log('States updated:', this.extractionStatus)
         },
         onMeasureCompleted: (measureIndex) => {
           if (!this.trainingMode && measureIndex >= this.allNotes.length - 1) {
@@ -193,7 +190,6 @@ export function midiApp() {
       this.allNotes = []
       this.trainingMode = false
       this.scoreProgress = null
-      this.extractionStatus = null
       this.errorMessage = null
       const trainingInfo = document.getElementById('training-info')
       if (trainingInfo) trainingInfo.remove()

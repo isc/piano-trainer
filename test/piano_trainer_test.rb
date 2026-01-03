@@ -7,13 +7,13 @@ class PianoTrainerTest < CapybaraTestBase
   end
 
   def test_play_simple_score_till_the_end
-    load_score('simple-score.xml', 1, 4)
+    load_score('simple-score.xml', 4)
     replay_cassette('oh-when-the-saints', wait_for_end: false)
     assert_text 'Partition terminée'
   end
 
   def test_note_highlighting_when_playing_complex_score
-    load_score('schumann-melodie.xml', 20, 256)
+    load_score('schumann-melodie.xml', 256)
     assert_no_selector 'svg g.vf-stavenote.played-note'
 
     replay_cassette('melodie-2-bars', wait_for_end: false)
@@ -23,7 +23,7 @@ class PianoTrainerTest < CapybaraTestBase
   end
 
   def test_notes_must_be_played_in_correct_order
-    load_score('simple-score.xml', 1, 4)
+    load_score('simple-score.xml', 4)
     assert_no_selector 'svg g.vf-stavenote.played-note'
 
     replay_cassette('simple-score-wrong-order')
@@ -33,7 +33,7 @@ class PianoTrainerTest < CapybaraTestBase
   end
 
   def test_training_mode_repeats_same_measure
-    load_score('simple-score.xml', 1, 4)
+    load_score('simple-score.xml', 4)
 
     click_on 'Mode Entraînement'
     assert_text 'Mode Entraînement Actif'
@@ -54,7 +54,7 @@ class PianoTrainerTest < CapybaraTestBase
   end
 
   def test_training_mode_requires_clean_repetitions
-    load_score('simple-score.xml', 1, 4)
+    load_score('simple-score.xml', 4)
 
     click_on 'Mode Entraînement'
     assert_text 'Mode Entraînement Actif'
@@ -71,7 +71,7 @@ class PianoTrainerTest < CapybaraTestBase
   end
 
   def test_training_mode_allows_jumping_to_specific_measure
-    load_score('schumann-melodie.xml', 20, 256)
+    load_score('schumann-melodie.xml', 256)
 
     click_on 'Mode Entraînement'
 
@@ -96,7 +96,7 @@ class PianoTrainerTest < CapybaraTestBase
     cassette_file = File.join(__dir__, '..', 'public', 'cassettes', "#{cassette_name}.json")
 
     begin
-      load_score('simple-score.xml', 1, 4)
+      load_score('simple-score.xml', 4)
       click_on 'Démarrer enregistrement'
       assert_text 'Enregistrement en cours'
 
@@ -133,7 +133,7 @@ class PianoTrainerTest < CapybaraTestBase
   end
 
   def test_polyphonic_duplicate_notes_validation
-    load_score('schumann-melodie.xml', 20, 256)
+    load_score('schumann-melodie.xml', 256)
 
     click_on 'Mode Entraînement'
     assert_text 'Mode Entraînement Actif'
@@ -149,7 +149,7 @@ class PianoTrainerTest < CapybaraTestBase
   end
 
   def test_polyphonic_notes_must_be_held_together
-    load_score('schumann-melodie.xml', 20, 256)
+    load_score('schumann-melodie.xml', 256)
 
     # Schumann measure 1 starts with polyphonic notes:
     # - E5 (MIDI 76) in voice 1 (right hand)
@@ -182,7 +182,7 @@ class PianoTrainerTest < CapybaraTestBase
     # Measure 1: G4 whole note (tie-start)
     # Measure 2: G4 half (tie-stop) + F4 half (polyphonic, same timestamp)
     # The tied G4 in measure 2 should NOT require a new note-on if held
-    load_score('tied-notes.xml', 2, 3)
+    load_score('tied-notes.xml', 3)
 
     # Play G4 and HOLD it (don't release yet)
     simulate_midi_input("ON G4")
@@ -207,7 +207,7 @@ class PianoTrainerTest < CapybaraTestBase
       # Resize window to force more systems (one measure per system)
       page.current_window.resize_to(600, 1200)
 
-      load_score('schumann-melodie.xml', 20, 256)
+      load_score('schumann-melodie.xml', 256)
 
       # Capture initial scroll position (should be at top)
       initial_scroll_y = page.evaluate_script('window.scrollY')
@@ -226,9 +226,8 @@ class PianoTrainerTest < CapybaraTestBase
 
   private
 
-  def load_score(filename, expected_measures, expected_notes)
+  def load_score(filename, expected_notes)
     attach_file('musicxml-upload', File.expand_path("fixtures/#{filename}", __dir__))
-    assert_text "Extraction terminée: #{expected_measures} mesures, #{expected_notes} notes"
     assert_selector 'svg g.vf-stavenote', count: expected_notes
   end
 
