@@ -84,11 +84,11 @@ class PianoTrainerTest < CapybaraTestBase
     new_rect_x = page.find('svg rect.measure-click-area.selected')['x'].to_f
     assert new_rect_x != initial_rect_x, "Highlight should have moved"
 
-    # Play first note of measure 2 (A4 = MIDI 69)
+    # Play first notes of measure 2 (A4 = MIDI 69, F4 = MIDI 65 - polyphonic)
     replay_cassette('melodie-measure-2-first-note')
 
-    # Verify that exactly one note was validated
-    assert_selector 'svg g.vf-stavenote.played-note', count: 1
+    # Verify that both polyphonic notes were validated together
+    assert_selector 'svg g.vf-stavenote.played-note', count: 2
   end
 
   def test_cassette_recording_saves_valid_midi_data
@@ -142,6 +142,35 @@ class PianoTrainerTest < CapybaraTestBase
     # Check repeat indicators: should have 1 filled circle (1 clean repetition)
     # This verifies that duplicate notes at same timestamp are all validated
     assert_selector 'svg circle.repeat-indicator.filled', count: 1
+  end
+
+  def test_polyphonic_notes_must_be_held_together
+    load_score('schumann-melodie.xml', 20, 256)
+
+    # Schumann measure 1 starts with polyphonic notes:
+    # - E5 (MIDI 76) in voice 1 (right hand)
+    # - C4 (MIDI 60) in voice 5 (left hand)
+    # Both notes have the same timestamp and must be played together
+
+    # Play C4 (Note ON)
+    simulate_midi_input([144, 60, 80])
+
+    # The note should be highlighted while held
+    assert_selector 'svg g.vf-stavenote.active-note', count: 1
+
+    # Release C4 without having played E5 (Note OFF)
+    simulate_midi_input([128, 60, 64])
+
+    # The note should no longer be highlighted (not validated)
+    assert_no_selector 'svg g.vf-stavenote.active-note'
+    assert_no_selector 'svg g.vf-stavenote.played-note'
+
+    # Now play E5 alone (Note ON then OFF)
+    simulate_midi_input([144, 76, 80])
+    simulate_midi_input([128, 76, 64])
+
+    # Still no notes should be validated because they weren't held together
+    assert_no_selector 'svg g.vf-stavenote.played-note'
   end
 
   def test_autoscroll_when_moving_between_visual_systems
