@@ -11,6 +11,9 @@ let lastStaffY = null
 let currentSystemIndex = null
 let measureClickRectangles = []
 
+// Set of MIDI note numbers currently held down by the player
+let heldMidiNotes = new Set()
+
 // Padding around measure notes for clickable area
 const MEASURE_CLICK_PADDING = 15
 
@@ -84,6 +87,7 @@ function resetPlaybackState() {
   currentRepetitionIsClean = true
   lastStaffY = null
   currentSystemIndex = null
+  heldMidiNotes.clear()
 }
 
 async function loadMusicXML(event) {
@@ -183,6 +187,8 @@ function extractFromSourceMeasures(sourceMeasures) {
             for (const note of voiceEntry.notes) {
               if (!note.pitch) continue
               const noteInfo = pitchToMidiFromSourceNote(note.pitch)
+              // Check if this note is a tie continuation (not the start of the tie)
+              const isTieContinuation = note.NoteTie && note.NoteTie.StartNote !== note
               measureNotes.push({
                 note: note,
                 midiNumber: noteInfo.midiNote,
@@ -191,6 +197,7 @@ function extractFromSourceMeasures(sourceMeasures) {
                 measureIndex: measureIndex,
                 active: false,
                 played: false,
+                isTieContinuation: isTieContinuation,
               })
             }
           }
@@ -384,6 +391,9 @@ function jumpToMeasure(measureIndex) {
 
 // Activate a note when pressed (Note ON) - for polyphonic validation
 function activateNote(midiNote) {
+  // Track all held notes globally (for tie continuation validation)
+  heldMidiNotes.add(midiNote)
+
   if (!osmdInstance || allNotes.length === 0) return false
   if (currentMeasureIndex >= allNotes.length) return false
 
@@ -413,13 +423,20 @@ function activateNote(midiNote) {
     })
 
     // Check if ALL notes at this timestamp are now active
+    // For tie continuations, check if the MIDI note is currently held instead of requiring activation
     const notesAtTimestamp = measureData.notes.filter((n) => n.timestamp === expectedTimestamp)
-    const allActiveAtTimestamp = notesAtTimestamp.every((n) => n.active || n.played)
+    const allActiveAtTimestamp = notesAtTimestamp.every((n) => {
+      if (n.played) return true
+      if (n.active) return true
+      // Tie continuations are considered active if their MIDI note is currently held
+      if (n.isTieContinuation && heldMidiNotes.has(n.midiNumber)) return true
+      return false
+    })
 
     if (allActiveAtTimestamp) {
       // All polyphonic notes are held together - validate them all
       notesAtTimestamp.forEach((noteData) => {
-        if (noteData.active && !noteData.played) {
+        if (!noteData.played) {
           svgNote(noteData.note).classList.remove('active-note')
           svgNote(noteData.note).classList.add('played-note')
           noteData.played = true
@@ -448,6 +465,9 @@ function activateNote(midiNote) {
 
 // Deactivate a note when released (Note OFF) - for polyphonic validation
 function deactivateNote(midiNote) {
+  // Remove from held notes set
+  heldMidiNotes.delete(midiNote)
+
   if (!osmdInstance || allNotes.length === 0) return
   if (currentMeasureIndex >= allNotes.length) return
 

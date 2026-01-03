@@ -173,6 +173,28 @@ class PianoTrainerTest < CapybaraTestBase
     assert_no_selector 'svg g.vf-stavenote.played-note'
   end
 
+  def test_tied_notes_do_not_require_replay
+    # Load score with tied notes:
+    # Measure 1: G4 whole note (tie-start)
+    # Measure 2: G4 half (tie-stop) + F4 half (polyphonic, same timestamp)
+    # The tied G4 in measure 2 should NOT require a new note-on if held
+    load_score('tied-notes.xml', 2, 3)
+
+    # Play G4 and HOLD it (don't release yet)
+    simulate_midi_input([144, 67, 80])  # Note ON G4
+    assert_selector 'svg g.vf-stavenote.played-note', count: 1
+
+    # While holding G4, play F4 - both G4 tie-continuation and F4 should validate together
+    simulate_midi_input([144, 65, 80])  # Note ON F4
+    assert_selector 'svg g.vf-stavenote.played-note', count: 3
+
+    # Now release both notes
+    simulate_midi_input([128, 67, 64])  # Note OFF G4
+    simulate_midi_input([128, 65, 64])  # Note OFF F4
+
+    assert_text 'Partition terminée'
+  end
+
   def test_autoscroll_when_moving_between_visual_systems
     # Save original window size
     original_size = page.current_window.size
