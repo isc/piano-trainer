@@ -18,6 +18,7 @@ let state = {
 
 let callbacks = {
   onNotePlayed: null,
+  onNoteReleased: null,
 }
 
 export function initMidi() {
@@ -145,7 +146,11 @@ function parseMidiMessage(data, isReplay = false) {
     console.log(`Note ON ${isReplay ? 'replayed' : 'detected'}:`, noteNameStr)
   }
   if (statusType === NOTE_OFF || (statusType === NOTE_ON && velocity === 0)) {
-    console.log(`Note OFF ${isReplay ? 'replayed' : 'detected'}:`, noteName(note))
+    const noteNameStr = noteName(note)
+    if (callbacks.onNoteReleased) {
+      callbacks.onNoteReleased(noteNameStr, note)
+    }
+    console.log(`Note OFF ${isReplay ? 'replayed' : 'detected'}:`, noteNameStr)
   }
 }
 

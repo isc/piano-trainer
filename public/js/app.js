@@ -40,7 +40,10 @@ export function midiApp() {
 
       midi.setCallbacks({
         onNotePlayed: (noteName, midiNote) => {
-          musicxml.validatePlayedNote(midiNote)
+          musicxml.activateNote(midiNote)
+        },
+        onNoteReleased: (noteName, midiNote) => {
+          musicxml.deactivateNote(midiNote)
         },
       })
 

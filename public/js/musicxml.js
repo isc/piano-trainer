@@ -32,7 +32,8 @@ export function initMusicXML() {
     renderScore,
     renderMusicXML,
     extractNotesFromScore,
-    validatePlayedNote,
+    activateNote,
+    deactivateNote,
     resetProgress,
     clearScore,
     setCallbacks,
@@ -188,6 +189,7 @@ function extractFromSourceMeasures(sourceMeasures) {
                 noteName: noteInfo.noteName,
                 timestamp: measureIndex + voiceEntry.timestamp.realValue,
                 measureIndex: measureIndex,
+                active: false,
                 played: false,
               })
             }
@@ -220,7 +222,9 @@ function resetMeasureProgress(resetRepeatCount = true) {
 
   for (const noteData of measureData.notes) {
     svgNote(noteData.note).classList.remove('played-note')
+    svgNote(noteData.note).classList.remove('active-note')
     noteData.played = false
+    noteData.active = false
   }
 
   if (resetRepeatCount) {
@@ -378,121 +382,157 @@ function jumpToMeasure(measureIndex) {
   callbacks.onTrainingProgress?.(currentMeasureIndex, repeatCount, targetRepeatCount)
 }
 
-function validatePlayedNote(midiNote) {
+// Activate a note when pressed (Note ON) - for polyphonic validation
+function activateNote(midiNote) {
   if (!osmdInstance || allNotes.length === 0) return false
   if (currentMeasureIndex >= allNotes.length) return false
 
   const measureData = allNotes[currentMeasureIndex]
   if (!measureData || !measureData.notes || measureData.notes.length === 0) return false
 
-  const expectedNote = measureData.notes.find((n) => !n.played)
+  const expectedNote = measureData.notes.find((n) => !n.played && !n.active)
   if (!expectedNote) return false
 
   const expectedTimestamp = expectedNote.timestamp
 
-  // Find all notes at the expected timestamp with the matching MIDI number
+  // Find all notes at the expected timestamp with the matching MIDI number (not yet played or active)
   const matchingIndices = []
   for (let i = 0; i < measureData.notes.length; i++) {
     const noteData = measureData.notes[i]
-    if (!noteData.played && noteData.timestamp === expectedTimestamp && noteData.midiNumber === midiNote) {
+    if (!noteData.played && !noteData.active && noteData.timestamp === expectedTimestamp && noteData.midiNumber === midiNote) {
       matchingIndices.push(i)
     }
   }
 
   if (matchingIndices.length > 0) {
-    // Validate ALL matching notes (handles polyphonic notes with same pitch)
+    // Mark matching notes as active (highlighted but not validated yet)
     matchingIndices.forEach((index) => {
       const noteData = measureData.notes[index]
-      svgNote(noteData.note).classList.add('played-note')
-      measureData.notes[index].played = true
+      svgNote(noteData.note).classList.add('active-note')
+      measureData.notes[index].active = true
     })
-    // Use the first note for scroll calculations
-    const noteData = measureData.notes[matchingIndices[0]]
 
-    // Check if this was the first timestamp of the measure (could be multiple notes)
-    const playedCount = measureData.notes.filter((n) => n.played).length
-    const isFirstNoteOfMeasure = playedCount === matchingIndices.length
+    // Check if ALL notes at this timestamp are now active
+    const notesAtTimestamp = measureData.notes.filter((n) => n.timestamp === expectedTimestamp)
+    const allActiveAtTimestamp = notesAtTimestamp.every((n) => n.active || n.played)
 
-    if (isFirstNoteOfMeasure) {
-      const noteSystemIndex = getSystemIndexForNote(noteData.note)
-
-      // Scroll to score title when first note of first measure is played
-      if (currentMeasureIndex === 0) {
-        const scoreContainer = document.getElementById('score')
-        if (scoreContainer) {
-          scoreContainer.scrollIntoView({ behavior: 'smooth', block: 'start' })
-          // Store initial system index
-          currentSystemIndex = noteSystemIndex
-          // Also store the Y position for scroll calculation
-          const noteElement = svgNote(noteData.note)
-          const bbox = noteElement.getBBox()
-          lastStaffY = bbox.y
+    if (allActiveAtTimestamp) {
+      // All polyphonic notes are held together - validate them all
+      notesAtTimestamp.forEach((noteData) => {
+        if (noteData.active && !noteData.played) {
+          svgNote(noteData.note).classList.remove('active-note')
+          svgNote(noteData.note).classList.add('played-note')
+          noteData.played = true
+          noteData.active = false
         }
-      } else {
-        // Only scroll if we've moved to a new visual system (line)
-        if (currentSystemIndex !== null && noteSystemIndex !== currentSystemIndex) {
-          // We've moved to a new system, scroll to bring it into view
-          const noteElement = svgNote(noteData.note)
-          const bbox = noteElement.getBBox()
-          const currentY = bbox.y
+      })
 
-          // Calculate scroll amount based on actual Y position difference
-          if (lastStaffY !== null) {
-            const scrollAmount = currentY - lastStaffY
-            window.scrollBy({ top: scrollAmount, behavior: 'smooth' })
-          }
-
-          // Update tracking variables
-          currentSystemIndex = noteSystemIndex
-          lastStaffY = currentY
-        }
-      }
+      // Handle scroll and measure completion (use first validated note)
+      const firstValidatedNote = notesAtTimestamp[0]
+      handleNoteValidated(measureData, firstValidatedNote, notesAtTimestamp.length)
     }
 
-    const allNotesPlayed = measureData.notes.every((note) => note.played)
+    return true
+  } else {
+    // Wrong note - mark repetition as dirty in training mode
+    if (trainingMode) {
+      currentRepetitionIsClean = false
+    }
+    const expected = measureData.notes.find((n) => !n.played && !n.active)
+    if (expected) {
+      callbacks.onNoteError?.(expected.noteName, noteName(midiNote))
+    }
+    return false
+  }
+}
 
-    if (allNotesPlayed) {
-      if (trainingMode) {
-        if (currentRepetitionIsClean) {
-          repeatCount++
+// Deactivate a note when released (Note OFF) - for polyphonic validation
+function deactivateNote(midiNote) {
+  if (!osmdInstance || allNotes.length === 0) return
+  if (currentMeasureIndex >= allNotes.length) return
+
+  const measureData = allNotes[currentMeasureIndex]
+  if (!measureData || !measureData.notes || measureData.notes.length === 0) return
+
+  // Find active notes with this MIDI number and deactivate them
+  for (const noteData of measureData.notes) {
+    if (noteData.active && noteData.midiNumber === midiNote) {
+      svgNote(noteData.note).classList.remove('active-note')
+      noteData.active = false
+    }
+  }
+}
+
+// Helper function to handle post-validation logic (scroll, measure completion)
+function handleNoteValidated(measureData, noteData, validatedCount) {
+  // Check if this was the first timestamp of the measure
+  const playedCount = measureData.notes.filter((n) => n.played).length
+  const isFirstNoteOfMeasure = playedCount === validatedCount
+
+  if (isFirstNoteOfMeasure) {
+    const noteSystemIndex = getSystemIndexForNote(noteData.note)
+
+    // Scroll to score title when first note of first measure is played
+    if (currentMeasureIndex === 0) {
+      const scoreContainer = document.getElementById('score')
+      if (scoreContainer) {
+        scoreContainer.scrollIntoView({ behavior: 'smooth', block: 'start' })
+        currentSystemIndex = noteSystemIndex
+        const noteElement = svgNote(noteData.note)
+        const bbox = noteElement.getBBox()
+        lastStaffY = bbox.y
+      }
+    } else {
+      // Only scroll if we've moved to a new visual system (line)
+      if (currentSystemIndex !== null && noteSystemIndex !== currentSystemIndex) {
+        const noteElement = svgNote(noteData.note)
+        const bbox = noteElement.getBBox()
+        const currentY = bbox.y
+
+        if (lastStaffY !== null) {
+          const scrollAmount = currentY - lastStaffY
+          window.scrollBy({ top: scrollAmount, behavior: 'smooth' })
         }
-        callbacks.onTrainingProgress?.(currentMeasureIndex, repeatCount, targetRepeatCount)
 
-        if (repeatCount >= targetRepeatCount) {
-          if (currentMeasureIndex + 1 >= allNotes.length) {
-            callbacks.onTrainingComplete?.()
-          } else {
-            setTimeout(() => {
-              resetMeasureProgress()
-              currentMeasureIndex++
-              updateMeasureCursor()
-              callbacks.onTrainingProgress?.(currentMeasureIndex, repeatCount, targetRepeatCount)
-            }, TRAINING_RESET_DELAY_MS)
-          }
+        currentSystemIndex = noteSystemIndex
+        lastStaffY = currentY
+      }
+    }
+  }
+
+  const allNotesPlayed = measureData.notes.every((note) => note.played)
+
+  if (allNotesPlayed) {
+    if (trainingMode) {
+      if (currentRepetitionIsClean) {
+        repeatCount++
+      }
+      callbacks.onTrainingProgress?.(currentMeasureIndex, repeatCount, targetRepeatCount)
+
+      if (repeatCount >= targetRepeatCount) {
+        if (currentMeasureIndex + 1 >= allNotes.length) {
+          callbacks.onTrainingComplete?.()
         } else {
           setTimeout(() => {
-            resetMeasureProgress(false)
+            resetMeasureProgress()
+            currentMeasureIndex++
+            updateMeasureCursor()
             callbacks.onTrainingProgress?.(currentMeasureIndex, repeatCount, targetRepeatCount)
           }, TRAINING_RESET_DELAY_MS)
         }
       } else {
-        if (currentMeasureIndex + 1 < allNotes.length) {
-          currentMeasureIndex++
-        } else {
-          callbacks.onMeasureCompleted?.(currentMeasureIndex)
-        }
+        setTimeout(() => {
+          resetMeasureProgress(false)
+          callbacks.onTrainingProgress?.(currentMeasureIndex, repeatCount, targetRepeatCount)
+        }, TRAINING_RESET_DELAY_MS)
+      }
+    } else {
+      if (currentMeasureIndex + 1 < allNotes.length) {
+        currentMeasureIndex++
+      } else {
+        callbacks.onMeasureCompleted?.(currentMeasureIndex)
       }
     }
-    return true
-  } else {
-    if (trainingMode) {
-      currentRepetitionIsClean = false
-    }
-    const expectedNote = measureData.notes.find((n) => !n.played)
-    if (expectedNote) {
-      callbacks.onNoteError?.(expectedNote.noteName, noteName(midiNote))
-    }
-    return false
   }
 }
 
@@ -535,7 +575,9 @@ function resetProgress() {
   for (const measureData of allNotes) {
     for (const noteData of measureData.notes) {
       svgNote(noteData.note).classList.remove('played-note')
+      svgNote(noteData.note).classList.remove('active-note')
       noteData.played = false
+      noteData.active = false
     }
   }
   resetPlaybackState()

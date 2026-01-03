@@ -7,6 +7,11 @@ svg g.played-note .vf-notehead path {
   fill: #22c55e;
 }
 
+/* Note actively pressed but not yet validated (waiting for polyphonic notes) */
+svg g.active-note .vf-notehead path {
+  fill: #f59e0b;
+}
+
 /* Clickable areas for measures in training mode */
 .measure-click-area {
   fill: transparent;
