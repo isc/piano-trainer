@@ -45,7 +45,7 @@ export function midiApp() {
       })
 
       musicxml.setCallbacks({
-        onMeasureCompleted: (measureIndex) => {
+        onScoreCompleted: (measureIndex) => {
           if (!this.trainingMode) {
             this.showScoreComplete()
           }

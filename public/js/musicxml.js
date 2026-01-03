@@ -22,7 +22,7 @@ const TRAINING_RESET_DELAY_MS = 200
 
 let callbacks = {
   onNotesExtracted: null,
-  onMeasureCompleted: null,
+  onScoreCompleted: null,
   onNoteError: null,
   onTrainingProgress: null,
   onTrainingComplete: null,
@@ -555,7 +555,7 @@ function handleNoteValidated(measureData, noteData, validatedCount) {
       if (currentMeasureIndex + 1 < allNotes.length) {
         currentMeasureIndex++
       } else {
-        callbacks.onMeasureCompleted?.(currentMeasureIndex)
+        callbacks.onScoreCompleted?.(currentMeasureIndex)
       }
     }
   }
