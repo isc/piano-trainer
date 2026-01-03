@@ -425,13 +425,9 @@ function activateNote(midiNote) {
     // Check if ALL notes at this timestamp are now active
     // For tie continuations, check if the MIDI note is currently held instead of requiring activation
     const notesAtTimestamp = measureData.notes.filter((n) => n.timestamp === expectedTimestamp)
-    const allActiveAtTimestamp = notesAtTimestamp.every((n) => {
-      if (n.played) return true
-      if (n.active) return true
-      // Tie continuations are considered active if their MIDI note is currently held
-      if (n.isTieContinuation && heldMidiNotes.has(n.midiNumber)) return true
-      return false
-    })
+    const allActiveAtTimestamp = notesAtTimestamp.every((n) =>
+      n.played || n.active || (n.isTieContinuation && heldMidiNotes.has(n.midiNumber))
+    )
 
     if (allActiveAtTimestamp) {
       // All polyphonic notes are held together - validate them all
