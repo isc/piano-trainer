@@ -61,9 +61,6 @@
 
       <article x-show="scoreProgress != null || errorMessage != null">
         <div class="score-progress" x-text="scoreProgress || ''"></div>
-        <div>
-          <small x-text="extractionStatus || ''"></small>
-        </div>
         <div x-show="errorMessage != null" class="error-message" x-text="errorMessage" x-transition></div>
       </article>
 
