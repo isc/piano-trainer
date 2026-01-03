@@ -39,8 +39,8 @@ class CapybaraTestBase < Minitest::Test
   private
 
   def parse_midi_notation(notation)
-    # Parse notation like "ON C4" or "OFF C4"
-    match = notation.match(/^(ON|OFF)\s+([A-G]#?)?(\d+)$/)
+    # Parse notation like "ON C4", "OFF C#4", or "ON G#5"
+    match = notation.match(/^(ON|OFF)\s+([A-G]#?)(\d+)$/)
     raise "Invalid MIDI notation: #{notation}" unless match
 
     status_str, note_name, octave_str = match.captures
