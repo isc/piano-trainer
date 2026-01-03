@@ -68,7 +68,10 @@ async function connectMIDI(options = {}) {
     } else {
       // Show selection dialog
       const inputNames = inputs.map((input, i) => `${i + 1}. ${input.name || 'Périphérique inconnu'}`).join('\n')
-      const choice = prompt(`Plusieurs périphériques MIDI trouvés:\n${inputNames}\n\nEntrez le numéro (1-${inputs.length}):`, '1')
+      const choice = prompt(
+        `Plusieurs périphériques MIDI trouvés:\n${inputNames}\n\nEntrez le numéro (1-${inputs.length}):`,
+        '1',
+      )
 
       if (choice) {
         const index = parseInt(choice, 10) - 1

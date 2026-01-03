@@ -409,7 +409,12 @@ function activateNote(midiNote) {
   const matchingIndices = []
   for (let i = 0; i < measureData.notes.length; i++) {
     const noteData = measureData.notes[i]
-    if (!noteData.played && !noteData.active && noteData.timestamp === expectedTimestamp && noteData.midiNumber === midiNote) {
+    if (
+      !noteData.played &&
+      !noteData.active &&
+      noteData.timestamp === expectedTimestamp &&
+      noteData.midiNumber === midiNote
+    ) {
       matchingIndices.push(i)
     }
   }
@@ -425,8 +430,8 @@ function activateNote(midiNote) {
     // Check if ALL notes at this timestamp are now active
     // For tie continuations, check if the MIDI note is currently held instead of requiring activation
     const notesAtTimestamp = measureData.notes.filter((n) => n.timestamp === expectedTimestamp)
-    const allActiveAtTimestamp = notesAtTimestamp.every((n) =>
-      n.played || n.active || (n.isTieContinuation && heldMidiNotes.has(n.midiNumber))
+    const allActiveAtTimestamp = notesAtTimestamp.every(
+      (n) => n.played || n.active || (n.isTieContinuation && heldMidiNotes.has(n.midiNumber)),
     )
 
     if (allActiveAtTimestamp) {
