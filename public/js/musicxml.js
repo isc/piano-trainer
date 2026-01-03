@@ -190,11 +190,11 @@ function extractFromSourceMeasures(sourceMeasures) {
               // Check if this note is a tie continuation (not the start of the tie)
               const isTieContinuation = note.NoteTie && note.NoteTie.StartNote !== note
               measureNotes.push({
-                note: note,
+                note,
                 midiNumber: noteInfo.midiNote,
                 noteName: noteInfo.noteName,
                 timestamp: measureIndex + voiceEntry.timestamp.realValue,
-                measureIndex: measureIndex,
+                measureIndex,
                 active: false,
                 played: false,
                 isTieContinuation,
@@ -207,7 +207,7 @@ function extractFromSourceMeasures(sourceMeasures) {
 
     if (measureNotes.length > 0) {
       allNotes.push({
-        measureIndex: measureIndex,
+        measureIndex,
         notes: measureNotes,
       })
     }
