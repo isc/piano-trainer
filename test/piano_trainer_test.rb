@@ -14,21 +14,21 @@ class PianoTrainerTest < CapybaraTestBase
 
   def test_note_highlighting_when_playing_complex_score
     load_score('schumann-melodie.xml', 256)
-    assert_no_selector 'svg g.vf-stavenote.played-note'
+    assert_no_selector 'svg g.vf-notehead.played-note'
 
     replay_cassette('melodie-2-bars', wait_for_end: false)
 
-    assert_selector 'svg g.vf-stavenote.played-note', minimum: 5
-    assert first('svg g.vf-stavenote')[:class].include?('played-note')
+    assert_selector 'svg g.vf-notehead.played-note', minimum: 5
+    assert first('svg g.vf-notehead')[:class].include?('played-note')
   end
 
   def test_notes_must_be_played_in_correct_order
     load_score('simple-score.xml', 4)
-    assert_no_selector 'svg g.vf-stavenote.played-note'
+    assert_no_selector 'svg g.vf-notehead.played-note'
 
     replay_cassette('simple-score-wrong-order')
 
-    assert_selector 'svg g.vf-stavenote.played-note', count: 3
+    assert_selector 'svg g.vf-notehead.played-note', count: 3
     assert_no_text 'Partition terminée'
   end
 
@@ -44,9 +44,9 @@ class PianoTrainerTest < CapybaraTestBase
     replay_cassette('simple-score-3-repeats', wait_for_end: false)
 
     # Verify visual transitions during playback
-    assert_selector 'svg g.vf-stavenote.played-note', count: 4  # After 1st repetition
-    assert_selector 'svg g.vf-stavenote.played-note', count: 0  # After automatic reset (500ms)
-    assert_selector 'svg g.vf-stavenote.played-note', minimum: 1, maximum: 3  # During 2nd repetition
+    assert_selector 'svg g.vf-notehead.played-note', count: 4  # After 1st repetition
+    assert_selector 'svg g.vf-notehead.played-note', count: 0  # After automatic reset (500ms)
+    assert_selector 'svg g.vf-notehead.played-note', minimum: 1, maximum: 3  # During 2nd repetition
 
     assert_text 'Rejeu terminé'
     assert_text 'Félicitations'
@@ -88,7 +88,7 @@ class PianoTrainerTest < CapybaraTestBase
     replay_cassette('melodie-measure-2-first-note')
 
     # Verify that both polyphonic notes were validated together
-    assert_selector 'svg g.vf-stavenote.played-note', count: 2
+    assert_selector 'svg g.vf-notehead.played-note', count: 2
   end
 
   def test_cassette_recording_saves_valid_midi_data
@@ -160,21 +160,21 @@ class PianoTrainerTest < CapybaraTestBase
     simulate_midi_input("ON C4")
 
     # The note should be highlighted while held
-    assert_selector 'svg g.vf-stavenote.active-note', count: 1
+    assert_selector 'svg g.vf-notehead.active-note', count: 1
 
     # Release C4 without having played E5 (Note OFF)
     simulate_midi_input("OFF C4")
 
     # The note should no longer be highlighted (not validated)
-    assert_no_selector 'svg g.vf-stavenote.active-note'
-    assert_no_selector 'svg g.vf-stavenote.played-note'
+    assert_no_selector 'svg g.vf-notehead.active-note'
+    assert_no_selector 'svg g.vf-notehead.played-note'
 
     # Now play E5 alone (Note ON then OFF)
     simulate_midi_input("ON E5")
     simulate_midi_input("OFF E5")
 
     # Still no notes should be validated because they weren't held together
-    assert_no_selector 'svg g.vf-stavenote.played-note'
+    assert_no_selector 'svg g.vf-notehead.played-note'
   end
 
   def test_tied_notes_do_not_require_replay
@@ -186,17 +186,29 @@ class PianoTrainerTest < CapybaraTestBase
 
     # Play G4 and HOLD it (don't release yet)
     simulate_midi_input("ON G4")
-    assert_selector 'svg g.vf-stavenote.played-note', count: 1
+    assert_selector 'svg g.vf-notehead.played-note', count: 1
 
     # While holding G4, play F4 - both G4 tie-continuation and F4 should validate together
     simulate_midi_input("ON F4")
-    assert_selector 'svg g.vf-stavenote.played-note', count: 3
+    assert_selector 'svg g.vf-notehead.played-note', count: 3
 
     # Now release both notes
     simulate_midi_input("OFF G4")
     simulate_midi_input("OFF F4")
 
     assert_text 'Partition terminée'
+  end
+
+  def test_chord_activates_only_pressed_note
+    # Load score with C major chord (C4, E4, G4 at same timestamp)
+    # A chord is a single vf-stavenote element with multiple noteheads
+    load_score('chord.xml', 1)
+
+    # Play only C4 - only C4's notehead should be orange, not E4 and G4
+    simulate_midi_input("ON C4")
+
+    assert_selector 'svg g.vf-notehead.active-note', count: 1
+    assert_no_selector 'svg g.vf-notehead.played-note'
   end
 
   def test_autoscroll_when_moving_between_visual_systems

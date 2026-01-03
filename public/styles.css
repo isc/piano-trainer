@@ -5,12 +5,13 @@
   background-color: white;
 }
 
-svg g.played-note .vf-notehead path {
+/* Validated note - green */
+svg g.vf-notehead.played-note path {
   fill: #22c55e;
 }
 
 /* Note actively pressed but not yet validated (waiting for polyphonic notes) */
-svg g.active-note .vf-notehead path {
+svg g.vf-notehead.active-note path {
   fill: #f59e0b;
 }
 

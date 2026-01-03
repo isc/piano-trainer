@@ -184,7 +184,8 @@ function extractFromSourceMeasures(sourceMeasures) {
           if (!staffEntry?.voiceEntries) continue
           for (const voiceEntry of staffEntry.voiceEntries) {
             if (!voiceEntry.notes) continue
-            for (const note of voiceEntry.notes) {
+            for (let noteIndex = 0; noteIndex < voiceEntry.notes.length; noteIndex++) {
+              const note = voiceEntry.notes[noteIndex]
               if (!note.pitch) continue
               const noteInfo = pitchToMidiFromSourceNote(note.pitch)
               // Check if this note is a tie continuation (not the start of the tie)
@@ -198,6 +199,9 @@ function extractFromSourceMeasures(sourceMeasures) {
                 active: false,
                 played: false,
                 isTieContinuation,
+                // Index of the notehead within the chord (for targeting individual noteheads in SVG)
+                noteheadIndex: noteIndex,
+                noteheadCount: voiceEntry.notes.filter((n) => n.pitch).length,
               })
             }
           }
@@ -228,8 +232,8 @@ function resetMeasureProgress(resetRepeatCount = true) {
   if (!measureData) return
 
   for (const noteData of measureData.notes) {
-    svgNote(noteData.note).classList.remove('played-note')
-    svgNote(noteData.note).classList.remove('active-note')
+    svgNotehead(noteData).classList.remove('played-note')
+    svgNotehead(noteData).classList.remove('active-note')
     noteData.played = false
     noteData.active = false
   }
@@ -423,7 +427,7 @@ function activateNote(midiNote) {
     // Mark matching notes as active (highlighted but not validated yet)
     matchingIndices.forEach((index) => {
       const noteData = measureData.notes[index]
-      svgNote(noteData.note).classList.add('active-note')
+      svgNotehead(noteData).classList.add('active-note')
       measureData.notes[index].active = true
     })
 
@@ -438,8 +442,8 @@ function activateNote(midiNote) {
       // All polyphonic notes are held together - validate them all
       notesAtTimestamp.forEach((noteData) => {
         if (!noteData.played) {
-          svgNote(noteData.note).classList.remove('active-note')
-          svgNote(noteData.note).classList.add('played-note')
+          svgNotehead(noteData).classList.remove('active-note')
+          svgNotehead(noteData).classList.add('played-note')
           noteData.played = true
           noteData.active = false
         }
@@ -478,7 +482,7 @@ function deactivateNote(midiNote) {
   // Find active notes with this MIDI number and deactivate them
   for (const noteData of measureData.notes) {
     if (noteData.active && noteData.midiNumber === midiNote) {
-      svgNote(noteData.note).classList.remove('active-note')
+      svgNotehead(noteData).classList.remove('active-note')
       noteData.active = false
     }
   }
@@ -561,6 +565,15 @@ function svgNote(note) {
   return osmdInstance.rules.GNote(note).getSVGGElement()
 }
 
+// Get the specific notehead element for a note (handles chords correctly)
+function svgNotehead(noteData) {
+  const svgGroup = svgNote(noteData.note)
+  if (!svgGroup) return null
+
+  const noteheads = svgGroup.querySelectorAll('.vf-notehead')
+  return noteheads[noteData.noteheadIndex]
+}
+
 function getSystemIndexForNote(note) {
   try {
     // Navigate up the OSMD hierarchy: note → parentVoiceEntry → parentStaffEntry → parentMeasure
@@ -595,8 +608,8 @@ function resetProgress() {
 
   for (const measureData of allNotes) {
     for (const noteData of measureData.notes) {
-      svgNote(noteData.note).classList.remove('played-note')
-      svgNote(noteData.note).classList.remove('active-note')
+      svgNotehead(noteData).classList.remove('played-note')
+      svgNotehead(noteData).classList.remove('active-note')
       noteData.played = false
       noteData.active = false
     }
