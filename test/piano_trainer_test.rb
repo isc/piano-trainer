@@ -221,15 +221,25 @@ class PianoTrainerTest < CapybaraTestBase
 
       load_score('schumann-melodie.xml', 256)
 
-      # Capture initial scroll position (should be at top)
-      initial_scroll_y = page.evaluate_script('window.scrollY')
-
-      # Play cassette that goes from measure 0 to measure 1 (different systems)
+      # Play cassette (measures 0-1, minus the very last note)
+      # This brings us to the last note of measure 1 (end of first system)
       replay_cassette('melodie-2-bars')
 
-      # Verify that scroll position has changed (scrolled down)
-      final_scroll_y = page.evaluate_script('window.scrollY')
-      assert final_scroll_y > initial_scroll_y, "Page should have scrolled down when moving to next system (initial: #{initial_scroll_y}, final: #{final_scroll_y})"
+      # Capture scroll position before playing the last note
+      scroll_before_last_note = page.evaluate_script('window.scrollY')
+
+      # Simulate the last note of measure 1 (D4)
+      # This should trigger the scroll to next system
+      simulate_midi_input('ON D4')
+      simulate_midi_input('OFF D4')
+
+      # Wait for smooth scroll animation to complete
+      sleep 0.3
+
+      # Verify that scroll position has changed (scrolled down to next system)
+      scroll_after_last_note = page.evaluate_script('window.scrollY')
+
+      assert scroll_after_last_note > scroll_before_last_note, "Page should have scrolled down when completing last note of first system (before: #{scroll_before_last_note}, after: #{scroll_after_last_note})"
     ensure
       # Always restore original window size for subsequent tests
       page.current_window.resize_to(*original_size)

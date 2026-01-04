@@ -134,18 +134,22 @@ export function midiApp() {
       // Load the MusicXML file (this will trigger callbacks that set the state)
       await musicxml.loadMusicXML(event)
       this.osmdInstance = musicxml.getOsmdInstance()
+      await this.waitForDOMAndRender()
       await this.requestWakeLock()
     },
 
     async loadScoreFromURL(url) {
       await musicxml.loadFromURL(url)
       this.osmdInstance = musicxml.getOsmdInstance()
+      await this.waitForDOMAndRender()
+      await this.requestWakeLock()
+    },
 
+    async waitForDOMAndRender() {
       // Wait for Alpine to update DOM (show #score container), then render
       await this.$nextTick()
       await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)))
       musicxml.renderScore()
-      await this.requestWakeLock()
     },
 
     async requestWakeLock() {
