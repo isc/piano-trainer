@@ -20,5 +20,16 @@ export function libraryApp() {
     getScoreUrl(score) {
       return this.baseUrl + score.file
     },
+
+    loadScoreWithFullscreen(scoreUrl) {
+      // Request fullscreen while still in user gesture context
+      if (document.documentElement.requestFullscreen) {
+        document.documentElement.requestFullscreen().catch(err => {
+          console.warn('Fullscreen non disponible:', err)
+        })
+      }
+      // Navigate to score page
+      window.location.href = 'score.html?url=' + encodeURIComponent(scoreUrl)
+    },
   }
 }

@@ -142,12 +142,14 @@ export function midiApp() {
       await musicxml.loadFromURL(url)
       this.osmdInstance = musicxml.getOsmdInstance()
 
+      // Request fullscreen early, before more awaits
+      this.requestFullscreen()
+
       // Wait for Alpine to update DOM (show #score container), then render
       await this.$nextTick()
       await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)))
       musicxml.renderScore()
       await this.requestWakeLock()
-      this.requestFullscreen()
     },
 
     async requestWakeLock() {

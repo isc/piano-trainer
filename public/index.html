@@ -41,7 +41,7 @@
           <template x-for="score in filteredScores" :key="score.file">
             <tr>
               <td>
-                <a :href="'score.html?url=' + encodeURIComponent(getScoreUrl(score))" x-text="score.title"></a>
+                <a href="#" @click.prevent="loadScoreWithFullscreen(getScoreUrl(score))" x-text="score.title"></a>
               </td>
               <td x-text="score.composer"></td>
             </tr>
