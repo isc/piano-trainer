@@ -135,6 +135,7 @@ export function midiApp() {
       await musicxml.loadMusicXML(event)
       this.osmdInstance = musicxml.getOsmdInstance()
       await this.requestWakeLock()
+      await this.requestFullscreen()
     },
 
     async loadScoreFromURL(url) {
@@ -146,6 +147,7 @@ export function midiApp() {
       await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)))
       musicxml.renderScore()
       await this.requestWakeLock()
+      await this.requestFullscreen()
     },
 
     async requestWakeLock() {
@@ -154,6 +156,17 @@ export function midiApp() {
           await navigator.wakeLock.request('screen')
         } catch (err) {
           console.warn('Wake lock non disponible:', err)
+        }
+      }
+    },
+
+    async requestFullscreen() {
+      const elem = document.documentElement
+      if (elem.requestFullscreen) {
+        try {
+          await elem.requestFullscreen()
+        } catch (err) {
+          console.warn('Fullscreen non disponible:', err)
         }
       }
     },
