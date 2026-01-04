@@ -764,10 +764,19 @@ function handleNoteValidated(measureData, noteData, validatedCount) {
         // Check if next measure's source has been played before (repeat)
         const nextSourceMeasure = allNotes[currentMeasureIndex + 1].sourceMeasureIndex
         if (playedSourceMeasures.has(nextSourceMeasure)) {
-          // Reset visual state only for source measures that will be replayed
-          // (from repeat start up to but NOT including current measure which is volta 1)
+          // Check if current measure will be replayed (appears later in playback sequence)
+          // If yes (simple repeat), reset it. If no (volta 1 ending), don't reset it.
+          const currentMeasureWillBeReplayed = allNotes
+            .slice(currentMeasureIndex + 1)
+            .some((m) => m.sourceMeasureIndex === currentSourceMeasure)
+
+          // Reset visual state for source measures that will be replayed
           for (const sourceMeasureIndex of playedSourceMeasures) {
-            if (sourceMeasureIndex >= nextSourceMeasure && sourceMeasureIndex < currentSourceMeasure) {
+            const shouldReset =
+              sourceMeasureIndex >= nextSourceMeasure &&
+              (sourceMeasureIndex < currentSourceMeasure ||
+                (sourceMeasureIndex === currentSourceMeasure && currentMeasureWillBeReplayed))
+            if (shouldReset) {
               resetSourceMeasureVisualState(sourceMeasureIndex)
             }
           }
