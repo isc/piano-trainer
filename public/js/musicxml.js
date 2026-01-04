@@ -220,6 +220,9 @@ function extractFromSourceMeasures(sourceMeasures) {
     // Adjust grace note timestamps so they are played sequentially before main notes
     adjustGraceNoteTimestamps(measureNotes)
 
+    // Ensure notes are ordered by (possibly adjusted) timestamp for sequential validation
+    measureNotes.sort((a, b) => a.timestamp - b.timestamp)
+
     if (measureNotes.length > 0) {
       allNotes.push({
         measureIndex,
