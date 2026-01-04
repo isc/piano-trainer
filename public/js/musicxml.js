@@ -27,6 +27,9 @@ let callbacks = {
   onTrainingComplete: null,
 }
 
+// Hand selection: by default both hands are active
+let activeHands = { right: true, left: true }
+
 export function initMusicXML() {
   return {
     loadMusicXML,
@@ -39,6 +42,9 @@ export function initMusicXML() {
     resetProgress,
     clearScore,
     setCallbacks,
+    setActiveHands: (hands) => {
+      activeHands = { ...activeHands, ...hands }
+    },
     getOsmdInstance: () => osmdInstance,
     getTrainingState: () => ({
       trainingMode,
@@ -77,6 +83,15 @@ export function initMusicXML() {
 
 function setCallbacks(cbs) {
   callbacks = { ...callbacks, ...cbs }
+}
+
+// Check if a note should be considered based on active hands
+function isNoteActiveForHands(noteData) {
+  // Staff 0 = right hand, Staff 1+ = left hand
+  if (noteData.staffIndex === 0) {
+    return activeHands.right
+  }
+  return activeHands.left
 }
 
 function resetPlaybackState() {
@@ -192,6 +207,8 @@ function extractFromSourceMeasures(sourceMeasures) {
                 // Index of the notehead within the chord (for targeting individual noteheads in SVG)
                 noteheadIndex: noteIndex,
                 noteheadCount: voiceEntry.notes.filter((n) => n.pitch).length,
+                // Staff 0 = right hand (treble clef), Staff 1 = left hand (bass clef)
+                staffIndex,
               })
             }
           }
@@ -394,16 +411,20 @@ function activateNote(midiNote) {
   const measureData = allNotes[currentMeasureIndex]
   if (!measureData || !measureData.notes || measureData.notes.length === 0) return false
 
-  const expectedNote = measureData.notes.find((n) => !n.played && !n.active)
+  // Filter notes by active hands
+  const activeNotes = measureData.notes.filter((n) => isNoteActiveForHands(n))
+  const expectedNote = activeNotes.find((n) => !n.played && !n.active)
   if (!expectedNote) return false
 
   const expectedTimestamp = expectedNote.timestamp
 
   // Find all notes at the expected timestamp with the matching MIDI number (not yet played or active)
+  // Only consider notes from active hands
   const matchingIndices = []
   for (let i = 0; i < measureData.notes.length; i++) {
     const noteData = measureData.notes[i]
     if (
+      isNoteActiveForHands(noteData) &&
       !noteData.played &&
       !noteData.active &&
       noteData.timestamp === expectedTimestamp &&
@@ -421,9 +442,11 @@ function activateNote(midiNote) {
       measureData.notes[index].active = true
     })
 
-    // Check if ALL notes at this timestamp are now active
+    // Check if ALL notes at this timestamp are now active (only for active hands)
     // For tie continuations, check if the MIDI note is currently held instead of requiring activation
-    const notesAtTimestamp = measureData.notes.filter((n) => n.timestamp === expectedTimestamp)
+    const notesAtTimestamp = measureData.notes.filter(
+      (n) => n.timestamp === expectedTimestamp && isNoteActiveForHands(n),
+    )
     const allActiveAtTimestamp = notesAtTimestamp.every(
       (n) => n.played || n.active || (n.isTieContinuation && heldMidiNotes.has(n.midiNumber)),
     )
@@ -450,7 +473,7 @@ function activateNote(midiNote) {
     if (trainingMode) {
       currentRepetitionIsClean = false
     }
-    const expected = measureData.notes.find((n) => !n.played && !n.active)
+    const expected = activeNotes.find((n) => !n.played && !n.active)
     if (expected) {
       callbacks.onNoteError?.(expected.noteName, noteName(midiNote))
     }
@@ -497,7 +520,9 @@ function handleNoteValidated(measureData, noteData, validatedCount) {
     lastStaffY = bbox.y
   }
 
-  const allNotesPlayed = measureData.notes.every((note) => note.played)
+  // Only consider notes from active hands when checking if measure is complete
+  const activeNotesInMeasure = measureData.notes.filter((n) => isNoteActiveForHands(n))
+  const allNotesPlayed = activeNotesInMeasure.every((note) => note.played)
 
   if (allNotesPlayed) {
     // Check if next measure is on a different system - if so, scroll now
