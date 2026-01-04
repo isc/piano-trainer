@@ -1,3 +1,10 @@
+/* Header with flexbox alignment */
+main > section:first-of-type {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
 /* Full-width score section to maximize measures per staff */
 #score {
   width: 100vw;
