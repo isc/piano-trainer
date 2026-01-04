@@ -204,6 +204,7 @@ function extractFromSourceMeasures(sourceMeasures) {
                 active: false,
                 played: false,
                 isTieContinuation,
+                isGrace: voiceEntry.isGrace === true,
                 // Index of the notehead within the chord (for targeting individual noteheads in SVG)
                 noteheadIndex: noteIndex,
                 noteheadCount: voiceEntry.notes.filter((n) => n.pitch).length,
@@ -216,6 +217,9 @@ function extractFromSourceMeasures(sourceMeasures) {
       }
     })
 
+    // Adjust grace note timestamps so they are played sequentially before main notes
+    adjustGraceNoteTimestamps(measureNotes)
+
     if (measureNotes.length > 0) {
       allNotes.push({
         measureIndex,
@@ -223,6 +227,34 @@ function extractFromSourceMeasures(sourceMeasures) {
       })
     }
   })
+}
+
+// Grace notes should be played before the main note, not held together with it.
+// This function adjusts their timestamps to be slightly earlier than the main note.
+function adjustGraceNoteTimestamps(measureNotes) {
+  const GRACE_NOTE_OFFSET = 0.0001
+
+  // Group grace notes by their original timestamp
+  const graceNotesByTimestamp = new Map()
+  for (const noteData of measureNotes) {
+    if (noteData.isGrace) {
+      const ts = noteData.timestamp
+      if (!graceNotesByTimestamp.has(ts)) {
+        graceNotesByTimestamp.set(ts, [])
+      }
+      graceNotesByTimestamp.get(ts).push(noteData)
+    }
+  }
+
+  // Adjust timestamps: each grace note gets an earlier timestamp
+  for (const [timestamp, graceNotes] of graceNotesByTimestamp) {
+    // Grace notes are ordered, first one should be played first (earliest timestamp)
+    for (let i = 0; i < graceNotes.length; i++) {
+      // Subtract offset so grace notes come before main note
+      // Earlier grace notes get larger offset (played first)
+      graceNotes[i].timestamp = timestamp - (graceNotes.length - i) * GRACE_NOTE_OFFSET
+    }
+  }
 }
 
 function pitchToMidiFromSourceNote(pitch) {

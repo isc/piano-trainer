@@ -241,6 +241,31 @@ class PianoTrainerTest < CapybaraTestBase
     assert_selector 'svg g.vf-notehead.played-note', count: 1
   end
 
+  def test_grace_notes_played_sequentially_before_main_note
+    # Grace notes (ornaments) are played quickly before the main note.
+    # They should be validated sequentially, NOT held together with the main note.
+    # Score has: E4 (grace) -> F4 (grace) -> G4 (main)
+    load_score('grace-note.xml', 3)
+
+    # Play grace note E4 first
+    simulate_midi_input("ON E4")
+    assert_selector 'svg g.vf-notehead.played-note', count: 1
+    simulate_midi_input("OFF E4")
+
+    # Play grace note F4 second
+    simulate_midi_input("ON F4")
+    assert_selector 'svg g.vf-notehead.played-note', count: 2
+    simulate_midi_input("OFF F4")
+
+    # Play main note G4 last
+    simulate_midi_input("ON G4")
+    assert_selector 'svg g.vf-notehead.played-note', count: 3
+    simulate_midi_input("OFF G4")
+
+    # Score should be completed
+    assert_text 'Partition terminée'
+  end
+
   def test_autoscroll_when_moving_between_visual_systems
     # Save original window size
     original_size = page.current_window.size
@@ -255,19 +280,16 @@ class PianoTrainerTest < CapybaraTestBase
       # This brings us to the last note of measure 1 (end of first system)
       replay_cassette('melodie-2-bars')
 
-      # Capture scroll position before playing the last note
-      scroll_before_last_note = page.evaluate_script('window.scrollY')
+      # Wait for scroll to stabilize before capturing position
+      scroll_before_last_note = wait_for_stable_scroll
 
       # Simulate the last note of measure 1 (D4)
       # This should trigger the scroll to next system
       simulate_midi_input('ON D4')
       simulate_midi_input('OFF D4')
 
-      # Wait for smooth scroll animation to complete
-      sleep 0.1
-
-      # Verify that scroll position has changed (scrolled down to next system)
-      scroll_after_last_note = page.evaluate_script('window.scrollY')
+      # Wait for scroll to change from initial value, then stabilize
+      scroll_after_last_note = wait_for_stable_scroll(expect_change_from: scroll_before_last_note)
 
       assert scroll_after_last_note > scroll_before_last_note, "Page should have scrolled down when completing last note of first system (before: #{scroll_before_last_note}, after: #{scroll_after_last_note})"
     ensure
@@ -292,6 +314,34 @@ class PianoTrainerTest < CapybaraTestBase
 
   def click_measure(measure_number)
     page.all('svg rect.measure-click-area')[measure_number - 1].trigger('click')
+  end
+
+  # Wait for scroll position to stabilize (stop changing)
+  # If expect_change is true, first wait for the scroll to change from initial value
+  def wait_for_stable_scroll(expect_change_from: nil, max_iterations: 100, interval: 0.01)
+    last_scroll = nil
+    stable_count = 0
+    changed = expect_change_from.nil?
+
+    max_iterations.times do
+      current_scroll = page.evaluate_script('window.scrollY')
+
+      # If we expect a change, wait for scroll to differ from initial value
+      if !changed && current_scroll != expect_change_from
+        changed = true
+      end
+
+      if changed && current_scroll == last_scroll
+        stable_count += 1
+        return current_scroll if stable_count >= 3
+      else
+        stable_count = 0
+        last_scroll = current_scroll
+      end
+      sleep interval
+    end
+
+    last_scroll
   end
 
   # Helper method to display the browser console logs.
