@@ -36,8 +36,19 @@
         <type>whole</type>
       </note>
     </measure>
-    <!-- Measure 2: E4 - first ending (volta 1) with backward repeat -->
+    <!-- Measure 2: D4 - part of repeat section (will be replayed) -->
     <measure number="2">
+      <note>
+        <duration>16</duration>
+        <pitch>
+          <step>D</step>
+          <octave>4</octave>
+        </pitch>
+        <type>whole</type>
+      </note>
+    </measure>
+    <!-- Measure 3: E4 - first ending (volta 1) with backward repeat -->
+    <measure number="3">
       <barline location="left">
         <ending number="1" type="start"/>
       </barline>
@@ -55,8 +66,8 @@
         <repeat direction="backward"/>
       </barline>
     </measure>
-    <!-- Measure 3: F4 - second ending (volta 2) -->
-    <measure number="3">
+    <!-- Measure 4: F4 - second ending (volta 2) -->
+    <measure number="4">
       <barline location="left">
         <ending number="2" type="start"/>
       </barline>

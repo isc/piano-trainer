@@ -11,6 +11,7 @@ let currentRepetitionIsClean = true
 let lastStaffY = null
 let currentSystemIndex = null
 let measureClickRectangles = []
+let playedSourceMeasures = new Set() // Track source measures that have been fully played
 
 // Repetition instruction types from OSMD
 const RepetitionType = {
@@ -50,9 +51,11 @@ function buildPlaybackSequence(sourceMeasures) {
     // Check for StartLine at the beginning of this measure
     const hasStartLine = firstInstructions.some((ri) => ri.type === RepetitionType.StartLine)
     if (hasStartLine) {
+      // Check before updating repeatStartIndex: are we returning from a backward jump?
+      const isReturningToRepeatStart = currentPass === 2 && i === repeatStartIndex
       repeatStartIndex = i
       // Only reset pass if we're starting a new repeat section (not coming back from a jump)
-      if (currentPass !== 2 || i !== repeatStartIndex) {
+      if (!isReturningToRepeatStart) {
         currentPass = 1
       }
     }
@@ -182,6 +185,7 @@ function resetPlaybackState() {
   lastStaffY = null
   currentSystemIndex = null
   heldMidiNotes.clear()
+  playedSourceMeasures.clear()
 }
 
 async function loadMusicXML(event) {
@@ -401,6 +405,23 @@ function resetMeasureProgress(resetRepeatCount = true) {
     repeatCount = 0
   }
   currentRepetitionIsClean = true
+}
+
+// Reset the visual state (played-note class) for notes of a specific source measure
+// This is used when repeating a measure due to repeat endings (voltas)
+function resetSourceMeasureVisualState(sourceMeasureIndex) {
+  // Find all playback entries that reference this source measure and reset their SVG visual state
+  for (const measureData of allNotes) {
+    if (measureData.sourceMeasureIndex === sourceMeasureIndex) {
+      for (const noteData of measureData.notes) {
+        const notehead = svgNotehead(noteData)
+        if (notehead) {
+          notehead.classList.remove('played-note')
+          notehead.classList.remove('active-note')
+        }
+      }
+    }
+  }
 }
 
 function updateMeasureCursor() {
@@ -735,7 +756,22 @@ function handleNoteValidated(measureData, noteData, validatedCount) {
         }, TRAINING_RESET_DELAY_MS)
       }
     } else {
+      // Mark current source measure as played
+      const currentSourceMeasure = measureData.sourceMeasureIndex
+      playedSourceMeasures.add(currentSourceMeasure)
+
       if (currentMeasureIndex + 1 < allNotes.length) {
+        // Check if next measure's source has been played before (repeat)
+        const nextSourceMeasure = allNotes[currentMeasureIndex + 1].sourceMeasureIndex
+        if (playedSourceMeasures.has(nextSourceMeasure)) {
+          // Reset visual state only for source measures that will be replayed
+          // (from repeat start up to but NOT including current measure which is volta 1)
+          for (const sourceMeasureIndex of playedSourceMeasures) {
+            if (sourceMeasureIndex >= nextSourceMeasure && sourceMeasureIndex < currentSourceMeasure) {
+              resetSourceMeasureVisualState(sourceMeasureIndex)
+            }
+          }
+        }
         currentMeasureIndex++
       } else {
         callbacks.onScoreCompleted?.(currentMeasureIndex)
