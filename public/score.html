@@ -21,10 +21,8 @@
     <main class="container">
       <section>
         <a href="index.html">&larr; Bibliotheque</a>
-        <div>
-          <button @click="connectMIDI" x-text="'Connecter clavier MIDI'" x-show="!bluetoothConnected"></button>
-          <strong x-show="bluetoothConnected"> 🎹 <span x-text="midiDeviceName || 'Clavier MIDI'"></span> </strong>
-        </div>
+        <button @click="connectMIDI" x-text="'Connecter clavier MIDI'" x-show="!bluetoothConnected"></button>
+        <strong x-show="bluetoothConnected"> 🎹 <span x-text="midiDeviceName || 'Clavier MIDI'"></span> </strong>
         <button
           @click="toggleTrainingMode"
           x-show="!!osmdInstance"
@@ -32,12 +30,7 @@
           :aria-pressed="trainingMode"
           class="secondary"
         ></button>
-        <button
-          @click="requestFullscreen"
-          x-show="!!osmdInstance"
-          x-text="'⛶ Plein écran'"
-          class="secondary"
-        ></button>
+        <button @click="requestFullscreen" x-show="!!osmdInstance" x-text="'⛶ Plein écran'" class="secondary"></button>
       </section>
 
       <article x-show="!osmdInstance">
