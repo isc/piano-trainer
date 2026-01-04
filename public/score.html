@@ -27,11 +27,19 @@
       <section>
         <button @click="connectMIDI" x-text="'Connecter clavier MIDI'" x-show="!bluetoothConnected"></button>
         <strong x-show="bluetoothConnected"> 🎹 <span x-text="midiDeviceName || 'Clavier MIDI'"></span> </strong>
+      </section>
+
+      <section class="grid" x-show="!!osmdInstance">
         <button
           @click="toggleTrainingMode"
-          x-show="!!osmdInstance"
           x-text="trainingMode ? '🔄 Mode Entraînement Actif' : '🎯 Mode Entraînement'"
           :aria-pressed="trainingMode"
+          class="secondary"
+        ></button>
+        <button
+          @click="requestFullscreen"
+          x-text="'⛶ Plein écran'"
+          class="secondary"
         ></button>
       </section>
 

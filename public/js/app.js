@@ -158,6 +158,15 @@ export function midiApp() {
       }
     },
 
+    requestFullscreen() {
+      const elem = document.documentElement
+      if (elem.requestFullscreen) {
+        elem.requestFullscreen().catch(err => {
+          console.warn('Fullscreen non disponible:', err)
+        })
+      }
+    },
+
     clearScore() {
       musicxml.clearScore()
       this.osmdInstance = null
