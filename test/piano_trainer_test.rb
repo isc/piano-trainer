@@ -183,7 +183,6 @@ class PianoTrainerTest < CapybaraTestBase
     # Measure 2: G4 half (tie-stop) + F4 half (polyphonic, same timestamp)
     # The tied G4 in measure 2 should NOT require a new note-on if held
     load_score('tied-notes.xml', 3)
-    sleep 0.05  # Wait for DOM and callbacks to fully initialize
 
     # Play G4 and HOLD it (don't release yet)
     simulate_midi_input("ON G4")
@@ -252,6 +251,7 @@ class PianoTrainerTest < CapybaraTestBase
   def load_score(filename, expected_notes)
     attach_file('musicxml-upload', File.expand_path("fixtures/#{filename}", __dir__))
     assert_selector 'svg g.vf-stavenote', count: expected_notes
+    sleep 0.05  # Wait for DOM and callbacks to fully initialize
   end
 
   def replay_cassette(name, wait_for_end: true)
