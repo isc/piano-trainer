@@ -29,8 +29,6 @@ svg g.vf-notehead.active-note path {
   /* Selected (current) measure in training mode */
   &.selected {
     fill: rgba(59, 130, 246, 0.15);
-    stroke: rgba(59, 130, 246, 0.8);
-    stroke-width: 2;
   }
 }
 
