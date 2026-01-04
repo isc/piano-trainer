@@ -211,6 +211,36 @@ class PianoTrainerTest < CapybaraTestBase
     assert_no_selector 'svg g.vf-notehead.played-note'
   end
 
+  def test_hand_selection_right_hand_only
+    load_score('schumann-melodie.xml', 256)
+
+    # Schumann measure 1 has polyphonic notes:
+    # - E5 (MIDI 76) on staff 0 (right hand)
+    # - C4 (MIDI 60) on staff 1 (left hand)
+
+    # Uncheck left hand checkbox
+    uncheck 'Main gauche'
+
+    # Play only the right hand note (E5)
+    simulate_midi_input("ON E5")
+
+    # The note should be validated (green) because left hand is disabled
+    assert_selector 'svg g.vf-notehead.played-note', count: 1
+  end
+
+  def test_hand_selection_left_hand_only
+    load_score('schumann-melodie.xml', 256)
+
+    # Uncheck right hand checkbox
+    uncheck 'Main droite'
+
+    # Play only the left hand note (C4)
+    simulate_midi_input("ON C4")
+
+    # The note should be validated because right hand is disabled
+    assert_selector 'svg g.vf-notehead.played-note', count: 1
+  end
+
   def test_autoscroll_when_moving_between_visual_systems
     # Save original window size
     original_size = page.current_window.size

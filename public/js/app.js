@@ -23,6 +23,10 @@ export function midiApp() {
     targetRepeatCount: 3,
     repeatCount: 0,
 
+    // Hand selection (both active by default)
+    rightHandActive: true,
+    leftHandActive: true,
+
     // UI states
     errorMessage: null,
     trainingComplete: false,
@@ -208,6 +212,13 @@ export function midiApp() {
       setTimeout(() => {
         this.showScoreCompleteModal = false
       }, 3000)
+    },
+
+    updateActiveHands() {
+      musicxml.setActiveHands({
+        right: this.rightHandActive,
+        left: this.leftHandActive,
+      })
     },
   }
 }
