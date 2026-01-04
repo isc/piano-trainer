@@ -26,7 +26,7 @@
       </nav>
       <section>
         <button @click="connectMIDI" x-text="'Connecter clavier MIDI'" x-show="!bluetoothConnected"></button>
-        <strong x-show="bluetoothConnected"> 🎹 <span x-text="midiDeviceName || 'Clavier MIDI'"></span> </strong>
+        <strong x-show="bluetoothConnected"> 🎹 <span x-text="midiDeviceName || 'Clavier MIDI'"></span> </strong>
         <button
           @click="toggleTrainingMode"
           x-show="!!osmdInstance"
