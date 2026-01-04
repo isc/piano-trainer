@@ -266,6 +266,53 @@ class PianoTrainerTest < CapybaraTestBase
     assert_text 'Partition terminée'
   end
 
+  def test_repeat_endings_playback_sequence
+    # Score has:
+    # - Measure 1: C4 (repeat start)
+    # - Measure 2: D4 (will be repeated)
+    # - Measure 3: E4 (first ending / volta 1, with backward repeat)
+    # - Measure 4: F4 (second ending / volta 2)
+    #
+    # Expected playback sequence: C4 -> D4 -> E4 -> C4 -> D4 -> F4
+    # After E4 (volta 1), only C4 and D4 are reset (they will be replayed),
+    # but E4 stays green (volta 1 won't be replayed).
+    load_score('repeat-endings.xml', 4)
+
+    # First pass: C4 (measure 1)
+    simulate_midi_input("ON C4")
+    assert_selector 'svg g.vf-notehead.played-note', count: 1
+    simulate_midi_input("OFF C4")
+
+    # First pass: D4 (measure 2)
+    simulate_midi_input("ON D4")
+    assert_selector 'svg g.vf-notehead.played-note', count: 2
+    simulate_midi_input("OFF D4")
+
+    # First pass: E4 (measure 3, volta 1) - triggers repeat
+    # After E4, only C4 and D4 are reset (will be replayed), E4 stays green
+    simulate_midi_input("ON E4")
+    assert_selector 'svg g.vf-notehead.played-note', count: 1  # Only E4 remains
+    simulate_midi_input("OFF E4")
+
+    # Second pass: C4 again (measure 1, repeated)
+    simulate_midi_input("ON C4")
+    assert_selector 'svg g.vf-notehead.played-note', count: 2  # E4 + C4
+    simulate_midi_input("OFF C4")
+
+    # Second pass: D4 again (measure 2, repeated)
+    simulate_midi_input("ON D4")
+    assert_selector 'svg g.vf-notehead.played-note', count: 3  # E4 + C4 + D4
+    simulate_midi_input("OFF D4")
+
+    # Second pass: F4 (measure 4, volta 2) - skips volta 1
+    simulate_midi_input("ON F4")
+    assert_selector 'svg g.vf-notehead.played-note', count: 4  # All notes green
+    simulate_midi_input("OFF F4")
+
+    # Score should be completed after playing the correct sequence
+    assert_text 'Partition terminée'
+  end
+
   def test_autoscroll_when_moving_between_visual_systems
     # Save original window size
     original_size = page.current_window.size
