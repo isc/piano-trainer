@@ -480,44 +480,50 @@ function deactivateNote(midiNote) {
 
 // Helper function to handle post-validation logic (scroll, measure completion)
 function handleNoteValidated(measureData, noteData, validatedCount) {
-  // Check if this was the first timestamp of the measure
+  // Initialize system tracking on first note of first measure
   const playedCount = measureData.notes.filter((n) => n.played).length
   const isFirstNoteOfMeasure = playedCount === validatedCount
 
-  if (isFirstNoteOfMeasure) {
-    const noteSystemIndex = getSystemIndexForNote(noteData.note)
-
-    // Scroll to score title when first note of first measure is played
-    if (currentMeasureIndex === 0) {
-      const scoreContainer = document.getElementById('score')
-      if (scoreContainer) {
-        scoreContainer.scrollIntoView({ behavior: 'smooth', block: 'start' })
-        currentSystemIndex = noteSystemIndex
-        const noteElement = svgNote(noteData.note)
-        const bbox = noteElement.getBBox()
-        lastStaffY = bbox.y
-      }
-    } else {
-      // Only scroll if we've moved to a new visual system (line)
-      if (currentSystemIndex !== null && noteSystemIndex !== currentSystemIndex) {
-        const noteElement = svgNote(noteData.note)
-        const bbox = noteElement.getBBox()
-        const currentY = bbox.y
-
-        if (lastStaffY !== null) {
-          const scrollAmount = currentY - lastStaffY
-          window.scrollBy({ top: scrollAmount, behavior: 'smooth' })
-        }
-
-        currentSystemIndex = noteSystemIndex
-        lastStaffY = currentY
-      }
+  if (isFirstNoteOfMeasure && currentMeasureIndex === 0) {
+    // Scroll to top on first note (in case user scrolled away or page loaded scrolled down)
+    const scoreContainer = document.getElementById('score')
+    if (scoreContainer) {
+      scoreContainer.scrollIntoView({ behavior: 'smooth', block: 'start' })
     }
+    const noteSystemIndex = getSystemIndexForNote(noteData.note)
+    currentSystemIndex = noteSystemIndex
+    const noteElement = svgNote(noteData.note)
+    const bbox = noteElement.getBBox()
+    lastStaffY = bbox.y
   }
 
   const allNotesPlayed = measureData.notes.every((note) => note.played)
 
   if (allNotesPlayed) {
+    // Check if next measure is on a different system - if so, scroll now
+    const nextMeasureIndex = currentMeasureIndex + 1
+    if (nextMeasureIndex < allNotes.length) {
+      const nextMeasureData = allNotes[nextMeasureIndex]
+      if (nextMeasureData && nextMeasureData.notes && nextMeasureData.notes.length > 0) {
+        const nextMeasureFirstNote = nextMeasureData.notes[0].note
+        const nextSystemIndex = getSystemIndexForNote(nextMeasureFirstNote)
+
+        // Scroll if we're moving to a new system
+        if (currentSystemIndex !== null && nextSystemIndex !== currentSystemIndex) {
+          const nextNoteElement = svgNote(nextMeasureFirstNote)
+          const nextBbox = nextNoteElement.getBBox()
+          const nextY = nextBbox.y
+
+          if (lastStaffY !== null) {
+            const scrollAmount = nextY - lastStaffY
+            window.scrollBy({ top: scrollAmount, behavior: 'smooth' })
+          }
+
+          currentSystemIndex = nextSystemIndex
+          lastStaffY = nextY
+        }
+      }
+    }
     if (trainingMode) {
       if (currentRepetitionIsClean) {
         repeatCount++
