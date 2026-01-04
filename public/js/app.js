@@ -27,6 +27,7 @@ export function midiApp() {
     errorMessage: null,
     trainingComplete: false,
     showScoreCompleteModal: false,
+    fullscreenRequested: false,
 
     async init() {
       this.loadCassettesList()
@@ -37,6 +38,11 @@ export function midiApp() {
 
       midi.setCallbacks({
         onNotePlayed: (noteName, midiNote) => {
+          // Request fullscreen on first note played when score is loaded
+          if (!this.fullscreenRequested && this.osmdInstance) {
+            this.requestFullscreen()
+            this.fullscreenRequested = true
+          }
           musicxml.activateNote(midiNote)
         },
         onNoteReleased: (noteName, midiNote) => {
@@ -134,12 +140,14 @@ export function midiApp() {
       // Load the MusicXML file (this will trigger callbacks that set the state)
       await musicxml.loadMusicXML(event)
       this.osmdInstance = musicxml.getOsmdInstance()
+      this.fullscreenRequested = false
       await this.requestWakeLock()
     },
 
     async loadScoreFromURL(url) {
       await musicxml.loadFromURL(url)
       this.osmdInstance = musicxml.getOsmdInstance()
+      this.fullscreenRequested = false
 
       // Wait for Alpine to update DOM (show #score container), then render
       await this.$nextTick()
@@ -158,11 +166,21 @@ export function midiApp() {
       }
     },
 
+    requestFullscreen() {
+      const elem = document.documentElement
+      if (elem.requestFullscreen) {
+        elem.requestFullscreen().catch(err => {
+          console.warn('Fullscreen non disponible:', err)
+        })
+      }
+    },
+
     clearScore() {
       musicxml.clearScore()
       this.osmdInstance = null
       this.trainingMode = false
       this.errorMessage = null
+      this.fullscreenRequested = false
       const trainingInfo = document.getElementById('training-info')
       if (trainingInfo) trainingInfo.remove()
     },
