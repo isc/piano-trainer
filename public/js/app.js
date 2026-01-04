@@ -131,15 +131,16 @@ export function midiApp() {
     },
 
     async loadMusicXML(event) {
-      // Load the MusicXML file (this will trigger callbacks that set the state)
       await musicxml.loadMusicXML(event)
-      this.osmdInstance = musicxml.getOsmdInstance()
-      await this.waitForDOMAndRender()
-      await this.requestWakeLock()
+      await this.afterScoreLoad()
     },
 
     async loadScoreFromURL(url) {
       await musicxml.loadFromURL(url)
+      await this.afterScoreLoad()
+    },
+
+    async afterScoreLoad() {
       this.osmdInstance = musicxml.getOsmdInstance()
       await this.waitForDOMAndRender()
       await this.requestWakeLock()
