@@ -234,7 +234,7 @@ class PianoTrainerTest < CapybaraTestBase
       simulate_midi_input('OFF D4')
 
       # Wait for smooth scroll animation to complete
-      sleep 0.3
+      sleep 0.1
 
       # Verify that scroll position has changed (scrolled down to next system)
       scroll_after_last_note = page.evaluate_script('window.scrollY')
