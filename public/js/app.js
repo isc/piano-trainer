@@ -20,8 +20,6 @@ export function midiApp() {
     cassettes: [],
     selectedCassette: '',
     trainingMode: false,
-    targetRepeatCount: 3,
-    repeatCount: 0,
 
     // Hand selection (both active by default)
     rightHandActive: true,
@@ -60,8 +58,8 @@ export function midiApp() {
             this.errorMessage = ''
           }, 2000)
         },
-        onTrainingProgress: (measureIndex, repeatCount, targetRepeatCount) => {
-          this.updateTrainingDisplay(measureIndex, repeatCount, targetRepeatCount)
+        onTrainingProgress: () => {
+          musicxml.updateRepeatIndicators()
         },
         onTrainingComplete: () => {
           this.showTrainingComplete()
@@ -166,7 +164,7 @@ export function midiApp() {
     requestFullscreen() {
       const elem = document.documentElement
       if (elem.requestFullscreen) {
-        elem.requestFullscreen().catch(err => {
+        elem.requestFullscreen().catch((err) => {
           console.warn('Fullscreen non disponible:', err)
         })
       }
@@ -187,20 +185,12 @@ export function midiApp() {
       if (this.trainingMode) {
         musicxml.setTrainingMode(true)
         this.trainingComplete = false
-        this.repeatCount = 0
-        const state = musicxml.getTrainingState()
-        this.updateTrainingDisplay(state.currentMeasureIndex, state.repeatCount, state.targetRepeatCount)
+        musicxml.updateRepeatIndicators()
       } else {
         musicxml.setTrainingMode(false)
         musicxml.resetProgress()
         this.trainingComplete = false
-        this.repeatCount = 0
       }
-    },
-
-    updateTrainingDisplay(measureIndex, repeatCount, targetRepeatCount) {
-      this.repeatCount = repeatCount
-      musicxml.updateRepeatIndicators()
     },
 
     showTrainingComplete() {

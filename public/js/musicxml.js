@@ -476,23 +476,49 @@ function deactivateNote(midiNote) {
   }
 }
 
+// Helper function to scroll to next measure if it's on a different system
+function scrollToNextMeasureIfNeeded(currentIndex, nextIndex) {
+  if (nextIndex >= allNotes.length) return
+
+  const nextMeasureData = allNotes[nextIndex]
+  if (!nextMeasureData || !nextMeasureData.notes || nextMeasureData.notes.length === 0) return
+
+  const nextMeasureFirstNote = nextMeasureData.notes[0].note
+  const nextSystemIndex = getSystemIndexForNote(nextMeasureFirstNote)
+
+  // Scroll if we're moving to a new system
+  if (currentSystemIndex !== null && nextSystemIndex !== currentSystemIndex) {
+    const nextNoteElement = svgNote(nextMeasureFirstNote)
+    const nextBbox = nextNoteElement.getBBox()
+    const nextY = nextBbox.y
+
+    if (lastStaffY !== null) {
+      const scrollAmount = nextY - lastStaffY
+      window.scrollBy({ top: scrollAmount, behavior: 'smooth' })
+    }
+
+    currentSystemIndex = nextSystemIndex
+    lastStaffY = nextY
+  }
+}
+
 // Helper function to handle post-validation logic (scroll, measure completion)
 function handleNoteValidated(measureData, noteData, validatedCount) {
   // Initialize system tracking on first note of first measure
   const playedCount = measureData.notes.filter((n) => n.played).length
   const isFirstNoteOfMeasure = playedCount === validatedCount
 
-  if (isFirstNoteOfMeasure && currentMeasureIndex === 0) {
-    // Scroll to top on first note (in case user scrolled away or page loaded scrolled down)
-    const scoreContainer = document.getElementById('score')
-    if (scoreContainer) {
-      scoreContainer.scrollIntoView({ behavior: 'smooth', block: 'start' })
-    }
+  if (isFirstNoteOfMeasure) {
+    // Initialize/update system tracking on first note of each measure
     const noteSystemIndex = getSystemIndexForNote(noteData.note)
     currentSystemIndex = noteSystemIndex
     const noteElement = svgNote(noteData.note)
     const bbox = noteElement.getBBox()
     lastStaffY = bbox.y
+
+    if (!trainingMode || repeatCount === 0) {
+      document.getElementById('score')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }
   }
 
   // Only consider notes from active hands when checking if measure is complete
@@ -500,30 +526,6 @@ function handleNoteValidated(measureData, noteData, validatedCount) {
   const allNotesPlayed = activeNotesInMeasure.every((note) => note.played)
 
   if (allNotesPlayed) {
-    // Check if next measure is on a different system - if so, scroll now
-    const nextMeasureIndex = currentMeasureIndex + 1
-    if (nextMeasureIndex < allNotes.length) {
-      const nextMeasureData = allNotes[nextMeasureIndex]
-      if (nextMeasureData && nextMeasureData.notes && nextMeasureData.notes.length > 0) {
-        const nextMeasureFirstNote = nextMeasureData.notes[0].note
-        const nextSystemIndex = getSystemIndexForNote(nextMeasureFirstNote)
-
-        // Scroll if we're moving to a new system
-        if (currentSystemIndex !== null && nextSystemIndex !== currentSystemIndex) {
-          const nextNoteElement = svgNote(nextMeasureFirstNote)
-          const nextBbox = nextNoteElement.getBBox()
-          const nextY = nextBbox.y
-
-          if (lastStaffY !== null) {
-            const scrollAmount = nextY - lastStaffY
-            window.scrollBy({ top: scrollAmount, behavior: 'smooth' })
-          }
-
-          currentSystemIndex = nextSystemIndex
-          lastStaffY = nextY
-        }
-      }
-    }
     if (trainingMode) {
       if (currentRepetitionIsClean) {
         repeatCount++
@@ -536,6 +538,8 @@ function handleNoteValidated(measureData, noteData, validatedCount) {
         } else {
           setTimeout(() => {
             resetMeasureProgress()
+            // Scroll to next measure before incrementing
+            scrollToNextMeasureIfNeeded(currentMeasureIndex, currentMeasureIndex + 1)
             currentMeasureIndex++
             updateMeasureCursor()
             callbacks.onTrainingProgress?.(currentMeasureIndex, repeatCount, targetRepeatCount)
@@ -573,6 +577,8 @@ function handleNoteValidated(measureData, noteData, validatedCount) {
             }
           }
         }
+        // Scroll to next measure before incrementing
+        scrollToNextMeasureIfNeeded(currentMeasureIndex, currentMeasureIndex + 1)
         currentMeasureIndex++
       } else {
         callbacks.onScoreCompleted?.(currentMeasureIndex)
