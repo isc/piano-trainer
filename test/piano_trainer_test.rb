@@ -345,6 +345,91 @@ class PianoTrainerTest < CapybaraTestBase
     end
   end
 
+  def test_training_mode_autoscroll_only_after_clean_repetitions
+    # This test verifies that auto-scroll only triggers when moving to the next measure
+    # after completing 3 clean repetitions, not during the repetitions themselves
+    original_size = page.current_window.size
+
+    begin
+      # Resize window to force each measure on its own system
+      page.current_window.resize_to(300, 600)
+
+      # Use repeat-endings score: 4 measures with one note each (C4, D4, E4, F4)
+      load_score('repeat-endings.xml', 4)
+
+      # Enable training mode
+      click_on 'Mode Entraînement'
+      assert_text 'Mode Entraînement Actif'
+
+      # Play first repetition
+      simulate_midi_input('ON C4')
+      simulate_midi_input('OFF C4')
+      sleep 0.25
+      initial_scroll = wait_for_stable_scroll
+
+      # Play second repetition - scroll should not change
+      simulate_midi_input('ON C4')
+      simulate_midi_input('OFF C4')
+      sleep 0.25  # Wait for measure reset before checking scroll
+      scroll_after_rep2 = wait_for_stable_scroll
+      assert_equal initial_scroll, scroll_after_rep2, "Scroll should not change after second repetition"
+
+      # Play third repetition - this triggers advancement
+      simulate_midi_input('ON C4')
+      simulate_midi_input('OFF C4')
+
+      # Wait for advancement by checking repeat indicators reset to 0 filled
+      assert_selector 'svg circle.repeat-indicator.filled', count: 0
+
+      # Verify scroll changed when advancing to measure 2 (on different system)
+      final_scroll = wait_for_stable_scroll
+      assert final_scroll > initial_scroll, "Scroll should change when advancing to measure 2 (initial: #{initial_scroll}, final: #{final_scroll})"
+    ensure
+      page.current_window.resize_to(*original_size)
+    end
+  end
+
+  def test_training_mode_autoscroll_works_when_starting_from_non_first_measure
+    # This test verifies that auto-scroll works even when jumping to a measure > 0
+    # (regression test: currentSystemIndex was null when not starting from measure 0)
+    #
+    # With a 200x600 window, each measure should be on its own system
+    original_size = page.current_window.size
+
+    begin
+      # Very narrow window to force each measure on its own system
+      page.current_window.resize_to(200, 600)
+
+      load_score('repeat-endings.xml', 4)
+
+      click_on 'Mode Entraînement'
+      assert_text 'Mode Entraînement Actif'
+
+      # Jump to measure 2 (index 1) - a non-first measure
+      click_measure(2)
+
+      # Capture initial scroll position
+      initial_scroll = wait_for_stable_scroll
+
+      # Play the note 3 times
+      3.times do
+        simulate_midi_input('ON D4')
+        sleep 0.05
+        simulate_midi_input('OFF D4')
+        sleep 0.2
+      end
+
+      # Wait for advancement by checking repeat indicators reset to 0 filled
+      assert_selector 'svg circle.repeat-indicator.filled', count: 0
+
+      # Verify scroll changed when advancing to measure 3 (on different system)
+      final_scroll = wait_for_stable_scroll
+      assert final_scroll > initial_scroll, "Scroll should work when starting from non-first measure (initial: #{initial_scroll}, final: #{final_scroll})"
+    ensure
+      page.current_window.resize_to(*original_size)
+    end
+  end
+
   private
 
   def load_score(filename, expected_notes)
