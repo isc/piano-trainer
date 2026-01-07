@@ -67,9 +67,6 @@ export function midiApp() {
             this.errorMessage = ''
           }, 2000)
         },
-        onTrainingProgress: () => {
-          musicxml.updateRepeatIndicators()
-        },
         onTrainingComplete: async () => {
           this.showTrainingComplete()
           await practiceTracker.endSession()
@@ -157,8 +154,6 @@ export function midiApp() {
     },
 
     async loadScoreFromURL(url) {
-      await practiceTracker.endSession()
-
       this.scoreUrl = url
       await musicxml.loadFromURL(url)
       await this.afterScoreLoad()
@@ -208,7 +203,6 @@ export function midiApp() {
       if (this.trainingMode) {
         musicxml.setTrainingMode(true)
         this.trainingComplete = false
-        musicxml.updateRepeatIndicators()
       } else {
         musicxml.setTrainingMode(false)
         musicxml.resetProgress()

@@ -30,7 +30,6 @@ const TRAINING_RESET_DELAY_MS = 200
 let callbacks = {
   onScoreCompleted: null,
   onNoteError: null,
-  onTrainingProgress: null,
   onTrainingComplete: null,
   onMeasureStarted: null,
   onMeasureCompleted: null,
@@ -389,7 +388,7 @@ function jumpToMeasure(measureIndex) {
   updateMeasureCursor()
 
   // Notify callback
-  callbacks.onTrainingProgress?.(currentMeasureIndex, repeatCount, targetRepeatCount)
+  updateRepeatIndicators()
 }
 
 // Activate a note when pressed (Note ON) - for polyphonic validation
@@ -567,7 +566,7 @@ function handleNoteValidated(measureData, noteData, validatedCount) {
       if (currentRepetitionIsClean) {
         repeatCount++
       }
-      callbacks.onTrainingProgress?.(currentMeasureIndex, repeatCount, targetRepeatCount)
+      updateRepeatIndicators()
 
       if (repeatCount >= targetRepeatCount) {
         if (currentMeasureIndex + 1 >= allNotes.length) {
@@ -579,13 +578,13 @@ function handleNoteValidated(measureData, noteData, validatedCount) {
             scrollToNextMeasureIfNeeded(currentMeasureIndex, currentMeasureIndex + 1)
             currentMeasureIndex++
             updateMeasureCursor()
-            callbacks.onTrainingProgress?.(currentMeasureIndex, repeatCount, targetRepeatCount)
+            updateRepeatIndicators()
           }, TRAINING_RESET_DELAY_MS)
         }
       } else {
         setTimeout(() => {
           resetMeasureProgress(false)
-          callbacks.onTrainingProgress?.(currentMeasureIndex, repeatCount, targetRepeatCount)
+          updateRepeatIndicators()
         }, TRAINING_RESET_DELAY_MS)
       }
     } else {
