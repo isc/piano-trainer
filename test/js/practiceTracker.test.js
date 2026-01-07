@@ -44,12 +44,12 @@ describe('practiceTracker', () => {
       tracker.startSession('/scores/test.xml', 'Test', 'Composer', 'training')
     })
 
-    it('records wrong notes and marks attempt as dirty', () => {
+    it('records wrong notes and marks attempt as dirty', async () => {
       tracker.startMeasureAttempt(0)
       tracker.recordWrongNote()
       tracker.recordWrongNote()
 
-      const attempt = tracker.endMeasureAttempt()
+      const attempt = await tracker.endMeasureAttempt()
       expect(attempt.wrongNotes).toBe(2)
       expect(attempt.clean).toBe(false)
     })

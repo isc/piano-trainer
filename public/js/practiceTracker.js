@@ -69,7 +69,7 @@ export function initPracticeTracker(storageInstance = null) {
     currentMeasureAttempt.clean = false
   }
 
-  function endMeasureAttempt(clean = null) {
+  async function endMeasureAttempt(clean = null) {
     if (!currentSession || !currentMeasureAttempt) return null
 
     const startTime = new Date(currentMeasureAttempt.startedAt).getTime()
@@ -100,6 +100,10 @@ export function initPracticeTracker(storageInstance = null) {
 
     const completedAttempt = { ...currentMeasureAttempt }
     currentMeasureAttempt = null
+
+    // Save session incrementally (don't await - fire and forget)
+    storage.saveSession({ ...currentSession })
+
     return completedAttempt
   }
 
@@ -263,7 +267,8 @@ export function initPracticeTracker(storageInstance = null) {
       const entry = scoreMap.get(session.scoreId)
       entry.sessions.push(session)
 
-      const sessionDuration = new Date(session.endedAt) - new Date(session.startedAt)
+      const endTime = session.endedAt ? new Date(session.endedAt) : new Date()
+      const sessionDuration = endTime - new Date(session.startedAt)
       entry.totalPracticeTimeMs += sessionDuration
 
       for (const measure of session.measures) {
