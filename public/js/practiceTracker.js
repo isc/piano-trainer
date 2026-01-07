@@ -259,7 +259,7 @@ export function initPracticeTracker(storageInstance = null) {
           scoreTitle: session.scoreTitle,
           composer: session.composer,
           sessions: [],
-          measuresPlayed: new Set(),
+          measuresPlayedCount: 0,
           totalPracticeTimeMs: 0,
         })
       }
@@ -272,14 +272,11 @@ export function initPracticeTracker(storageInstance = null) {
       entry.totalPracticeTimeMs += sessionDuration
 
       for (const measure of session.measures) {
-        entry.measuresPlayed.add(measure.sourceMeasureIndex)
+        entry.measuresPlayedCount += measure.attempts.length
       }
     }
 
-    return Array.from(scoreMap.values()).map((entry) => ({
-      ...entry,
-      measuresPlayed: Array.from(entry.measuresPlayed).sort((a, b) => a - b),
-    }))
+    return Array.from(scoreMap.values())
   }
 
   async function getAllScores() {

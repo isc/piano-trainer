@@ -154,7 +154,7 @@ describe('practiceTracker', () => {
 
       expect(log).toHaveLength(1)
       expect(log[0].scoreId).toBe('/scores/test.xml')
-      expect(log[0].measuresPlayed).toContain(0)
+      expect(log[0].measuresPlayedCount).toBe(1)
     })
   })
 
