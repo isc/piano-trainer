@@ -67,12 +67,11 @@
                 <a :href="'score.html?url=' + encodeURIComponent(entry.scoreId)">
                   <strong x-text="entry.scoreTitle || 'Sans titre'"></strong>
                 </a>
-                <small x-text="entry.composer" class="muted"></small>
+                <small class="muted">· <span x-text="formatDuration(entry.totalPracticeTimeMs)"></span></small>
               </header>
               <p>
-                <span x-text="formatDuration(entry.totalPracticeTimeMs)"></span>
-                &bull;
-                <span x-text="entry.measuresWorked.length"></span> mesures
+                <small x-text="entry.composer" class="muted"></small>
+                · <span x-text="entry.measuresWorked.length"></span> mesures
               </p>
             </article>
           </template>
