@@ -9,6 +9,7 @@ export function initPracticeTracker(storageInstance = null) {
   return {
     init: () => storage.init(),
     startSession,
+    toggleMode,
     startMeasureAttempt,
     recordWrongNote,
     endMeasureAttempt,
@@ -39,6 +40,14 @@ export function initPracticeTracker(storageInstance = null) {
       measures: [],
     }
     return currentSession
+  }
+
+  async function toggleMode(newMode) {
+    if (!currentSession) return null
+
+    const { scoreId, scoreTitle, composer } = currentSession
+    await endSession()
+    return startSession(scoreId, scoreTitle, composer, newMode)
   }
 
   function startMeasureAttempt(sourceMeasureIndex) {

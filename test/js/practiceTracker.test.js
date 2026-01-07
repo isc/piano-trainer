@@ -62,6 +62,37 @@ describe('practiceTracker', () => {
       const result = await tracker.endSession()
       expect(result).toBeNull()
     })
+
+    it('toggles mode and preserves metadata', async () => {
+      tracker.startSession('/scores/test.xml', 'Test Score', 'Test Composer', 'free')
+      tracker.startMeasureAttempt(0)
+      tracker.endMeasureAttempt(true)
+
+      const newSession = await tracker.toggleMode('training')
+
+      expect(newSession).not.toBeNull()
+      expect(newSession.scoreId).toBe('/scores/test.xml')
+      expect(newSession.scoreTitle).toBe('Test Score')
+      expect(newSession.composer).toBe('Test Composer')
+      expect(newSession.mode).toBe('training')
+      expect(newSession.measures).toEqual([])
+    })
+
+    it('toggleMode saves previous session', async () => {
+      tracker.startSession('/scores/test.xml', 'Test', 'Composer', 'free')
+      tracker.startMeasureAttempt(0)
+      tracker.endMeasureAttempt(true)
+
+      await tracker.toggleMode('training')
+
+      const stats = await tracker.getScoreStats('/scores/test.xml')
+      expect(stats.totalSessions).toBe(1)
+    })
+
+    it('toggleMode returns null without active session', async () => {
+      const result = await tracker.toggleMode('training')
+      expect(result).toBeNull()
+    })
   })
 
   describe('measure attempts', () => {
