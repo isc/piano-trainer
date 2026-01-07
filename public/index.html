@@ -17,37 +17,68 @@
       <h1>Bibliotheque</h1>
 
       <div class="grid">
+        <!-- Left column: Library -->
         <div>
-          <input
-            type="search"
-            x-model="searchQuery"
-            placeholder="Rechercher une partition..."
-            aria-label="Rechercher une partition"
-          />
-        </div>
-        <div>
-          <a href="score.html" role="button" class="secondary">Charger ma partition</a>
-        </div>
-      </div>
+          <div class="grid">
+            <div>
+              <input
+                type="search"
+                x-model="searchQuery"
+                placeholder="Rechercher une partition..."
+                aria-label="Rechercher une partition"
+              />
+            </div>
+            <div>
+              <a href="score.html" role="button" class="secondary">Charger ma partition</a>
+            </div>
+          </div>
 
-      <table>
-        <thead>
-          <tr>
-            <th>Titre</th>
-            <th>Compositeur</th>
-          </tr>
-        </thead>
-        <tbody>
-          <template x-for="score in filteredScores" :key="score.file">
-            <tr>
-              <td>
-                <a :href="'score.html?url=' + encodeURIComponent(getScoreUrl(score))" x-text="score.title"></a>
-              </td>
-              <td x-text="score.composer"></td>
-            </tr>
+          <table>
+            <thead>
+              <tr>
+                <th>Titre</th>
+                <th>Compositeur</th>
+              </tr>
+            </thead>
+            <tbody>
+              <template x-for="score in filteredScores" :key="score.file">
+                <tr>
+                  <td>
+                    <a :href="'score.html?url=' + encodeURIComponent(getScoreUrl(score))" x-text="score.title"></a>
+                  </td>
+                  <td x-text="score.composer"></td>
+                </tr>
+              </template>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Right column: Daily Log -->
+        <aside id="daily-log">
+          <h2>Aujourd'hui</h2>
+          <template x-if="dailyLog.length === 0">
+            <p class="muted">Aucune pratique aujourd'hui</p>
           </template>
-        </tbody>
-      </table>
+          <template x-for="entry in dailyLog" :key="entry.scoreId">
+            <article>
+              <header>
+                <strong x-text="entry.scoreTitle || 'Sans titre'"></strong>
+                <small x-text="entry.composer" class="muted"></small>
+              </header>
+              <p>
+                <span x-text="formatDuration(entry.totalPracticeTimeMs)"></span>
+                &bull;
+                <span x-text="entry.measuresPlayed.length"></span> mesures
+              </p>
+            </article>
+          </template>
+          <template x-if="dailyLog.length > 0">
+            <p class="total-time">
+              Total: <strong x-text="formatDuration(totalPracticeTime)"></strong>
+            </p>
+          </template>
+        </aside>
+      </div>
     </main>
   </body>
 </html>

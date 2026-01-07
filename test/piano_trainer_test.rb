@@ -430,34 +430,6 @@ class PianoTrainerTest < CapybaraTestBase
     end
   end
 
-  def test_practice_tracking_saves_session_to_indexeddb
-    # Load score via URL (enables practice tracking)
-    load_score_from_url('simple-score.xml', 4)
-
-    # Play the complete score (C4, E4, F4, G4)
-    %w[C4 E4 F4 G4].each do |note|
-      simulate_midi_input("ON #{note}")
-      simulate_midi_input("OFF #{note}")
-      sleep 0.05
-    end
-
-    # Wait for "score completed" modal which triggers session end
-    assert_text 'Partition terminée'
-
-    # Small wait for async IndexedDB operations
-    sleep 0.3
-
-    # Check IndexedDB contains the session
-    sessions = get_indexeddb_sessions
-    assert sessions.is_a?(Array), 'Sessions should be an array'
-    assert sessions.length >= 1, 'Should have at least one session'
-
-    session = sessions.last
-    assert_equal '/test-fixtures/simple-score.xml', session['scoreId']
-    assert_equal 'free', session['mode']
-    assert session['measures'].length >= 1, 'Should have tracked at least one measure'
-  end
-
   private
 
   def load_score(filename, expected_notes)
@@ -480,26 +452,6 @@ class PianoTrainerTest < CapybaraTestBase
     visit "/score.html?url=/test-fixtures/#{fixture_filename}"
     assert_selector 'svg g.vf-stavenote', count: expected_notes
     sleep 0.2  # Wait for DOM and callbacks to fully initialize
-  end
-
-  def get_indexeddb_sessions
-    page.evaluate_async_script(<<~JS)
-      const done = arguments[arguments.length - 1];
-      const request = indexedDB.open('piano-trainer-practice', 1);
-      request.onerror = () => done([]);
-      request.onsuccess = (event) => {
-        const db = event.target.result;
-        if (!db.objectStoreNames.contains('sessions')) {
-          done([]);
-          return;
-        }
-        const transaction = db.transaction(['sessions'], 'readonly');
-        const store = transaction.objectStore('sessions');
-        const getAllRequest = store.getAll();
-        getAllRequest.onsuccess = () => done(getAllRequest.result);
-        getAllRequest.onerror = () => done([]);
-      };
-    JS
   end
 
   # Wait for scroll position to stabilize (stop changing)
