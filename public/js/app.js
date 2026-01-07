@@ -99,6 +99,11 @@ export function midiApp() {
       if (scoreUrl) {
         await this.loadScoreFromURL(scoreUrl)
       }
+
+      // Save session when leaving the page
+      window.addEventListener('beforeunload', () => {
+        practiceTracker.endSession()
+      })
     },
 
     syncMidiState() {
