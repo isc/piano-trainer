@@ -64,14 +64,21 @@
           <template x-for="entry in dailyLog" :key="entry.scoreId">
             <article>
               <header>
-                <a :href="'score.html?url=' + encodeURIComponent(entry.scoreId)">
-                  <strong x-text="entry.scoreTitle || 'Sans titre'"></strong>
-                </a>
-                <small class="muted">· <span x-text="formatDuration(entry.totalPracticeTimeMs)"></span></small>
+                <a :href="'score.html?url=' + encodeURIComponent(entry.scoreId)" x-text="entry.scoreTitle || 'Sans titre'"></a>
+                <small class="muted">
+                  <span x-text="entry.composer"></span> · <span x-text="formatDuration(entry.totalPracticeTimeMs)"></span>
+                </small>
               </header>
               <p>
-                <small x-text="entry.composer" class="muted"></small>
-                · <span x-text="entry.measuresWorked.length"></span> mesures
+                <template x-if="entry.workedInFull">
+                  <span>Joué en entier</span>
+                </template>
+                <template x-if="!entry.workedInFull">
+                  <span><span x-text="entry.measuresWorked.length"></span> mesures jouées</span>
+                </template>
+                <template x-if="entry.measuresReinforced.length > 0">
+                  <span class="muted">· Renforcement: <span x-text="entry.measuresReinforced.length"></span> mesures</span>
+                </template>
               </p>
             </article>
           </template>

@@ -26,7 +26,7 @@ export function initPracticeTracker(storageInstance = null) {
     return `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`
   }
 
-  function startSession(scoreId, scoreTitle, composer, mode) {
+  function startSession(scoreId, scoreTitle, composer, mode, totalMeasures = null) {
     if (!scoreId) return null
 
     currentSession = {
@@ -34,6 +34,7 @@ export function initPracticeTracker(storageInstance = null) {
       scoreId,
       scoreTitle: scoreTitle || null,
       composer: composer || null,
+      totalMeasures: totalMeasures || null,
       mode,
       startedAt: new Date().toISOString(),
       endedAt: null,
@@ -45,9 +46,9 @@ export function initPracticeTracker(storageInstance = null) {
   async function toggleMode(newMode) {
     if (!currentSession) return null
 
-    const { scoreId, scoreTitle, composer } = currentSession
+    const { scoreId, scoreTitle, composer, totalMeasures } = currentSession
     await endSession()
-    return startSession(scoreId, scoreTitle, composer, newMode)
+    return startSession(scoreId, scoreTitle, composer, newMode, totalMeasures)
   }
 
   function startMeasureAttempt(sourceMeasureIndex) {
@@ -112,16 +113,13 @@ export function initPracticeTracker(storageInstance = null) {
 
     currentSession.endedAt = new Date().toISOString()
 
-    if (currentMeasureAttempt) {
-      endMeasureAttempt()
-    }
-
     const sessionToSave = { ...currentSession }
 
     await storage.saveSession(sessionToSave)
     await updateAggregates(sessionToSave)
 
     currentSession = null
+    currentMeasureAttempt = null
     return sessionToSave
   }
 
@@ -258,8 +256,10 @@ export function initPracticeTracker(storageInstance = null) {
           scoreId: session.scoreId,
           scoreTitle: session.scoreTitle,
           composer: session.composer,
+          totalMeasures: null,
           sessions: [],
           measuresWorked: new Set(),
+          measuresReinforced: new Set(),
           totalPracticeTimeMs: 0,
         })
       }
@@ -267,19 +267,33 @@ export function initPracticeTracker(storageInstance = null) {
       const entry = scoreMap.get(session.scoreId)
       entry.sessions.push(session)
 
+      if (session.totalMeasures) {
+        entry.totalMeasures = session.totalMeasures
+      }
+
       const endTime = session.endedAt ? new Date(session.endedAt) : new Date()
       const sessionDuration = endTime - new Date(session.startedAt)
       entry.totalPracticeTimeMs += sessionDuration
 
       for (const measure of session.measures) {
-        entry.measuresWorked.add(measure.sourceMeasureIndex)
+        const measureIndex = Number(measure.sourceMeasureIndex)
+        entry.measuresWorked.add(measureIndex)
+        if (session.mode === 'training') {
+          entry.measuresReinforced.add(measureIndex)
+        }
       }
     }
 
-    return Array.from(scoreMap.values()).map((entry) => ({
-      ...entry,
-      measuresWorked: Array.from(entry.measuresWorked).sort((a, b) => a - b),
-    }))
+    return Array.from(scoreMap.values()).map((entry) => {
+      const measuresWorked = Array.from(entry.measuresWorked).sort((a, b) => a - b)
+      const workedInFull = entry.totalMeasures && measuresWorked.length >= entry.totalMeasures
+      return {
+        ...entry,
+        measuresWorked,
+        measuresReinforced: Array.from(entry.measuresReinforced).sort((a, b) => a - b),
+        workedInFull,
+      }
+    })
   }
 
   async function getAllScores() {

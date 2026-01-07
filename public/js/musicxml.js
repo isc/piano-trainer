@@ -57,6 +57,7 @@ export function initMusicXML() {
     getScoreMetadata: () => ({
       title: osmdInstance?.Sheet?.Title?.text || null,
       composer: osmdInstance?.Sheet?.Composer?.text || null,
+      totalMeasures: new Set(allNotes.map((m) => m.sourceMeasureIndex)).size,
     }),
     getTrainingState: () => ({
       trainingMode,
