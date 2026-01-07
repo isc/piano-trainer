@@ -1,11 +1,13 @@
 import { initMidi } from './midi.js'
 import { initMusicXML } from './musicxml.js'
 import { initCassettes } from './cassettes.js'
+import { initPracticeTracker } from './practiceTracker.js'
 
 export function midiApp() {
   const midi = initMidi()
   const musicxml = initMusicXML()
   const cassettes = initCassettes()
+  const practiceTracker = initPracticeTracker()
 
   return {
     bluetoothConnected: false,
@@ -21,6 +23,9 @@ export function midiApp() {
     selectedCassette: '',
     trainingMode: false,
 
+    // Practice tracking (only for scores loaded via URL, not uploads)
+    scoreUrl: null,
+
     // Hand selection (both active by default)
     rightHandActive: true,
     leftHandActive: true,
@@ -32,6 +37,9 @@ export function midiApp() {
 
     async init() {
       this.loadCassettesList()
+
+      // Initialize practice tracking
+      await practiceTracker.init()
 
       // Auto-connect to MIDI device silently
       await midi.connectMIDI({ silent: true, autoSelectFirst: true })
@@ -47,10 +55,14 @@ export function midiApp() {
       })
 
       musicxml.setCallbacks({
-        onScoreCompleted: (measureIndex) => {
+        onScoreCompleted: async (measureIndex) => {
           if (!this.trainingMode) {
             this.showScoreComplete()
           }
+          await practiceTracker.endSession()
+          // Start new session for next playthrough
+          const metadata = musicxml.getScoreMetadata()
+          practiceTracker.startSession(this.scoreUrl, metadata.title, metadata.composer, 'free')
         },
         onNoteError: (expected, played) => {
           this.errorMessage = `❌ Erreur: attendu ${expected}, joué ${played}`
@@ -58,11 +70,21 @@ export function midiApp() {
             this.errorMessage = ''
           }, 2000)
         },
-        onTrainingProgress: () => {
-          musicxml.updateRepeatIndicators()
-        },
-        onTrainingComplete: () => {
+        onTrainingComplete: async () => {
           this.showTrainingComplete()
+          await practiceTracker.endSession()
+          // Start new session for next playthrough
+          const metadata = musicxml.getScoreMetadata()
+          practiceTracker.startSession(this.scoreUrl, metadata.title, metadata.composer, 'training')
+        },
+        onMeasureStarted: (sourceMeasureIndex) => {
+          practiceTracker.startMeasureAttempt(sourceMeasureIndex)
+        },
+        onMeasureCompleted: (data) => {
+          practiceTracker.endMeasureAttempt(data.clean)
+        },
+        onWrongNote: () => {
+          practiceTracker.recordWrongNote()
         },
       })
 
@@ -83,6 +105,11 @@ export function midiApp() {
       if (scoreUrl) {
         await this.loadScoreFromURL(scoreUrl)
       }
+
+      // Save session when leaving the page
+      window.addEventListener('beforeunload', () => {
+        practiceTracker.endSession()
+      })
     },
 
     syncMidiState() {
@@ -138,8 +165,13 @@ export function midiApp() {
     },
 
     async loadScoreFromURL(url) {
+      this.scoreUrl = url
       await musicxml.loadFromURL(url)
       await this.afterScoreLoad()
+
+      // Start practice tracking session in free mode
+      const metadata = musicxml.getScoreMetadata()
+      practiceTracker.startSession(url, metadata.title, metadata.composer, 'free')
     },
 
     async afterScoreLoad() {
@@ -170,22 +202,15 @@ export function midiApp() {
       }
     },
 
-    clearScore() {
-      musicxml.clearScore()
-      this.osmdInstance = null
-      this.trainingMode = false
-      this.errorMessage = null
-      const trainingInfo = document.getElementById('training-info')
-      if (trainingInfo) trainingInfo.remove()
-    },
-
-    toggleTrainingMode() {
+    async toggleTrainingMode() {
       this.trainingMode = !this.trainingMode
+
+      const mode = this.trainingMode ? 'training' : 'free'
+      await practiceTracker.toggleMode(mode)
 
       if (this.trainingMode) {
         musicxml.setTrainingMode(true)
         this.trainingComplete = false
-        musicxml.updateRepeatIndicators()
       } else {
         musicxml.setTrainingMode(false)
         musicxml.resetProgress()

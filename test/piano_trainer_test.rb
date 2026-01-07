@@ -448,6 +448,12 @@ class PianoTrainerTest < CapybaraTestBase
     page.all('svg rect.measure-click-area')[measure_number - 1].trigger('click')
   end
 
+  def load_score_from_url(fixture_filename, expected_notes)
+    visit "/score.html?url=/test-fixtures/#{fixture_filename}"
+    assert_selector 'svg g.vf-stavenote', count: expected_notes
+    sleep 0.2  # Wait for DOM and callbacks to fully initialize
+  end
+
   # Wait for scroll position to stabilize (stop changing)
   # If expect_change is true, first wait for the scroll to change from initial value
   def wait_for_stable_scroll(expect_change_from: nil, max_iterations: 100, interval: 0.01)

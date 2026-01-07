@@ -17,6 +17,10 @@ let playedSourceMeasures = new Set() // Track source measures that have been ful
 // Set of MIDI note numbers currently held down by the player
 let heldMidiNotes = new Set()
 
+// Practice tracking variables
+let measureStartTime = null
+let measureWrongNotes = 0
+
 // Padding around measure notes for clickable area
 const MEASURE_CLICK_PADDING = 15
 
@@ -26,8 +30,10 @@ const TRAINING_RESET_DELAY_MS = 200
 let callbacks = {
   onScoreCompleted: null,
   onNoteError: null,
-  onTrainingProgress: null,
   onTrainingComplete: null,
+  onMeasureStarted: null,
+  onMeasureCompleted: null,
+  onWrongNote: null,
 }
 
 // Hand selection: by default both hands are active
@@ -43,12 +49,15 @@ export function initMusicXML() {
     activateNote,
     deactivateNote,
     resetProgress,
-    clearScore,
     setCallbacks,
     setActiveHands: (hands) => {
       activeHands = { ...activeHands, ...hands }
     },
     getOsmdInstance: () => osmdInstance,
+    getScoreMetadata: () => ({
+      title: osmdInstance?.Sheet?.Title?.text || null,
+      composer: osmdInstance?.Sheet?.Composer?.text || null,
+    }),
     getTrainingState: () => ({
       trainingMode,
       currentMeasureIndex,
@@ -105,6 +114,8 @@ function resetPlaybackState() {
   currentSystemIndex = null
   heldMidiNotes.clear()
   playedSourceMeasures.clear()
+  measureStartTime = null
+  measureWrongNotes = 0
 }
 
 async function loadMusicXML(event) {
@@ -197,6 +208,11 @@ function resetMeasureProgress(resetRepeatCount = true) {
     repeatCount = 0
   }
   currentRepetitionIsClean = true
+
+  // Reset practice tracking for new attempt
+  measureStartTime = Date.now()
+  measureWrongNotes = 0
+  callbacks.onMeasureStarted?.(measureData.sourceMeasureIndex)
 }
 
 // Reset the visual state (played-note class) for notes of a specific source measure
@@ -372,7 +388,7 @@ function jumpToMeasure(measureIndex) {
   updateMeasureCursor()
 
   // Notify callback
-  callbacks.onTrainingProgress?.(currentMeasureIndex, repeatCount, targetRepeatCount)
+  updateRepeatIndicators()
 }
 
 // Activate a note when pressed (Note ON) - for polyphonic validation
@@ -448,6 +464,10 @@ function activateNote(midiNote) {
     if (trainingMode) {
       currentRepetitionIsClean = false
     }
+    // Track wrong note for practice statistics
+    measureWrongNotes++
+    callbacks.onWrongNote?.()
+
     const expected = activeNotes.find((n) => !n.played && !n.active)
     if (expected) {
       callbacks.onNoteError?.(expected.noteName, noteName(midiNote))
@@ -516,6 +536,13 @@ function handleNoteValidated(measureData, noteData, validatedCount) {
     const bbox = noteElement.getBBox()
     lastStaffY = bbox.y
 
+    // Initialize practice tracking if not already set
+    if (measureStartTime === null) {
+      measureStartTime = Date.now()
+      measureWrongNotes = 0
+      callbacks.onMeasureStarted?.(measureData.sourceMeasureIndex)
+    }
+
     if (!trainingMode || repeatCount === 0) {
       document.getElementById('score')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
     }
@@ -526,11 +553,20 @@ function handleNoteValidated(measureData, noteData, validatedCount) {
   const allNotesPlayed = activeNotesInMeasure.every((note) => note.played)
 
   if (allNotesPlayed) {
+    // Notify practice tracking that measure is completed
+    const attemptDuration = measureStartTime ? Date.now() - measureStartTime : 0
+    callbacks.onMeasureCompleted?.({
+      sourceMeasureIndex: measureData.sourceMeasureIndex,
+      durationMs: attemptDuration,
+      wrongNotes: measureWrongNotes,
+      clean: currentRepetitionIsClean,
+    })
+
     if (trainingMode) {
       if (currentRepetitionIsClean) {
         repeatCount++
       }
-      callbacks.onTrainingProgress?.(currentMeasureIndex, repeatCount, targetRepeatCount)
+      updateRepeatIndicators()
 
       if (repeatCount >= targetRepeatCount) {
         if (currentMeasureIndex + 1 >= allNotes.length) {
@@ -542,13 +578,13 @@ function handleNoteValidated(measureData, noteData, validatedCount) {
             scrollToNextMeasureIfNeeded(currentMeasureIndex, currentMeasureIndex + 1)
             currentMeasureIndex++
             updateMeasureCursor()
-            callbacks.onTrainingProgress?.(currentMeasureIndex, repeatCount, targetRepeatCount)
+            updateRepeatIndicators()
           }, TRAINING_RESET_DELAY_MS)
         }
       } else {
         setTimeout(() => {
           resetMeasureProgress(false)
-          callbacks.onTrainingProgress?.(currentMeasureIndex, repeatCount, targetRepeatCount)
+          updateRepeatIndicators()
         }, TRAINING_RESET_DELAY_MS)
       }
     } else {
@@ -580,6 +616,9 @@ function handleNoteValidated(measureData, noteData, validatedCount) {
         // Scroll to next measure before incrementing
         scrollToNextMeasureIfNeeded(currentMeasureIndex, currentMeasureIndex + 1)
         currentMeasureIndex++
+        // Reset practice tracking for next measure in free mode
+        measureStartTime = null
+        measureWrongNotes = 0
       } else {
         callbacks.onScoreCompleted?.(currentMeasureIndex)
       }
@@ -643,14 +682,3 @@ function resetProgress() {
   resetPlaybackState()
 }
 
-function clearScore() {
-  osmdInstance = null
-  allNotes = []
-  trainingMode = false
-  resetPlaybackState()
-  const scoreContainer = document.getElementById('score')
-  if (scoreContainer) {
-    scoreContainer.innerHTML = ''
-  }
-  document.getElementById('musicxml-upload').value = ''
-}

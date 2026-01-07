@@ -113,6 +113,17 @@ class App < Sinatra::Base
     end
   end
 
+  # Serve test fixtures in test environment
+  get '/test-fixtures/*' do
+    fixture_path = File.join(__dir__, 'test', 'fixtures', params['splat'].first)
+    if File.exist?(fixture_path) && File.file?(fixture_path)
+      send_file fixture_path
+    else
+      status 404
+      'Fixture non trouvée'
+    end
+  end
+
   # Route catch-all pour servir les fichiers statiques
   get '*' do
     file_path = File.join(settings.public_folder, request.path_info)
