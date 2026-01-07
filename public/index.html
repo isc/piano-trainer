@@ -61,7 +61,9 @@
           <template x-for="entry in dailyLog" :key="entry.scoreId">
             <article>
               <header>
-                <strong x-text="entry.scoreTitle || 'Sans titre'"></strong>
+                <a :href="'score.html?url=' + encodeURIComponent(entry.scoreId)">
+                  <strong x-text="entry.scoreTitle || 'Sans titre'"></strong>
+                </a>
                 <small x-text="entry.composer" class="muted"></small>
               </header>
               <p>
