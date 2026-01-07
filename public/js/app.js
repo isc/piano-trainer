@@ -62,7 +62,7 @@ export function midiApp() {
           await practiceTracker.endSession()
           // Start new session for next playthrough
           const metadata = musicxml.getScoreMetadata()
-          practiceTracker.startSession(this.scoreUrl, metadata.title, metadata.composer, 'free')
+          practiceTracker.startSession(this.scoreUrl, metadata.title, metadata.composer, 'free', metadata.totalMeasures)
         },
         onNoteError: (expected, played) => {
           this.errorMessage = `❌ Erreur: attendu ${expected}, joué ${played}`
@@ -75,7 +75,7 @@ export function midiApp() {
           await practiceTracker.endSession()
           // Start new session for next playthrough
           const metadata = musicxml.getScoreMetadata()
-          practiceTracker.startSession(this.scoreUrl, metadata.title, metadata.composer, 'training')
+          practiceTracker.startSession(this.scoreUrl, metadata.title, metadata.composer, 'training', metadata.totalMeasures)
         },
         onMeasureStarted: (sourceMeasureIndex) => {
           practiceTracker.startMeasureAttempt(sourceMeasureIndex)
@@ -171,7 +171,7 @@ export function midiApp() {
 
       // Start practice tracking session in free mode
       const metadata = musicxml.getScoreMetadata()
-      practiceTracker.startSession(url, metadata.title, metadata.composer, 'free')
+      practiceTracker.startSession(url, metadata.title, metadata.composer, 'free', metadata.totalMeasures)
     },
 
     async afterScoreLoad() {
