@@ -41,6 +41,11 @@ describe('practiceTracker', () => {
       expect(session.composer).toBeNull()
     })
 
+    it('returns null when scoreId is null', () => {
+      const session = tracker.startSession(null, 'Test', 'Composer', 'training')
+      expect(session).toBeNull()
+    })
+
     it('ends session and saves to storage', async () => {
       tracker.startSession('/scores/test.xml', 'Test', 'Composer', 'training')
       const savedSession = await tracker.endSession()

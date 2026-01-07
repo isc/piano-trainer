@@ -201,11 +201,9 @@ export function midiApp() {
 
       // Restart session with new mode
       await practiceTracker.endSession()
-      if (this.scoreUrl) {
-        const metadata = musicxml.getScoreMetadata()
-        const mode = this.trainingMode ? 'training' : 'free'
-        practiceTracker.startSession(this.scoreUrl, metadata.title, metadata.composer, mode)
-      }
+      const metadata = musicxml.getScoreMetadata()
+      const mode = this.trainingMode ? 'training' : 'free'
+      practiceTracker.startSession(this.scoreUrl, metadata.title, metadata.composer, mode)
 
       if (this.trainingMode) {
         musicxml.setTrainingMode(true)

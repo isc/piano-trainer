@@ -26,6 +26,8 @@ export function initPracticeTracker(storageInstance = null) {
   }
 
   function startSession(scoreId, scoreTitle, composer, mode) {
+    if (!scoreId) return null
+
     currentSession = {
       id: generateId(),
       scoreId,
