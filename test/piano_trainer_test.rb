@@ -431,10 +431,6 @@ class PianoTrainerTest < CapybaraTestBase
   end
 
   def test_practice_tracking_saves_session_to_indexeddb
-    # Clear any existing data
-    visit '/score.html'
-    clear_indexeddb
-
     # Load score via URL (enables practice tracking)
     load_score_from_url('simple-score.xml', 4)
 
@@ -503,16 +499,6 @@ class PianoTrainerTest < CapybaraTestBase
         getAllRequest.onsuccess = () => done(getAllRequest.result);
         getAllRequest.onerror = () => done([]);
       };
-    JS
-  end
-
-  def clear_indexeddb
-    page.evaluate_async_script(<<~JS)
-      const done = arguments[arguments.length - 1];
-      const request = indexedDB.deleteDatabase('piano-trainer-practice');
-      request.onsuccess = () => done(true);
-      request.onerror = () => done(false);
-      request.onblocked = () => done(false);
     JS
   end
 
