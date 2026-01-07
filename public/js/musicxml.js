@@ -542,10 +542,6 @@ function handleNoteValidated(measureData, noteData, validatedCount) {
       measureWrongNotes = 0
       callbacks.onMeasureStarted?.(measureData.sourceMeasureIndex)
     }
-
-    if (!trainingMode || repeatCount === 0) {
-      document.getElementById('score')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-    }
   }
 
   // Only consider notes from active hands when checking if measure is complete
