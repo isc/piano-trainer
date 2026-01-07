@@ -342,17 +342,8 @@ function setupMeasureClickHandlers() {
 
   removeMeasureClickHandlers()
 
-  // Track which source measures we've already created rectangles for
-  // This avoids creating duplicate rectangles for repeated measures
-  const processedSourceMeasures = new Set()
-
   allNotes.forEach((measureData, measureIndex) => {
     if (!measureData || !measureData.notes || measureData.notes.length === 0) return
-
-    // Skip if we've already created a rectangle for this source measure
-    const sourceMeasureIndex = measureData.sourceMeasureIndex
-    if (processedSourceMeasures.has(sourceMeasureIndex)) return
-    processedSourceMeasures.add(sourceMeasureIndex)
 
     const noteElements = measureData.notes.map((n) => svgNote(n.note))
     if (noteElements.length === 0) return
