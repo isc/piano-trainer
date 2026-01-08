@@ -1,4 +1,5 @@
 always open a PR to make changes, never commit directly to main
+when merging PRs, always use squash merge (gh pr merge --squash)
 PR titles and descriptions must be in English
 focus on writing DRY code
 use PicoCSS as much as possible, avoid custom CSS code
