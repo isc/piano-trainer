@@ -14,9 +14,6 @@ export function midiApp() {
     midiDeviceName: null,
     osmdInstance: null,
     isRecording: false,
-    recordingStartTime: null,
-    recordingDuration: 0,
-    recordingTimer: null,
     isReplaying: false,
     replayEnded: false,
     cassettes: [],
@@ -125,18 +122,11 @@ export function midiApp() {
     startRecording() {
       midi.startRecording()
       this.isRecording = true
-      this.recordingStartTime = Date.now()
-      this.recordingDuration = 0
-
-      this.recordingTimer = setInterval(() => {
-        this.recordingDuration = Math.floor((Date.now() - this.recordingStartTime) / 1000)
-      }, 1000)
     },
 
     async stopRecording() {
       const result = await midi.stopRecording()
       this.isRecording = false
-      clearInterval(this.recordingTimer)
 
       if (result) {
         const saveResult = await cassettes.saveCassette(result.name, result.data)
@@ -234,6 +224,10 @@ export function midiApp() {
         right: this.rightHandActive,
         left: this.leftHandActive,
       })
+    },
+
+    get recordingDuration() {
+      return midi.state.recordingDuration
     },
   }
 }
