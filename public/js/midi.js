@@ -12,8 +12,6 @@ let state = {
   isRecording: false,
   recordingData: [],
   recordingStartTime: null,
-  recordingDuration: 0,
-  recordingTimer: null,
 }
 
 let callbacks = {
@@ -167,16 +165,10 @@ function startRecording() {
   state.isRecording = true
   state.recordingData = []
   state.recordingStartTime = Date.now()
-  state.recordingDuration = 0
-
-  state.recordingTimer = setInterval(() => {
-    state.recordingDuration = Math.floor((Date.now() - state.recordingStartTime) / 1000)
-  }, 1000)
 }
 
 async function stopRecording() {
   state.isRecording = false
-  clearInterval(state.recordingTimer)
 
   if (state.recordingData.length === 0) {
     alert('Aucune donnée enregistrée !')
