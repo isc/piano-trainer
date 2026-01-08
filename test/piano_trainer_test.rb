@@ -139,7 +139,9 @@ class PianoTrainerTest < CapybaraTestBase
     assert_text 'Mode Entraînement Actif'
 
     # Measure 8 contains polyphonic notes with duplicate stems
-    click_measure(8)
+    # Schumann has a repeat on measures 1-4, so playback sequence is:
+    # indices 0-3: measures 1-4, indices 4-7: repeat, indices 8-11: measures 5-8
+    click_measure(12)
 
     replay_cassette('polyphonic-duplicate-notes')
 
