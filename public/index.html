@@ -15,44 +15,7 @@
   <body>
     <main class="container">
       <div class="grid">
-        <!-- Left column: Library -->
-        <div>
-          <h1>Bibliotheque</h1>
-          <div class="grid">
-            <div>
-              <input
-                type="search"
-                x-model="searchQuery"
-                placeholder="Rechercher une partition..."
-                aria-label="Rechercher une partition"
-              />
-            </div>
-            <div>
-              <a href="score.html" role="button" class="secondary">Charger ma partition</a>
-            </div>
-          </div>
-
-          <table>
-            <thead>
-              <tr>
-                <th>Titre</th>
-                <th>Compositeur</th>
-              </tr>
-            </thead>
-            <tbody>
-              <template x-for="score in filteredScores" :key="score.file">
-                <tr>
-                  <td>
-                    <a :href="'score.html?url=' + encodeURIComponent(getScoreUrl(score))" x-text="score.title"></a>
-                  </td>
-                  <td x-text="score.composer"></td>
-                </tr>
-              </template>
-            </tbody>
-          </table>
-        </div>
-
-        <!-- Right column: Daily Log -->
+        <!-- Left column: Daily Log -->
         <aside id="daily-log">
           <h2>Journal de pratique</h2>
           <template x-for="dateEntry in dailyLogsByDate" :key="dateEntry.date.toISOString()">
@@ -88,6 +51,43 @@
             </div>
           </template>
         </aside>
+
+        <!-- Right column: Library -->
+        <div>
+          <h1>Bibliotheque</h1>
+          <div class="grid">
+            <div>
+              <input
+                type="search"
+                x-model="searchQuery"
+                placeholder="Rechercher une partition..."
+                aria-label="Rechercher une partition"
+              />
+            </div>
+            <div>
+              <a href="score.html" role="button" class="secondary">Charger ma partition</a>
+            </div>
+          </div>
+
+          <table>
+            <thead>
+              <tr>
+                <th>Titre</th>
+                <th>Compositeur</th>
+              </tr>
+            </thead>
+            <tbody>
+              <template x-for="score in filteredScores" :key="score.file">
+                <tr>
+                  <td>
+                    <a :href="'score.html?url=' + encodeURIComponent(getScoreUrl(score))" x-text="score.title"></a>
+                  </td>
+                  <td x-text="score.composer"></td>
+                </tr>
+              </template>
+            </tbody>
+          </table>
+        </div>
       </div>
     </main>
   </body>
