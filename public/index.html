@@ -54,33 +54,38 @@
 
         <!-- Right column: Daily Log -->
         <aside id="daily-log">
-          <h2>
-            Aujourd'hui
-            <small x-show="dailyLog.length > 0" class="muted">· <span x-text="formatDuration(totalPracticeTime)"></span></small>
-          </h2>
-          <template x-if="dailyLog.length === 0">
-            <p class="muted">Aucune pratique aujourd'hui</p>
-          </template>
-          <template x-for="entry in dailyLog" :key="entry.scoreId">
-            <article>
-              <header>
-                <a :href="'score.html?url=' + encodeURIComponent(entry.scoreId)" x-text="entry.scoreTitle || 'Sans titre'"></a>
-                <small class="muted">
-                  <span x-text="entry.composer"></span> · <span x-text="formatDuration(entry.totalPracticeTimeMs)"></span>
-                </small>
-              </header>
-              <p>
-                <template x-if="entry.workedInFull">
-                  <span>Joué en entier</span>
-                </template>
-                <template x-if="!entry.workedInFull">
-                  <span><span x-text="entry.measuresWorked.length"></span> mesures jouées</span>
-                </template>
-                <template x-if="entry.measuresReinforced.length > 0">
-                  <span class="muted">· Renforcement: <span x-text="entry.measuresReinforced.length"></span> mesures</span>
-                </template>
-              </p>
-            </article>
+          <h2>Journal de pratique</h2>
+          <template x-for="dateEntry in dailyLogsByDate" :key="dateEntry.date.toISOString()">
+            <div>
+              <h3>
+                <span x-text="formatDate(dateEntry.date)"></span>
+                <small x-show="dateEntry.log.length > 0" class="muted">· <span x-text="formatDuration(getTotalPracticeTimeForDate(dateEntry))"></span></small>
+              </h3>
+              <template x-if="dateEntry.log.length === 0">
+                <p class="muted">Aucune pratique</p>
+              </template>
+              <template x-for="entry in dateEntry.log" :key="entry.scoreId">
+                <article>
+                  <header>
+                    <a :href="'score.html?url=' + encodeURIComponent(entry.scoreId)" x-text="entry.scoreTitle || 'Sans titre'"></a>
+                    <small class="muted">
+                      <span x-text="entry.composer"></span> · <span x-text="formatDuration(entry.totalPracticeTimeMs)"></span>
+                    </small>
+                  </header>
+                  <p>
+                    <template x-if="entry.workedInFull">
+                      <span>Joué en entier</span>
+                    </template>
+                    <template x-if="!entry.workedInFull">
+                      <span><span x-text="entry.measuresWorked.length"></span> mesures jouées</span>
+                    </template>
+                    <template x-if="entry.measuresReinforced.length > 0">
+                      <span class="muted">· Renforcement: <span x-text="entry.measuresReinforced.length"></span> mesures</span>
+                    </template>
+                  </p>
+                </article>
+              </template>
+            </div>
           </template>
         </aside>
       </div>
