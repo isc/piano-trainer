@@ -7,7 +7,6 @@ export function libraryApp() {
     scores: [],
     searchQuery: '',
     baseUrl: '',
-    dailyLog: [],
     dailyLogsByDate: [],
 
     async init() {
@@ -29,19 +28,12 @@ export function libraryApp() {
         )
       }
       this.dailyLogsByDate = await Promise.all(logPromises)
-
-      // Keep the old dailyLog for backward compatibility (today only)
-      this.dailyLog = this.dailyLogsByDate[0]?.log || []
     },
 
     get filteredScores() {
       if (!this.searchQuery) return this.scores
       const q = this.searchQuery.toLowerCase()
       return this.scores.filter((s) => s.title.toLowerCase().includes(q) || s.composer.toLowerCase().includes(q))
-    },
-
-    get totalPracticeTime() {
-      return this.dailyLog.reduce((sum, entry) => sum + entry.totalPracticeTimeMs, 0)
     },
 
     getScoreUrl(score) {
