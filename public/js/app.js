@@ -225,9 +225,5 @@ export function midiApp() {
         left: this.leftHandActive,
       })
     },
-
-    get recordingDuration() {
-      return midi.state.recordingDuration
-    },
   }
 }

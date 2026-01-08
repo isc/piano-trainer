@@ -87,7 +87,7 @@
         🔴 Démarrer enregistrement
       </button>
       <button @click="stopRecording" x-show="isRecording" class="secondary">⏹️ Arrêter enregistrement</button>
-      <strong x-show="isRecording"> 🔴 Enregistrement en cours... (<span x-text="recordingDuration">0</span>s) </strong>
+      <strong x-show="isRecording"> 🔴 Enregistrement en cours... </strong>
     </main>
 
     <dialog id="noMidiModal" x-bind:open="!navigator.requestMIDIAccess">
