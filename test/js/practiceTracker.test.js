@@ -17,10 +17,20 @@ describe('practiceTracker', () => {
   describe('session management', () => {
     it('saves session to storage on end', async () => {
       tracker.startSession('/scores/test.xml', 'Test', 'Composer', 'training')
+      tracker.startMeasureAttempt(0)
+      tracker.endMeasureAttempt(true)
       const savedSession = await tracker.endSession()
 
       const retrieved = await storage.getSession(savedSession.id)
       expect(retrieved.scoreId).toBe('/scores/test.xml')
+    })
+
+    it('does not save sessions with no completed measures', async () => {
+      tracker.startSession('/scores/test.xml', 'Test', 'Composer', 'training')
+      const savedSession = await tracker.endSession()
+
+      const retrieved = await storage.getSession(savedSession.id)
+      expect(retrieved).toBeNull()
     })
 
     it('toggleMode preserves metadata and saves previous session', async () => {

@@ -115,8 +115,11 @@ export function initPracticeTracker(storageInstance = null) {
 
     const sessionToSave = { ...currentSession }
 
-    await storage.saveSession(sessionToSave)
-    await updateAggregates(sessionToSave)
+    // Don't save sessions with no completed measures
+    if (sessionToSave.measures.length > 0) {
+      await storage.saveSession(sessionToSave)
+      await updateAggregates(sessionToSave)
+    }
 
     currentSession = null
     currentMeasureAttempt = null
