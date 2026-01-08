@@ -6,7 +6,7 @@ class LibraryTest < CapybaraTestBase
   end
 
   def test_library_page_loads_scores
-    assert_text 'Bibliotheque'
+    assert_text 'Bibliothèque'
     assert_selector 'table'
     assert_selector 'tbody tr', count: 70
   end
@@ -30,7 +30,7 @@ class LibraryTest < CapybaraTestBase
     click_link 'Air on the G String'
 
     assert_current_path %r{/score\.html\?url=}
-    assert_text 'Bibliotheque' # Back link
+    assert_text 'Bibliothèque' # Back link
     assert_selector 'svg g.vf-stavenote', minimum: 1
   end
 
@@ -42,10 +42,10 @@ class LibraryTest < CapybaraTestBase
 
   def test_back_link_from_score_to_library
     visit '/score.html'
-    click_on 'Bibliotheque'
+    click_on 'Bibliothèque'
 
     assert_current_path '/index.html'
-    assert_text 'Bibliotheque'
+    assert_text 'Bibliothèque'
     assert_selector 'table'
   end
 end
