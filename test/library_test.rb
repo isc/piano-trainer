@@ -8,7 +8,7 @@ class LibraryTest < CapybaraTestBase
   def test_library_page_loads_scores
     assert_text 'Bibliothèque'
     assert_selector 'table'
-    assert_selector 'tbody tr', count: 70
+    assert_selector 'tbody tr', count: 75
   end
 
   def test_search_filters_scores_by_title
@@ -47,5 +47,17 @@ class LibraryTest < CapybaraTestBase
     assert_current_path '/index.html'
     assert_text 'Bibliothèque'
     assert_selector 'table'
+  end
+
+  def test_search_filters_scores_by_multiple_words_in_any_order
+    # Test "Bach INV"
+    fill_in 'Rechercher une partition', with: 'Bach INV'
+    assert_selector 'tbody tr', count: 3
+    assert_selector 'tr td', text: 'Invention'
+    assert_selector 'tr td', text: 'J.S. Bach'
+
+    # Test "INV Bach" - word order doesn't matter
+    fill_in 'Rechercher une partition', with: 'INV Bach'
+    assert_selector 'tbody tr', count: 3
   end
 end
