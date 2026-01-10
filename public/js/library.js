@@ -32,8 +32,11 @@ export function libraryApp() {
 
     get filteredScores() {
       if (!this.searchQuery) return this.scores
-      const q = this.searchQuery.toLowerCase()
-      return this.scores.filter((s) => s.title.toLowerCase().includes(q) || s.composer.toLowerCase().includes(q))
+      const words = this.searchQuery.toLowerCase().trim().split(/\s+/).filter((w) => w)
+      return this.scores.filter((score) => {
+        const searchableText = `${score.title} ${score.composer}`.toLowerCase()
+        return words.every((word) => searchableText.includes(word))
+      })
     },
 
     getScoreUrl(score) {
