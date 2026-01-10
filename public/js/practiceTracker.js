@@ -313,12 +313,30 @@ export function initPracticeTracker(storageInstance = null) {
 
     return Array.from(scoreMap.values()).map((entry) => {
       const measuresWorked = Array.from(entry.measuresWorked).sort((a, b) => a - b)
-      const workedInFull = entry.totalMeasures && measuresWorked.length >= entry.totalMeasures
+
+      // Count how many times the full score was played across all sessions
+      let timesPlayedInFull = 0
+      if (entry.totalMeasures) {
+        for (const session of entry.sessions) {
+          const sessionMeasuresPlayed = new Set()
+          for (const measure of session.measures) {
+            const measureIndex = Number(measure.sourceMeasureIndex)
+            sessionMeasuresPlayed.add(measureIndex)
+
+            // Check if we've completed a full playthrough
+            if (sessionMeasuresPlayed.size >= entry.totalMeasures) {
+              timesPlayedInFull++
+              sessionMeasuresPlayed.clear() // Reset for next playthrough
+            }
+          }
+        }
+      }
+
       return {
         ...entry,
         measuresWorked,
         measuresReinforced: Array.from(entry.measuresReinforced).sort((a, b) => a - b),
-        workedInFull,
+        timesPlayedInFull,
       }
     })
   }

@@ -36,10 +36,13 @@
                     </small>
                   </header>
                   <p>
-                    <template x-if="entry.workedInFull">
+                    <template x-if="entry.timesPlayedInFull === 1">
                       <span>Joué en entier</span>
                     </template>
-                    <template x-if="!entry.workedInFull">
+                    <template x-if="entry.timesPlayedInFull > 1">
+                      <span>Joué <span x-text="entry.timesPlayedInFull"></span> fois en entier</span>
+                    </template>
+                    <template x-if="entry.timesPlayedInFull === 0">
                       <span><span x-text="entry.measuresWorked.length"></span> mesures jouées</span>
                     </template>
                     <template x-if="entry.measuresReinforced.length > 0">
