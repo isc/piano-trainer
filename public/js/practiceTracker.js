@@ -246,9 +246,22 @@ export function initPracticeTracker(storageInstance = null) {
 
     let count = 0
     for (const session of sessions) {
-      const measuresPlayed = new Set()
+      // Flatten all attempts from all measures and sort chronologically
+      const allAttempts = []
       for (const measure of session.measures) {
-        measuresPlayed.add(Number(measure.sourceMeasureIndex))
+        for (const attempt of measure.attempts) {
+          allAttempts.push({
+            measureIndex: Number(measure.sourceMeasureIndex),
+            startedAt: attempt.startedAt,
+          })
+        }
+      }
+      allAttempts.sort((a, b) => new Date(a.startedAt) - new Date(b.startedAt))
+
+      // Count complete playthroughs in chronological order
+      const measuresPlayed = new Set()
+      for (const attempt of allAttempts) {
+        measuresPlayed.add(attempt.measureIndex)
         if (measuresPlayed.size >= totalMeasures) {
           count++
           measuresPlayed.clear()

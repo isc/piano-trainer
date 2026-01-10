@@ -190,6 +190,33 @@ describe('practiceTracker', () => {
       expect(log[0].timesPlayedInFull).toBe(2)
     })
 
+    it('counts timesPlayedInFull=2 when played twice in same session', async () => {
+      tracker.startSession('/scores/test.xml', 'Test', 'Composer', 'training', 2)
+
+      // First complete playthrough
+      tracker.startMeasureAttempt(0)
+      await new Promise((resolve) => setTimeout(resolve, 5))
+      tracker.endMeasureAttempt(true)
+      tracker.startMeasureAttempt(1)
+      await new Promise((resolve) => setTimeout(resolve, 5))
+      tracker.endMeasureAttempt(true)
+
+      // Second complete playthrough in the same session
+      tracker.startMeasureAttempt(0)
+      await new Promise((resolve) => setTimeout(resolve, 5))
+      tracker.endMeasureAttempt(true)
+      tracker.startMeasureAttempt(1)
+      await new Promise((resolve) => setTimeout(resolve, 5))
+      tracker.endMeasureAttempt(true)
+
+      await tracker.endSession()
+
+      const log = await tracker.getDailyLog(new Date())
+
+      expect(log).toHaveLength(1)
+      expect(log[0].timesPlayedInFull).toBe(2)
+    })
+
     it('returns timesPlayedInFull=0 when score is not fully played', async () => {
       tracker.startSession('/scores/test.xml', 'Test', 'Composer', 'training', 5)
 
