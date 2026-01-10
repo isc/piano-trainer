@@ -35,7 +35,7 @@ export function libraryApp() {
       const words = this.searchQuery.toLowerCase().trim().split(/\s+/).filter((w) => w)
       return this.scores.filter((score) => {
         const searchableText = `${score.title} ${score.composer}`.toLowerCase()
-        return words.every((word) => searchableText.includes(word))
+        return words.every((word) => new RegExp(`\\b${word}`).test(searchableText))
       })
     },
 
