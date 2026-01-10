@@ -241,6 +241,23 @@ export function initPracticeTracker(storageInstance = null) {
     return measures.slice(0, limit)
   }
 
+  function countFullPlaythroughs(sessions, totalMeasures) {
+    if (!totalMeasures) return 0
+
+    let count = 0
+    for (const session of sessions) {
+      const measuresPlayed = new Set()
+      for (const measure of session.measures) {
+        measuresPlayed.add(Number(measure.sourceMeasureIndex))
+        if (measuresPlayed.size >= totalMeasures) {
+          count++
+          measuresPlayed.clear()
+        }
+      }
+    }
+    return count
+  }
+
   function getSessionEndTime(session) {
     if (session.endedAt) {
       return new Date(session.endedAt)
@@ -311,34 +328,12 @@ export function initPracticeTracker(storageInstance = null) {
       }
     }
 
-    return Array.from(scoreMap.values()).map((entry) => {
-      const measuresWorked = Array.from(entry.measuresWorked).sort((a, b) => a - b)
-
-      // Count how many times the full score was played across all sessions
-      let timesPlayedInFull = 0
-      if (entry.totalMeasures) {
-        for (const session of entry.sessions) {
-          const sessionMeasuresPlayed = new Set()
-          for (const measure of session.measures) {
-            const measureIndex = Number(measure.sourceMeasureIndex)
-            sessionMeasuresPlayed.add(measureIndex)
-
-            // Check if we've completed a full playthrough
-            if (sessionMeasuresPlayed.size >= entry.totalMeasures) {
-              timesPlayedInFull++
-              sessionMeasuresPlayed.clear() // Reset for next playthrough
-            }
-          }
-        }
-      }
-
-      return {
-        ...entry,
-        measuresWorked,
-        measuresReinforced: Array.from(entry.measuresReinforced).sort((a, b) => a - b),
-        timesPlayedInFull,
-      }
-    })
+    return Array.from(scoreMap.values()).map((entry) => ({
+      ...entry,
+      measuresWorked: Array.from(entry.measuresWorked).sort((a, b) => a - b),
+      measuresReinforced: Array.from(entry.measuresReinforced).sort((a, b) => a - b),
+      timesPlayedInFull: countFullPlaythroughs(entry.sessions, entry.totalMeasures),
+    }))
   }
 
   async function getAllScores() {
