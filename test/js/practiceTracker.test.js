@@ -83,6 +83,57 @@ describe('practiceTracker', () => {
     })
   })
 
+  describe('session duration', () => {
+    it('calculates duration based only on measure timestamps, not session start time', async () => {
+      tracker.startSession('/scores/test.xml', 'Test', 'Composer', 'training')
+
+      // Wait 100ms to simulate user delay before starting to play
+      await new Promise((resolve) => setTimeout(resolve, 100))
+
+      const measureStart = Date.now()
+
+      // Play first measure
+      tracker.startMeasureAttempt(0)
+      await new Promise((resolve) => setTimeout(resolve, 50))
+      tracker.endMeasureAttempt(true)
+
+      // Play second measure
+      tracker.startMeasureAttempt(1)
+      await new Promise((resolve) => setTimeout(resolve, 50))
+      tracker.endMeasureAttempt(true)
+
+      await tracker.endSession()
+
+      const stats = await tracker.getScoreStats('/scores/test.xml')
+
+      // Duration should be approximately 100ms (two measures of ~50ms each)
+      // NOT ~200ms which would include the initial 100ms delay
+      expect(stats.totalPracticeTimeMs).toBeGreaterThan(80)
+      expect(stats.totalPracticeTimeMs).toBeLessThan(150)
+    })
+
+    it('calculates correct duration for daily log', async () => {
+      const today = new Date()
+      tracker.startSession('/scores/test.xml', 'Test Score', 'Composer', 'training')
+
+      // Wait before starting to play
+      await new Promise((resolve) => setTimeout(resolve, 100))
+
+      tracker.startMeasureAttempt(0)
+      await new Promise((resolve) => setTimeout(resolve, 50))
+      tracker.endMeasureAttempt(true)
+
+      await tracker.endSession()
+
+      const dailyLog = await tracker.getDailyLog(today)
+
+      expect(dailyLog).toHaveLength(1)
+      // Should be ~50ms, not ~150ms
+      expect(dailyLog[0].totalPracticeTimeMs).toBeGreaterThan(30)
+      expect(dailyLog[0].totalPracticeTimeMs).toBeLessThan(100)
+    })
+  })
+
   describe('aggregates', () => {
     it('accumulates sessions and calculates measure statistics', async () => {
       // First session
