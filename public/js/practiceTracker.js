@@ -147,7 +147,7 @@ export function initPracticeTracker(storageInstance = null) {
     aggregate.lastPlayedAt = sessionEndTime.toISOString()
     aggregate.totalSessions++
 
-    const sessionDuration = sessionEndTime - new Date(session.startedAt)
+    const sessionDuration = getSessionDuration(session)
     aggregate.totalPracticeTimeMs += sessionDuration
 
     for (const measureData of session.measures) {
@@ -271,6 +271,32 @@ export function initPracticeTracker(storageInstance = null) {
     return count
   }
 
+  function getSessionDuration(session) {
+    // Calculate session duration based only on measure attempt timestamps
+    if (!session.measures || session.measures.length === 0) {
+      return 0
+    }
+
+    let firstAttemptTime = Infinity
+    let lastAttemptEndTime = 0
+
+    for (const measure of session.measures) {
+      for (const attempt of measure.attempts) {
+        const attemptStart = new Date(attempt.startedAt).getTime()
+        const attemptEnd = attemptStart + attempt.durationMs
+
+        if (attemptStart < firstAttemptTime) {
+          firstAttemptTime = attemptStart
+        }
+        if (attemptEnd > lastAttemptEndTime) {
+          lastAttemptEndTime = attemptEnd
+        }
+      }
+    }
+
+    return firstAttemptTime === Infinity ? 0 : lastAttemptEndTime - firstAttemptTime
+  }
+
   function getSessionEndTime(session) {
     if (session.endedAt) {
       return new Date(session.endedAt)
@@ -328,8 +354,7 @@ export function initPracticeTracker(storageInstance = null) {
         entry.totalMeasures = session.totalMeasures
       }
 
-      const endTime = getSessionEndTime(session)
-      const sessionDuration = endTime - new Date(session.startedAt)
+      const sessionDuration = getSessionDuration(session)
       entry.totalPracticeTimeMs += sessionDuration
 
       for (const measure of session.measures) {
