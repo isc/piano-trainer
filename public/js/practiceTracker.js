@@ -241,6 +241,36 @@ export function initPracticeTracker(storageInstance = null) {
     return measures.slice(0, limit)
   }
 
+  function countFullPlaythroughs(sessions, totalMeasures) {
+    if (!totalMeasures) return 0
+
+    let count = 0
+    for (const session of sessions) {
+      // Flatten all attempts from all measures and sort chronologically
+      const allAttempts = []
+      for (const measure of session.measures) {
+        for (const attempt of measure.attempts) {
+          allAttempts.push({
+            measureIndex: Number(measure.sourceMeasureIndex),
+            startedAt: attempt.startedAt,
+          })
+        }
+      }
+      allAttempts.sort((a, b) => new Date(a.startedAt) - new Date(b.startedAt))
+
+      // Count complete playthroughs in chronological order
+      const measuresPlayed = new Set()
+      for (const attempt of allAttempts) {
+        measuresPlayed.add(attempt.measureIndex)
+        if (measuresPlayed.size >= totalMeasures) {
+          count++
+          measuresPlayed.clear()
+        }
+      }
+    }
+    return count
+  }
+
   function getSessionEndTime(session) {
     if (session.endedAt) {
       return new Date(session.endedAt)
@@ -311,16 +341,12 @@ export function initPracticeTracker(storageInstance = null) {
       }
     }
 
-    return Array.from(scoreMap.values()).map((entry) => {
-      const measuresWorked = Array.from(entry.measuresWorked).sort((a, b) => a - b)
-      const workedInFull = entry.totalMeasures && measuresWorked.length >= entry.totalMeasures
-      return {
-        ...entry,
-        measuresWorked,
-        measuresReinforced: Array.from(entry.measuresReinforced).sort((a, b) => a - b),
-        workedInFull,
-      }
-    })
+    return Array.from(scoreMap.values()).map((entry) => ({
+      ...entry,
+      measuresWorked: Array.from(entry.measuresWorked).sort((a, b) => a - b),
+      measuresReinforced: Array.from(entry.measuresReinforced).sort((a, b) => a - b),
+      timesPlayedInFull: countFullPlaythroughs(entry.sessions, entry.totalMeasures),
+    }))
   }
 
   async function getAllScores() {
