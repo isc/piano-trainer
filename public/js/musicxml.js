@@ -559,6 +559,9 @@ function handleNoteValidated(measureData, noteData, validatedCount) {
       if (repeatCount >= targetRepeatCount) {
         if (currentMeasureIndex + 1 >= allNotes.length) {
           callbacks.onTrainingComplete?.()
+          setTimeout(() => {
+            resetProgress()
+          }, TRAINING_RESET_DELAY_MS)
         } else {
           setTimeout(() => {
             resetMeasureProgress()
@@ -609,6 +612,9 @@ function handleNoteValidated(measureData, noteData, validatedCount) {
         measureWrongNotes = 0
       } else {
         callbacks.onScoreCompleted?.(currentMeasureIndex)
+        setTimeout(() => {
+          resetProgress()
+        }, TRAINING_RESET_DELAY_MS)
       }
     }
   }
@@ -668,5 +674,6 @@ function resetProgress() {
     }
   }
   resetPlaybackState()
+  window.scrollTo({ top: 0, behavior: 'smooth' })
 }
 
