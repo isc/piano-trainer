@@ -203,7 +203,6 @@ export function midiApp() {
         this.trainingComplete = false
       } else {
         musicxml.setTrainingMode(false)
-        musicxml.resetProgress()
         this.trainingComplete = false
       }
     },

@@ -558,6 +558,7 @@ function handleNoteValidated(measureData, noteData, validatedCount) {
 
       if (repeatCount >= targetRepeatCount) {
         if (currentMeasureIndex + 1 >= allNotes.length) {
+          resetProgress()
           callbacks.onTrainingComplete?.()
         } else {
           setTimeout(() => {
@@ -608,6 +609,7 @@ function handleNoteValidated(measureData, noteData, validatedCount) {
         measureStartTime = null
         measureWrongNotes = 0
       } else {
+        resetProgress()
         callbacks.onScoreCompleted?.(currentMeasureIndex)
       }
     }
