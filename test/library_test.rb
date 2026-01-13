@@ -95,14 +95,11 @@ class LibraryTest < CapybaraTestBase
     exported_file = Dir.glob(File.join(DOWNLOAD_DIR, 'piano-trainer-backup-*.json')).first
     assert exported_file, 'Export file should be downloaded'
 
-    # Verify exported content matches what we imported
+    # Verify exported sessions match imported sessions exactly
+    imported_data = JSON.parse(File.read(fixture_path))
     exported_data = JSON.parse(File.read(exported_file))
-    assert_equal 1, exported_data['sessions'].length
-    assert_equal 'test-session-1', exported_data['sessions'][0]['id']
-    assert_equal '/scores/test-roundtrip.xml', exported_data['sessions'][0]['scoreId']
-    assert_equal 'Test Roundtrip Score', exported_data['sessions'][0]['scoreTitle']
-    assert_equal 1, exported_data['sessions'][0]['measures'].length
-    assert_equal 1500, exported_data['sessions'][0]['measures'][0]['attempts'][0]['durationMs']
+
+    assert_equal imported_data['sessions'], exported_data['sessions']
 
     # Clean up
     File.delete(exported_file)
