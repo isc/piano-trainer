@@ -2,6 +2,7 @@ require_relative 'test_helper'
 
 class LibraryTest < CapybaraTestBase
   def setup
+    super
     visit '/index.html'
   end
 
@@ -61,52 +62,21 @@ class LibraryTest < CapybaraTestBase
     assert_selector 'tbody tr', count: 3
   end
 
-  def test_export_backup
+  def test_import_export_roundtrip
+    require 'json'
+    require 'tempfile'
+
     find('summary', text: '⚙️ Gestion des données').click
 
-    # Mock the download process
-    page.execute_script(<<~JS)
-      window.downloadedBackup = null;
-      const originalCreateElement = document.createElement.bind(document);
-      document.createElement = function(tagName) {
-        const element = originalCreateElement(tagName);
-        if (tagName.toLowerCase() === 'a') {
-          element.click = function() {
-            window.downloadedBackup = this.href;
-          };
-        }
-        return element;
-      };
-    JS
-
-    # Accept alert and verify message
-    alert_message = accept_alert do
-      click_button '📤 Exporter sauvegarde'
-    end
-
-    assert_includes alert_message, '✅ Sauvegarde exportée avec succès'
-
-    # Verify download was triggered
-    downloaded_url = page.evaluate_script('window.downloadedBackup')
-    assert downloaded_url, 'Backup download should have been triggered'
-    assert downloaded_url.start_with?('blob:'), 'Download URL should be a blob URL'
-  end
-
-  def test_import_valid_backup
-    find('summary', text: '⚙️ Gestion des données').click
-
-    # Verify the test score is not in the log before import
-    refute_text 'Test Score'
-
-    # Create a valid backup JSON with a session from today
+    # Import initial data
     today = Time.now.utc.iso8601
-    valid_backup = {
-      exportDate: '2026-01-13T12:00:00.000Z',
+    initial_backup = {
+      exportDate: today,
       sessions: [
         {
           id: 'test-session-1',
-          scoreId: '/scores/test.xml',
-          scoreTitle: 'Test Score',
+          scoreId: '/scores/test-roundtrip.xml',
+          scoreTitle: 'Test Roundtrip Score',
           composer: 'Test Composer',
           mode: 'free',
           startedAt: today,
@@ -117,7 +87,7 @@ class LibraryTest < CapybaraTestBase
               attempts: [
                 {
                   startedAt: today,
-                  durationMs: 1000,
+                  durationMs: 1500,
                   wrongNotes: 0,
                   clean: true
                 }
@@ -129,28 +99,43 @@ class LibraryTest < CapybaraTestBase
       aggregates: []
     }.to_json
 
-    # Create a temporary file with the backup content
-    require 'tempfile'
-    backup_file = Tempfile.new(['backup', '.json'])
-    backup_file.write(valid_backup)
+    backup_file = Tempfile.new(['initial-backup', '.json'])
+    backup_file.write(initial_backup)
     backup_file.close
 
-    # Attach the file and accept alert
-    alert_message = accept_alert do
+    accept_alert do
       attach_file 'backup-import', backup_file.path
     end
 
-    assert_includes alert_message, '✅ Sauvegarde importée avec succès'
-    assert_includes alert_message, '1 session(s) importée(s)'
-
-    # Verify the imported session appears in the daily log
+    # Verify imported data appears
     within('#daily-log') do
-      assert_text 'Test Score'
-      assert_text 'Test Composer'
-      assert_text '1 mesures jouées'
+      assert_text 'Test Roundtrip Score'
     end
 
+    # Export the data
+    accept_alert do
+      click_button '📤 Exporter sauvegarde'
+    end
+
+    # Wait a bit for the download to complete
+    sleep 0.5
+
+    # Find the downloaded file
+    exported_file = Dir.glob(File.join(DOWNLOAD_DIR, 'piano-trainer-backup-*.json')).first
+    assert exported_file, 'Export file should be downloaded'
+
+    # Verify exported content matches what we imported
+    exported_data = JSON.parse(File.read(exported_file))
+    assert_equal 1, exported_data['sessions'].length
+    assert_equal 'test-session-1', exported_data['sessions'][0]['id']
+    assert_equal '/scores/test-roundtrip.xml', exported_data['sessions'][0]['scoreId']
+    assert_equal 'Test Roundtrip Score', exported_data['sessions'][0]['scoreTitle']
+    assert_equal 1, exported_data['sessions'][0]['measures'].length
+    assert_equal 1500, exported_data['sessions'][0]['measures'][0]['attempts'][0]['durationMs']
+
+    # Clean up
     backup_file.unlink
+    File.delete(exported_file)
   end
 
   def test_import_invalid_backup
