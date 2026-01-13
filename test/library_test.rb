@@ -99,6 +99,7 @@ class LibraryTest < CapybaraTestBase
     imported_data = JSON.parse(File.read(fixture_path))
     exported_data = JSON.parse(File.read(exported_file))
 
+    assert exported_data['exportDate'], 'Export should have exportDate'
     assert_equal imported_data['sessions'], exported_data['sessions']
 
     # Clean up
