@@ -2,8 +2,8 @@ import { initPracticeTracker } from './practiceTracker.js'
 import { initPracticeStorage } from './practiceStorage.js'
 
 export function libraryApp() {
-  const practiceTracker = initPracticeTracker()
   const storage = initPracticeStorage()
+  const practiceTracker = initPracticeTracker(storage)
 
   return {
     scores: [],
@@ -15,7 +15,6 @@ export function libraryApp() {
       const [scoresResponse] = await Promise.all([
         fetch('/data/scores.json'),
         practiceTracker.init(),
-        storage.init(),
       ])
       const data = await scoresResponse.json()
       this.scores = data.scores
