@@ -58,6 +58,20 @@
         <!-- Right column: Library -->
         <div>
           <h1>Bibliothèque</h1>
+
+          <details>
+            <summary>⚙️ Gestion des données</summary>
+            <div class="grid">
+              <div>
+                <label for="backup-import">📥 Importer sauvegarde</label>
+                <input type="file" accept=".json" @change="importBackup($event)" id="backup-import" />
+              </div>
+              <div>
+                <button @click="exportBackup" class="secondary">📤 Exporter sauvegarde</button>
+              </div>
+            </div>
+          </details>
+
           <div class="grid">
             <div>
               <input

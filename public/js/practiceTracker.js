@@ -20,6 +20,8 @@ export function initPracticeTracker(storageInstance = null) {
     getAllScores,
     computeScoreStatus,
     getCurrentSession: () => currentSession,
+    importBackup: (backupData) => storage.importBackup(backupData),
+    exportBackup: () => storage.exportBackup(),
   }
 
   function generateId() {
