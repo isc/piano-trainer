@@ -60,4 +60,111 @@ class LibraryTest < CapybaraTestBase
     fill_in 'Rechercher une partition', with: 'INV Bach'
     assert_selector 'tbody tr', count: 3
   end
+
+  def test_backup_import_export_section_exists
+    # Verify the backup import/export section is present
+    assert_selector 'details summary', text: '⚙️ Gestion des données'
+
+    # Expand the details section
+    find('details summary', text: '⚙️ Gestion des données').click
+
+    assert_selector 'label[for="backup-import"]', text: '📥 Importer sauvegarde'
+    assert_selector 'input#backup-import[type="file"][accept=".json"]'
+    assert_button '📤 Exporter sauvegarde'
+  end
+
+  def test_export_backup
+    find('details summary', text: '⚙️ Gestion des données').click
+
+    # Mock the download process
+    page.execute_script(<<~JS)
+      window.downloadedBackup = null;
+      const originalCreateElement = document.createElement.bind(document);
+      document.createElement = function(tagName) {
+        const element = originalCreateElement(tagName);
+        if (tagName.toLowerCase() === 'a') {
+          element.click = function() {
+            window.downloadedBackup = this.href;
+          };
+        }
+        return element;
+      };
+    JS
+
+    # Accept alert and verify message
+    alert_message = accept_alert do
+      click_button '📤 Exporter sauvegarde'
+    end
+
+    assert_includes alert_message, '✅ Sauvegarde exportée avec succès'
+
+    # Verify download was triggered
+    downloaded_url = page.evaluate_script('window.downloadedBackup')
+    assert downloaded_url, 'Backup download should have been triggered'
+    assert downloaded_url.start_with?('blob:'), 'Download URL should be a blob URL'
+  end
+
+  def test_import_valid_backup
+    find('details summary', text: '⚙️ Gestion des données').click
+
+    # Create a valid backup JSON
+    valid_backup = {
+      exportDate: '2026-01-13T12:00:00.000Z',
+      sessions: [
+        {
+          id: 'test-session-1',
+          scoreId: '/scores/test.xml',
+          scoreTitle: 'Test Score',
+          composer: 'Test Composer',
+          mode: 'free',
+          startedAt: '2026-01-13T10:00:00.000Z',
+          endedAt: '2026-01-13T10:30:00.000Z',
+          measures: []
+        }
+      ],
+      aggregates: []
+    }.to_json
+
+    # Create a temporary file with the backup content
+    require 'tempfile'
+    backup_file = Tempfile.new(['backup', '.json'])
+    backup_file.write(valid_backup)
+    backup_file.close
+
+    # Attach the file and accept alert
+    alert_message = accept_alert do
+      attach_file 'backup-import', backup_file.path
+      sleep 0.5 # Wait for file processing
+    end
+
+    assert_includes alert_message, '✅ Sauvegarde importée avec succès'
+    assert_includes alert_message, '1 session(s) importée(s)'
+
+    backup_file.unlink
+  end
+
+  def test_import_invalid_backup
+    find('details summary', text: '⚙️ Gestion des données').click
+
+    # Create an invalid backup JSON (missing sessions field)
+    invalid_backup = {
+      exportDate: '2026-01-13T12:00:00.000Z'
+    }.to_json
+
+    require 'tempfile'
+    backup_file = Tempfile.new(['backup', '.json'])
+    backup_file.write(invalid_backup)
+    backup_file.close
+
+    # Attach the file and accept error alert
+    alert_message = accept_alert do
+      attach_file 'backup-import', backup_file.path
+      sleep 0.5 # Wait for file processing
+    end
+
+    assert_includes alert_message, '❌ Erreur lors de l\'import'
+    assert_includes alert_message, 'Invalid backup data format'
+
+    backup_file.unlink
+  end
 end
