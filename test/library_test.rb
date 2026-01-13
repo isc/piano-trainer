@@ -62,18 +62,20 @@ class LibraryTest < CapybaraTestBase
   end
 
   def test_import_export_roundtrip
+    # Set browser time to match fixture date (2026-01-10)
+    page.driver.browser.page.command('Emulation.setVirtualTimePolicy',
+      policy: 'advance',
+      initialVirtualTime: Time.new(2026, 1, 10, 12, 0, 0).to_i
+    )
+
+    visit '/index.html'
     find('summary', text: '⚙️ Gestion des données').click
 
     # Import initial data from fixture
     fixture_path = File.expand_path('fixtures/initial-backup.json', __dir__)
-    initial_backup = File.read(fixture_path).gsub('{{TODAY}}', Time.now.utc.iso8601)
-
-    backup_file = Tempfile.new(['initial-backup', '.json'])
-    backup_file.write(initial_backup)
-    backup_file.close
 
     accept_alert do
-      attach_file 'backup-import', backup_file.path
+      attach_file 'backup-import', fixture_path
     end
 
     # Verify imported data appears
@@ -103,7 +105,6 @@ class LibraryTest < CapybaraTestBase
     assert_equal 1500, exported_data['sessions'][0]['measures'][0]['attempts'][0]['durationMs']
 
     # Clean up
-    backup_file.unlink
     File.delete(exported_file)
   end
 

@@ -1,5 +1,5 @@
 {
-  "exportDate": "{{TODAY}}",
+  "exportDate": "2026-01-10T12:00:00.000Z",
   "sessions": [
     {
       "id": "test-session-1",
@@ -7,14 +7,14 @@
       "scoreTitle": "Test Roundtrip Score",
       "composer": "Test Composer",
       "mode": "free",
-      "startedAt": "{{TODAY}}",
-      "endedAt": "{{TODAY}}",
+      "startedAt": "2026-01-10T12:00:00.000Z",
+      "endedAt": "2026-01-10T12:00:00.000Z",
       "measures": [
         {
           "sourceMeasureIndex": 0,
           "attempts": [
             {
-              "startedAt": "{{TODAY}}",
+              "startedAt": "2026-01-10T12:00:00.000Z",
               "durationMs": 1500,
               "wrongNotes": 0,
               "clean": true
