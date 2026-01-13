@@ -2,7 +2,6 @@ require_relative 'test_helper'
 
 class LibraryTest < CapybaraTestBase
   def setup
-    super
     visit '/index.html'
   end
 
