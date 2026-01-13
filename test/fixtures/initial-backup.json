@@ -1,0 +1,28 @@
+{
+  "exportDate": "{{TODAY}}",
+  "sessions": [
+    {
+      "id": "test-session-1",
+      "scoreId": "/scores/test-roundtrip.xml",
+      "scoreTitle": "Test Roundtrip Score",
+      "composer": "Test Composer",
+      "mode": "free",
+      "startedAt": "{{TODAY}}",
+      "endedAt": "{{TODAY}}",
+      "measures": [
+        {
+          "sourceMeasureIndex": 0,
+          "attempts": [
+            {
+              "startedAt": "{{TODAY}}",
+              "durationMs": 1500,
+              "wrongNotes": 0,
+              "clean": true
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "aggregates": []
+}

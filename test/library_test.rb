@@ -64,36 +64,9 @@ class LibraryTest < CapybaraTestBase
   def test_import_export_roundtrip
     find('summary', text: '⚙️ Gestion des données').click
 
-    # Import initial data
-    today = Time.now.utc.iso8601
-    initial_backup = {
-      exportDate: today,
-      sessions: [
-        {
-          id: 'test-session-1',
-          scoreId: '/scores/test-roundtrip.xml',
-          scoreTitle: 'Test Roundtrip Score',
-          composer: 'Test Composer',
-          mode: 'free',
-          startedAt: today,
-          endedAt: today,
-          measures: [
-            {
-              sourceMeasureIndex: 0,
-              attempts: [
-                {
-                  startedAt: today,
-                  durationMs: 1500,
-                  wrongNotes: 0,
-                  clean: true
-                }
-              ]
-            }
-          ]
-        }
-      ],
-      aggregates: []
-    }.to_json
+    # Import initial data from fixture
+    fixture_path = File.expand_path('fixtures/initial-backup.json', __dir__)
+    initial_backup = File.read(fixture_path).gsub('{{TODAY}}', Time.now.utc.iso8601)
 
     backup_file = Tempfile.new(['initial-backup', '.json'])
     backup_file.write(initial_backup)
