@@ -1,7 +1,9 @@
 import { initPracticeTracker } from './practiceTracker.js'
+import { initPracticeStorage } from './practiceStorage.js'
 
 export function libraryApp() {
   const practiceTracker = initPracticeTracker()
+  const storage = initPracticeStorage()
 
   return {
     scores: [],
@@ -10,7 +12,11 @@ export function libraryApp() {
     dailyLogsByDate: [],
 
     async init() {
-      const [scoresResponse] = await Promise.all([fetch('/data/scores.json'), practiceTracker.init()])
+      const [scoresResponse] = await Promise.all([
+        fetch('/data/scores.json'),
+        practiceTracker.init(),
+        storage.init(),
+      ])
       const data = await scoresResponse.json()
       this.scores = data.scores
       this.baseUrl = data.baseUrl
@@ -79,7 +85,7 @@ export function libraryApp() {
         const text = await file.text()
         const backupData = JSON.parse(text)
 
-        const result = await practiceTracker.importBackup(backupData)
+        const result = await storage.importBackup(backupData)
 
         if (result.success) {
           alert(
@@ -101,7 +107,7 @@ export function libraryApp() {
 
     async exportBackup() {
       try {
-        const backupData = await practiceTracker.exportBackup()
+        const backupData = await storage.exportBackup()
 
         const blob = new Blob([JSON.stringify(backupData, null, 2)], {
           type: 'application/json',
