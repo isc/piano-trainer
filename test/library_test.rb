@@ -62,7 +62,7 @@ class LibraryTest < CapybaraTestBase
   end
 
   def test_export_backup
-    find('details summary', text: '⚙️ Gestion des données').click
+    find('summary', text: '⚙️ Gestion des données').click
 
     # Mock the download process
     page.execute_script(<<~JS)
@@ -93,7 +93,7 @@ class LibraryTest < CapybaraTestBase
   end
 
   def test_import_valid_backup
-    find('details summary', text: '⚙️ Gestion des données').click
+    find('summary', text: '⚙️ Gestion des données').click
 
     # Verify the test score is not in the log before import
     refute_text 'Test Score'
@@ -154,7 +154,7 @@ class LibraryTest < CapybaraTestBase
   end
 
   def test_import_invalid_backup
-    find('details summary', text: '⚙️ Gestion des données').click
+    find('summary', text: '⚙️ Gestion des données').click
 
     # Create an invalid backup JSON (missing sessions field)
     invalid_backup = {
