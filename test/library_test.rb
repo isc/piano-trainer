@@ -122,7 +122,6 @@ class LibraryTest < CapybaraTestBase
     # Attach the file and accept alert
     alert_message = accept_alert do
       attach_file 'backup-import', backup_file.path
-      sleep 0.5 # Wait for file processing
     end
 
     assert_includes alert_message, '✅ Sauvegarde importée avec succès'
@@ -147,7 +146,6 @@ class LibraryTest < CapybaraTestBase
     # Attach the file and accept error alert
     alert_message = accept_alert do
       attach_file 'backup-import', backup_file.path
-      sleep 0.5 # Wait for file processing
     end
 
     assert_includes alert_message, '❌ Erreur lors de l\'import'
