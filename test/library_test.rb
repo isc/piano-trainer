@@ -95,7 +95,11 @@ class LibraryTest < CapybaraTestBase
   def test_import_valid_backup
     find('details summary', text: '⚙️ Gestion des données').click
 
-    # Create a valid backup JSON
+    # Verify the test score is not in the log before import
+    refute_text 'Test Score'
+
+    # Create a valid backup JSON with a session from today
+    today = Time.now.utc.iso8601
     valid_backup = {
       exportDate: '2026-01-13T12:00:00.000Z',
       sessions: [
@@ -105,9 +109,21 @@ class LibraryTest < CapybaraTestBase
           scoreTitle: 'Test Score',
           composer: 'Test Composer',
           mode: 'free',
-          startedAt: '2026-01-13T10:00:00.000Z',
-          endedAt: '2026-01-13T10:30:00.000Z',
-          measures: []
+          startedAt: today,
+          endedAt: today,
+          measures: [
+            {
+              sourceMeasureIndex: 0,
+              attempts: [
+                {
+                  startedAt: today,
+                  durationMs: 1000,
+                  wrongNotes: 0,
+                  clean: true
+                }
+              ]
+            }
+          ]
         }
       ],
       aggregates: []
@@ -126,6 +142,13 @@ class LibraryTest < CapybaraTestBase
 
     assert_includes alert_message, '✅ Sauvegarde importée avec succès'
     assert_includes alert_message, '1 session(s) importée(s)'
+
+    # Verify the imported session appears in the daily log
+    within('#daily-log') do
+      assert_text 'Test Score'
+      assert_text 'Test Composer'
+      assert_text '1 mesures jouées'
+    end
 
     backup_file.unlink
   end
