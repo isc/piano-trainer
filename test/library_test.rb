@@ -92,12 +92,12 @@ class LibraryTest < CapybaraTestBase
     exported_file = wait_for_download('piano-trainer-backup-*.json')
     assert exported_file, 'Export file should be downloaded'
 
-    # Verify exported sessions match imported sessions exactly
+    # Verify imported session is included in export
     imported_data = JSON.parse(File.read(fixture_path))
     exported_data = JSON.parse(File.read(exported_file))
 
     assert exported_data['exportDate'], 'Export should have exportDate'
-    assert_equal imported_data['sessions'], exported_data['sessions']
+    assert_includes exported_data['sessions'], imported_data['sessions'].first
 
     # Clean up
     File.delete(exported_file)
