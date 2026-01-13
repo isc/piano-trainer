@@ -31,6 +31,19 @@ class CapybaraTestBase < Minitest::Test
   include Capybara::DSL
   include Capybara::Minitest::Assertions
 
+  # Wait for a file matching pattern to appear in download dir
+  def wait_for_download(pattern, timeout: Capybara.default_max_wait_time)
+    Timeout.timeout(timeout) do
+      loop do
+        file = Dir.glob(File.join(DOWNLOAD_DIR, pattern)).first
+        return file if file
+        sleep 0.05
+      end
+    end
+  rescue Timeout::Error
+    nil
+  end
+
   # Helper to simulate MIDI input events
   # Example: simulate_midi_input("ON C4") or simulate_midi_input("OFF C4")
   def simulate_midi_input(notation)

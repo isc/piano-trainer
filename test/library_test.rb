@@ -88,11 +88,8 @@ class LibraryTest < CapybaraTestBase
       click_button '📤 Exporter sauvegarde'
     end
 
-    # Wait a bit for the download to complete
-    sleep 0.5
-
-    # Find the downloaded file
-    exported_file = Dir.glob(File.join(DOWNLOAD_DIR, 'piano-trainer-backup-*.json')).first
+    # Wait for download to complete
+    exported_file = wait_for_download('piano-trainer-backup-*.json')
     assert exported_file, 'Export file should be downloaded'
 
     # Verify exported sessions match imported sessions exactly
