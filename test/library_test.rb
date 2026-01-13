@@ -61,18 +61,6 @@ class LibraryTest < CapybaraTestBase
     assert_selector 'tbody tr', count: 3
   end
 
-  def test_backup_import_export_section_exists
-    # Verify the backup import/export section is present
-    assert_selector 'details summary', text: '⚙️ Gestion des données'
-
-    # Expand the details section
-    find('details summary', text: '⚙️ Gestion des données').click
-
-    assert_selector 'label[for="backup-import"]', text: '📥 Importer sauvegarde'
-    assert_selector 'input#backup-import[type="file"][accept=".json"]'
-    assert_button '📤 Exporter sauvegarde'
-  end
-
   def test_export_backup
     find('details summary', text: '⚙️ Gestion des données').click
 
