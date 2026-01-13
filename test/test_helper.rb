@@ -9,20 +9,40 @@ require_relative '../app'
 
 Capybara.app = App
 
+# Configure download directory for tests
+DOWNLOAD_DIR = Dir.mktmpdir
+
 Capybara.register_driver(:cuprite) do |app|
   Capybara::Cuprite::Driver.new(
     app,
     headless: !ENV['DISABLE_HEADLESS'],
     logger: StringIO.new,
-    browser_options: { 'disable-gpu' => nil }
+    browser_options: { 'disable-gpu' => nil },
+    save_path: DOWNLOAD_DIR
   )
 end
 Capybara.default_driver = :cuprite
 Capybara.enable_aria_label = true
 
+# Clean up download directory at exit
+at_exit { FileUtils.rm_rf(DOWNLOAD_DIR) }
+
 class CapybaraTestBase < Minitest::Test
   include Capybara::DSL
   include Capybara::Minitest::Assertions
+
+  # Wait for a file matching pattern to appear in download dir
+  def wait_for_download(pattern, timeout: Capybara.default_max_wait_time)
+    Timeout.timeout(timeout) do
+      loop do
+        file = Dir.glob(File.join(DOWNLOAD_DIR, pattern)).first
+        return file if file
+        sleep 0.05
+      end
+    end
+  rescue Timeout::Error
+    nil
+  end
 
   # Helper to simulate MIDI input events
   # Example: simulate_midi_input("ON C4") or simulate_midi_input("OFF C4")

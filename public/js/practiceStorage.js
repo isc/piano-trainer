@@ -15,6 +15,8 @@ export function initPracticeStorage() {
     getAggregate,
     getAllAggregates,
     clearAll,
+    importBackup,
+    exportBackup,
   }
 }
 
@@ -147,5 +149,57 @@ async function clearAll() {
 
     transaction.oncomplete = () => resolve()
     transaction.onerror = () => reject(new Error('Failed to clear storage'))
+  })
+}
+
+async function exportBackup() {
+  const sessions = await getSessions()
+  const aggregates = await getAllAggregates()
+
+  return {
+    exportDate: new Date().toISOString(),
+    sessions,
+    aggregates,
+  }
+}
+
+async function importBackup(backupData) {
+  if (!backupData || !backupData.sessions) {
+    throw new Error('Invalid backup data format')
+  }
+
+  return new Promise((resolve, reject) => {
+    const transaction = db.transaction([SESSIONS_STORE, AGGREGATES_STORE], 'readwrite')
+    const sessionsStore = transaction.objectStore(SESSIONS_STORE)
+    const aggregatesStore = transaction.objectStore(AGGREGATES_STORE)
+
+    let importedSessions = 0
+    let importedAggregates = 0
+
+    // Import sessions
+    for (const session of backupData.sessions) {
+      sessionsStore.put(session)
+      importedSessions++
+    }
+
+    // Import aggregates if they exist
+    if (backupData.aggregates && Array.isArray(backupData.aggregates)) {
+      for (const aggregate of backupData.aggregates) {
+        aggregatesStore.put(aggregate)
+        importedAggregates++
+      }
+    }
+
+    transaction.oncomplete = () => {
+      resolve({
+        success: true,
+        importedSessions,
+        importedAggregates,
+      })
+    }
+
+    transaction.onerror = () => {
+      reject(new Error('Failed to import backup'))
+    }
   })
 }
