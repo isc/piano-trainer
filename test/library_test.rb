@@ -62,9 +62,6 @@ class LibraryTest < CapybaraTestBase
   end
 
   def test_import_export_roundtrip
-    require 'json'
-    require 'tempfile'
-
     find('summary', text: '⚙️ Gestion des données').click
 
     # Import initial data
@@ -145,7 +142,6 @@ class LibraryTest < CapybaraTestBase
       exportDate: '2026-01-13T12:00:00.000Z'
     }.to_json
 
-    require 'tempfile'
     backup_file = Tempfile.new(['backup', '.json'])
     backup_file.write(invalid_backup)
     backup_file.close
