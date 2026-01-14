@@ -75,6 +75,7 @@
     { "title": "Serenade (Ständchen)", "composer": "Schubert", "file": "Schubert_Serenade_Standchen.mxl" },
     { "title": "Invention No. 4 in D Minor", "composer": "J.S. Bach", "file": "Bach_Invention_No_4_in_D_Minor.mxl" },
     { "title": "Invention No. 14 in B Flat Major", "composer": "J.S. Bach", "file": "Bach_Invention_No_14_in_B_Flat_Major.mxl" },
-    { "title": "Invention No. 8 in F Major", "composer": "J.S. Bach", "file": "Bach_Invention_No_8_in_F_Major.mxl" }
+    { "title": "Invention No. 8 in F Major", "composer": "J.S. Bach", "file": "Bach_Invention_No_8_in_F_Major.mxl" },
+    { "title": "Waltz Op. 69 No. 2 in B Minor", "composer": "Chopin", "file": "waltz-opus-69-no-2-in-b-minor.mxl" }
   ]
 }
