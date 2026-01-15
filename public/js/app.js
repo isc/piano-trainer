@@ -2,6 +2,7 @@ import { initMidi } from './midi.js'
 import { initMusicXML } from './musicxml.js'
 import { initCassettes } from './cassettes.js'
 import { initPracticeTracker } from './practiceTracker.js'
+import { formatDuration, formatDate } from './utils.js'
 
 export function midiApp() {
   const midi = initMidi()
@@ -31,6 +32,8 @@ export function midiApp() {
     errorMessage: null,
     trainingComplete: false,
     showScoreCompleteModal: false,
+    showHistoryModal: false,
+    scoreHistory: [],
 
     async init() {
       this.loadCassettesList()
@@ -224,5 +227,14 @@ export function midiApp() {
         left: this.leftHandActive,
       })
     },
+
+    async openScoreHistory() {
+      if (!this.scoreUrl) return
+      this.scoreHistory = await practiceTracker.getScoreHistory(this.scoreUrl)
+      this.showHistoryModal = true
+    },
+
+    formatDate,
+    formatDuration,
   }
 }

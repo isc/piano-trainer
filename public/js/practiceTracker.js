@@ -17,6 +17,7 @@ export function initPracticeTracker(storageInstance = null) {
     getScoreStats,
     getMeasuresToReinforce,
     getDailyLog,
+    getScoreHistory,
     getAllScores,
     computeScoreStatus,
     getCurrentSession: () => currentSession,
@@ -377,6 +378,61 @@ export function initPracticeTracker(storageInstance = null) {
         timesPlayedInFull: countFullPlaythroughs(entry.sessions, entry.totalMeasures),
       }))
       .sort((a, b) => b.lastPlayedAt - a.lastPlayedAt)
+  }
+
+  async function getScoreHistory(scoreId) {
+    const sessions = await storage.getSessions(scoreId)
+
+    // Group sessions by date
+    const dateMap = new Map()
+
+    for (const session of sessions) {
+      const dateKey = session.startedAt.substring(0, 10)
+
+      if (!dateMap.has(dateKey)) {
+        dateMap.set(dateKey, {
+          date: dateKey,
+          sessions: [],
+          measuresWorked: new Set(),
+          measuresReinforced: new Set(),
+          totalPracticeTimeMs: 0,
+          totalMeasures: null,
+          lastPlayedAt: null,
+        })
+      }
+
+      const entry = dateMap.get(dateKey)
+      entry.sessions.push(session)
+
+      if (session.totalMeasures) {
+        entry.totalMeasures = session.totalMeasures
+      }
+
+      const sessionDuration = getSessionDuration(session)
+      entry.totalPracticeTimeMs += sessionDuration
+
+      const sessionLastPlayedAt = getLastMeasureEndTime(session)
+      if (!entry.lastPlayedAt || sessionLastPlayedAt > entry.lastPlayedAt) {
+        entry.lastPlayedAt = sessionLastPlayedAt
+      }
+
+      for (const measure of session.measures) {
+        const measureIndex = Number(measure.sourceMeasureIndex)
+        entry.measuresWorked.add(measureIndex)
+        if (session.mode === 'training') {
+          entry.measuresReinforced.add(measureIndex)
+        }
+      }
+    }
+
+    return Array.from(dateMap.values())
+      .map((entry) => ({
+        ...entry,
+        measuresWorked: Array.from(entry.measuresWorked).sort((a, b) => a - b),
+        measuresReinforced: Array.from(entry.measuresReinforced).sort((a, b) => a - b),
+        timesPlayedInFull: countFullPlaythroughs(entry.sessions, entry.totalMeasures),
+      }))
+      .sort((a, b) => new Date(b.date) - new Date(a.date))
   }
 
   async function getAllScores() {

@@ -32,6 +32,11 @@ class LibraryTest < CapybaraTestBase
     assert_current_path %r{/score\.html\?url=}
     assert_text 'Bibliothèque' # Back link
     assert_selector 'svg g.vf-stavenote', minimum: 1
+
+    # History button should be visible for URL-loaded scores
+    click_on 'Historique'
+    assert_selector 'dialog[open]'
+    assert_text 'Historique de pratique'
   end
 
   def test_charger_ma_partition_link

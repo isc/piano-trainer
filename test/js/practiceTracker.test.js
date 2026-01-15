@@ -288,6 +288,38 @@ describe('practiceTracker', () => {
     })
   })
 
+  describe('getScoreHistory', () => {
+    it('returns history for specific score only, with correct data', async () => {
+      await playSession('/scores/test1.xml', [0, 1], 'training', 2)
+      await playSession('/scores/test2.xml', [0])
+
+      const history = await tracker.getScoreHistory('/scores/test1.xml')
+
+      expect(history).toHaveLength(1)
+      expect(history[0].measuresWorked).toEqual([0, 1])
+      expect(history[0].measuresReinforced).toEqual([0, 1])
+      expect(history[0].timesPlayedInFull).toBe(1)
+    })
+
+    it('does not track measuresReinforced for free mode', async () => {
+      await playSession('/scores/test.xml', [0], 'free')
+
+      const history = await tracker.getScoreHistory('/scores/test.xml')
+
+      expect(history[0].measuresWorked).toEqual([0])
+      expect(history[0].measuresReinforced).toEqual([])
+    })
+  })
+
+  async function playSession(scoreId, measures, mode = 'training', totalMeasures = null) {
+    tracker.startSession(scoreId, 'Test', 'Composer', mode, totalMeasures)
+    for (const m of measures) {
+      tracker.startMeasureAttempt(m)
+      tracker.endMeasureAttempt(true)
+    }
+    await tracker.endSession()
+  }
+
   describe('getAllScores', () => {
     it('returns all practiced scores', async () => {
       tracker.startSession('/scores/test1.xml', 'Test 1', 'Composer', 'training')
