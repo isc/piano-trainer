@@ -1,5 +1,6 @@
 import { initPracticeTracker } from './practiceTracker.js'
 import { initPracticeStorage } from './practiceStorage.js'
+import { formatDuration, formatDate } from './utils.js'
 
 export function libraryApp() {
   const storage = initPracticeStorage()
@@ -66,29 +67,8 @@ export function libraryApp() {
       return this.baseUrl + score.file
     },
 
-    formatDuration(ms) {
-      const totalSeconds = Math.floor(ms / 1000)
-      const minutes = Math.floor(totalSeconds / 60)
-      const seconds = totalSeconds % 60
-      if (minutes === 0) return `${seconds}s`
-      return `${minutes}m ${seconds}s`
-    },
-
-    formatDate(date) {
-      const today = new Date()
-      today.setHours(0, 0, 0, 0)
-      const compareDate = new Date(date)
-      compareDate.setHours(0, 0, 0, 0)
-
-      const diffTime = today - compareDate
-      const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24))
-
-      if (diffDays === 0) return "Aujourd'hui"
-      if (diffDays === 1) return 'Hier'
-
-      const options = { weekday: 'long', day: 'numeric', month: 'long' }
-      return compareDate.toLocaleDateString('fr-FR', options)
-    },
+    formatDuration,
+    formatDate,
 
     getTotalPracticeTimeForDate(dateEntry) {
       return dateEntry.log.reduce((sum, entry) => sum + entry.totalPracticeTimeMs, 0)

@@ -102,7 +102,7 @@
         </template>
         <template x-for="day in scoreHistory" :key="day.date">
           <div style="margin-bottom: 1rem;">
-            <strong x-text="formatHistoryDate(day.date)"></strong>
+            <strong x-text="formatDate(day.date)"></strong>
             <ul style="margin: 0.5rem 0; padding-left: 1.5rem;">
               <li>
                 <span x-text="formatDuration(day.totalPracticeTimeMs)"></span>

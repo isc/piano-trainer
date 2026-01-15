@@ -2,6 +2,7 @@ import { initMidi } from './midi.js'
 import { initMusicXML } from './musicxml.js'
 import { initCassettes } from './cassettes.js'
 import { initPracticeTracker } from './practiceTracker.js'
+import { formatDuration, formatDate } from './utils.js'
 
 export function midiApp() {
   const midi = initMidi()
@@ -233,34 +234,7 @@ export function midiApp() {
       this.showHistoryModal = true
     },
 
-    formatHistoryDate(dateStr) {
-      const date = new Date(dateStr + 'T00:00:00')
-      const today = new Date()
-      today.setHours(0, 0, 0, 0)
-      const yesterday = new Date(today)
-      yesterday.setDate(yesterday.getDate() - 1)
-
-      if (date.getTime() === today.getTime()) {
-        return "Aujourd'hui"
-      } else if (date.getTime() === yesterday.getTime()) {
-        return 'Hier'
-      } else {
-        return date.toLocaleDateString('fr-FR', {
-          day: 'numeric',
-          month: 'long',
-          year: 'numeric',
-        })
-      }
-    },
-
-    formatDuration(ms) {
-      const totalSeconds = Math.floor(ms / 1000)
-      const minutes = Math.floor(totalSeconds / 60)
-      const seconds = totalSeconds % 60
-      if (minutes === 0) {
-        return `${seconds}s`
-      }
-      return seconds > 0 ? `${minutes}min ${seconds}s` : `${minutes}min`
-    },
+    formatDate,
+    formatDuration,
   }
 }
