@@ -31,6 +31,7 @@
           class="secondary"
         ></button>
         <button @click="requestFullscreen" x-show="!!osmdInstance" x-text="'⛶ Plein écran'" class="secondary"></button>
+        <button @click="openScoreHistory" x-show="!!scoreUrl" class="secondary">📜 Historique</button>
         <label>
           <input type="checkbox" x-model="rightHandActive" @change="updateActiveHands" />
           Main droite
@@ -89,6 +90,37 @@
       <button @click="stopRecording" x-show="isRecording" class="secondary">⏹️ Arrêter enregistrement</button>
       <strong x-show="isRecording"> 🔴 Enregistrement en cours... </strong>
     </main>
+
+    <dialog id="scoreHistoryModal" :open="showHistoryModal">
+      <article>
+        <header>
+          <button aria-label="Close" rel="prev" @click="showHistoryModal = false"></button>
+          <p><strong>📜 Historique de pratique</strong></p>
+        </header>
+        <template x-if="scoreHistory.length === 0">
+          <p>Aucun historique pour cette partition.</p>
+        </template>
+        <template x-for="day in scoreHistory" :key="day.date">
+          <div style="margin-bottom: 1rem;">
+            <strong x-text="formatHistoryDate(day.date)"></strong>
+            <ul style="margin: 0.5rem 0; padding-left: 1.5rem;">
+              <li>
+                <span x-text="formatDuration(day.totalPracticeTimeMs)"></span>
+                <template x-if="day.timesPlayedInFull > 0">
+                  <span x-text="' - ' + day.timesPlayedInFull + '× en entier'"></span>
+                </template>
+                <template x-if="day.timesPlayedInFull === 0 && day.measuresWorked.length > 0">
+                  <span x-text="' - ' + day.measuresWorked.length + ' mesures travaillées'"></span>
+                </template>
+                <template x-if="day.measuresReinforced.length > 0">
+                  <span x-text="' - ' + day.measuresReinforced.length + ' mesures renforcées'"></span>
+                </template>
+              </li>
+            </ul>
+          </div>
+        </template>
+      </article>
+    </dialog>
 
     <dialog id="noMidiModal" x-bind:open="!navigator.requestMIDIAccess">
       <article>
