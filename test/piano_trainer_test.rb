@@ -432,6 +432,22 @@ class PianoTrainerTest < CapybaraTestBase
     end
   end
 
+  def test_rests_with_display_position_are_not_treated_as_notes
+    # Regression test: OSMD interprets rests with display-step/display-octave as notes with pitch.
+    # This caused a phantom G5 note to appear in measure 5 of Kinderscenen, breaking note order.
+    # Note: This test uses URL-based loading which requires a fresh page (no prior visit to /score.html)
+    Capybara.reset_sessions!
+    visit '/score.html?url=/scores/Schumann_Kinderszenen_No_1.mxl'
+    assert_selector 'svg g.vf-stavenote', minimum: 100
+
+    click_on 'Mode Entraînement'
+    click_measure(5)
+
+    replay_cassette('bug-des-pays-lointains')
+
+    assert_selector 'svg g.vf-notehead.played-note', count: 5
+  end
+
   private
 
   def load_score(filename, expected_notes)
@@ -448,12 +464,6 @@ class PianoTrainerTest < CapybaraTestBase
 
   def click_measure(measure_number)
     page.all('svg rect.measure-click-area')[measure_number - 1].trigger('click')
-  end
-
-  def load_score_from_url(fixture_filename, expected_notes)
-    visit "/score.html?url=/test-fixtures/#{fixture_filename}"
-    assert_selector 'svg g.vf-stavenote', count: expected_notes
-    sleep 0.2  # Wait for DOM and callbacks to fully initialize
   end
 
   # Wait for scroll position to stabilize (stop changing)
