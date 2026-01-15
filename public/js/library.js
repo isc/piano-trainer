@@ -10,6 +10,7 @@ export function libraryApp() {
     searchQuery: '',
     baseUrl: '',
     dailyLogsByDate: [],
+    lastPlayedByScore: {},
 
     async init() {
       const [scoresResponse] = await Promise.all([
@@ -19,6 +20,15 @@ export function libraryApp() {
       const data = await scoresResponse.json()
       this.scores = data.scores
       this.baseUrl = data.baseUrl
+
+      // Build map of scoreId -> most recent play time
+      const sessions = await storage.getSessions()
+      for (const session of sessions) {
+        const existing = this.lastPlayedByScore[session.scoreId]
+        if (!existing || session.startedAt > existing) {
+          this.lastPlayedByScore[session.scoreId] = session.startedAt
+        }
+      }
 
       // Fetch daily logs for the last 8 days (today + 7 previous days)
       const logPromises = []
@@ -36,11 +46,19 @@ export function libraryApp() {
     },
 
     get filteredScores() {
-      if (!this.searchQuery) return this.scores
-      const words = this.searchQuery.toLowerCase().trim().split(/\s+/).filter((w) => w)
-      return this.scores.filter((score) => {
-        const searchableText = `${score.title} ${score.composer}`.toLowerCase()
-        return words.every((word) => new RegExp(`\\b${word}`).test(searchableText))
+      let results = this.scores
+      if (this.searchQuery) {
+        const words = this.searchQuery.toLowerCase().trim().split(/\s+/).filter((w) => w)
+        results = results.filter((score) => {
+          const searchableText = `${score.title} ${score.composer}`.toLowerCase()
+          return words.every((word) => new RegExp(`\\b${word}`).test(searchableText))
+        })
+      }
+      // Sort by most recently played first
+      return results.toSorted((a, b) => {
+        const aPlayed = this.lastPlayedByScore[this.getScoreUrl(a)] || ''
+        const bPlayed = this.lastPlayedByScore[this.getScoreUrl(b)] || ''
+        return bPlayed.localeCompare(aPlayed)
       })
     },
 
