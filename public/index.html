@@ -22,35 +22,25 @@
             <div>
               <h3>
                 <span x-text="formatDate(dateEntry.date)"></span>
-                <small x-show="dateEntry.log.length > 0" class="muted">· <span x-text="formatDuration(getTotalPracticeTimeForDate(dateEntry))"></span></small>
+                <small x-show="dateEntry.log.length > 0">· <span x-text="formatDuration(getTotalPracticeTimeForDate(dateEntry))"></span></small>
               </h3>
               <template x-if="dateEntry.log.length === 0">
-                <p class="muted">Aucune pratique</p>
+                <p>Aucune pratique</p>
               </template>
-              <template x-for="entry in dateEntry.log" :key="entry.scoreId">
-                <article>
-                  <header>
-                    <a :href="'score.html?url=' + encodeURIComponent(entry.scoreId)" x-text="entry.scoreTitle || 'Sans titre'"></a>
-                    <small class="muted">
-                      <span x-text="entry.composer"></span> · <span x-text="formatDuration(entry.totalPracticeTimeMs)"></span>
+              <ul>
+                <template x-for="entry in dateEntry.log" :key="entry.scoreId">
+                  <li>
+                    <a :href="'score.html?url=' + encodeURIComponent(entry.scoreId)" x-text="(entry.scoreTitle || 'Sans titre') + ' · ' + entry.composer"></a>
+                    <small>
+                      <span x-text="formatDuration(entry.totalPracticeTimeMs)"></span>
+                      <span x-show="entry.timesPlayedInFull === 1"> · Joué en entier</span>
+                      <span x-show="entry.timesPlayedInFull > 1"> · Joué <span x-text="entry.timesPlayedInFull"></span>× en entier</span>
+                      <span x-show="entry.timesPlayedInFull === 0"> · <span x-text="entry.measuresWorked.length"></span> mesures</span>
+                      <span x-show="entry.measuresReinforced.length > 0"> · <span x-text="entry.measuresReinforced.length"></span> renforcées</span>
                     </small>
-                  </header>
-                  <p>
-                    <template x-if="entry.timesPlayedInFull === 1">
-                      <span>Joué en entier</span>
-                    </template>
-                    <template x-if="entry.timesPlayedInFull > 1">
-                      <span>Joué <span x-text="entry.timesPlayedInFull"></span> fois en entier</span>
-                    </template>
-                    <template x-if="entry.timesPlayedInFull === 0">
-                      <span><span x-text="entry.measuresWorked.length"></span> mesures jouées</span>
-                    </template>
-                    <template x-if="entry.measuresReinforced.length > 0">
-                      <span class="muted">· Renforcement: <span x-text="entry.measuresReinforced.length"></span> mesures</span>
-                    </template>
-                  </p>
-                </article>
-              </template>
+                  </li>
+                </template>
+              </ul>
             </div>
           </template>
 

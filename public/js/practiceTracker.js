@@ -341,6 +341,7 @@ export function initPracticeTracker(storageInstance = null) {
           measuresWorked: new Set(),
           measuresReinforced: new Set(),
           totalPracticeTimeMs: 0,
+          lastPlayedAt: null,
         })
       }
 
@@ -354,6 +355,11 @@ export function initPracticeTracker(storageInstance = null) {
       const sessionDuration = getSessionDuration(session)
       entry.totalPracticeTimeMs += sessionDuration
 
+      const sessionLastPlayedAt = getLastMeasureEndTime(session)
+      if (!entry.lastPlayedAt || sessionLastPlayedAt > entry.lastPlayedAt) {
+        entry.lastPlayedAt = sessionLastPlayedAt
+      }
+
       for (const measure of session.measures) {
         const measureIndex = Number(measure.sourceMeasureIndex)
         entry.measuresWorked.add(measureIndex)
@@ -363,12 +369,14 @@ export function initPracticeTracker(storageInstance = null) {
       }
     }
 
-    return Array.from(scoreMap.values()).map((entry) => ({
-      ...entry,
-      measuresWorked: Array.from(entry.measuresWorked).sort((a, b) => a - b),
-      measuresReinforced: Array.from(entry.measuresReinforced).sort((a, b) => a - b),
-      timesPlayedInFull: countFullPlaythroughs(entry.sessions, entry.totalMeasures),
-    }))
+    return Array.from(scoreMap.values())
+      .map((entry) => ({
+        ...entry,
+        measuresWorked: Array.from(entry.measuresWorked).sort((a, b) => a - b),
+        measuresReinforced: Array.from(entry.measuresReinforced).sort((a, b) => a - b),
+        timesPlayedInFull: countFullPlaythroughs(entry.sessions, entry.totalMeasures),
+      }))
+      .sort((a, b) => b.lastPlayedAt - a.lastPlayedAt)
   }
 
   async function getAllScores() {
