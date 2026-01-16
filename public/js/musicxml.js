@@ -45,7 +45,6 @@ let activeHands = { right: true, left: true }
 export function initMusicXML() {
   return {
     loadMusicXML,
-    loadFromURL,
     renderScore,
     renderMusicXML,
     extractNotesFromScore,
@@ -142,30 +141,6 @@ async function loadMusicXML(event) {
   } catch (error) {
     console.error('Erreur lors du chargement du MusicXML:', error)
     alert('Erreur lors du chargement du fichier MusicXML')
-  }
-}
-
-async function loadFromURL(url) {
-  try {
-    // Clear previous score before loading new one
-    if (osmdInstance) {
-      const scoreContainer = document.getElementById('score')
-      if (scoreContainer) {
-        scoreContainer.innerHTML = ''
-      }
-    }
-
-    const scoreContainer = document.getElementById('score')
-    const osmd = new opensheetmusicdisplay.OpenSheetMusicDisplay(scoreContainer)
-
-    // OSMD can load directly from URL (supports .mxl compressed files)
-    await osmd.load(url)
-
-    osmdInstance = osmd
-    window.osmdInstance = osmd
-  } catch (error) {
-    console.error('Erreur lors du chargement du MusicXML depuis URL:', error)
-    alert('Erreur lors du chargement de la partition')
   }
 }
 
