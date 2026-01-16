@@ -61,7 +61,6 @@
     { "title": "Moonlight Sonata - 1st Movement", "composer": "Beethoven", "file": "Sonate_No._14_Moonlight_1st_Movement.mxl" },
     { "title": "Moonlight Sonata - 3rd Movement", "composer": "Beethoven", "file": "Sonate_No._14_Moonlight_3rd_Movement.mxl" },
     { "title": "Pathetique Sonata - 2nd Movement", "composer": "Beethoven", "file": "Sonate_No._8_Pathetique_2nd_Movement.mxl" },
-    { "title": "Serenade (Standchen)", "composer": "Schubert/Liszt", "file": "Schubert_Serenade_-_Standchen_-_By_Lizst.mxl" },
     { "title": "Spring Waltz (Mariage d'Amour)", "composer": "Chopin", "file": "Spring_Waltz_Mariage_dAmour_-_Chopin.mxl" },
     { "title": "Swan Lake", "composer": "Tchaikovsky", "file": "Swan_Lake.mxl" },
     { "title": "The Entertainer", "composer": "Scott Joplin", "file": "The_Entertainer_-_Scott_Joplin.mxl" },
@@ -72,10 +71,10 @@
     { "title": "Waltz in A Minor", "composer": "Chopin", "file": "Waltz_in_A_MinorChopin.mxl" },
     { "title": "Waltz of the Flowers", "composer": "Tchaikovsky", "file": "Waltz_of_the_Flowers.mxl" },
     { "title": "Kinderszenen No. 1 - Von fremden Ländern und Menschen", "composer": "Schumann", "file": "Schumann_Kinderszenen_No_1.mxl" },
-    { "title": "Serenade (Ständchen)", "composer": "Schubert", "file": "Schubert_Serenade_Standchen.mxl" },
     { "title": "Invention No. 4 in D Minor", "composer": "J.S. Bach", "file": "Bach_Invention_No_4_in_D_Minor.mxl" },
     { "title": "Invention No. 14 in B Flat Major", "composer": "J.S. Bach", "file": "Bach_Invention_No_14_in_B_Flat_Major.mxl" },
     { "title": "Invention No. 8 in F Major", "composer": "J.S. Bach", "file": "Bach_Invention_No_8_in_F_Major.mxl" },
-    { "title": "Waltz Op. 69 No. 2 in B Minor", "composer": "Chopin", "file": "waltz-opus-69-no-2-in-b-minor.mxl" }
+    { "title": "Waltz Op. 69 No. 2 in B Minor", "composer": "Chopin", "file": "waltz-opus-69-no-2-in-b-minor.mxl" },
+    { "title": "Serenade (Ständchen)", "composer": "Schubert", "file": "serenade-2.xml" }
   ]
 }
