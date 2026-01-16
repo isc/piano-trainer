@@ -48,10 +48,7 @@ export function midiApp() {
     async init() {
       this.loadCassettesList()
 
-      // Initialize practice tracking
       await practiceTracker.init()
-
-      // Initialize fingering storage
       await fingeringStorage.init()
 
       // Auto-connect to MIDI device silently
@@ -176,17 +173,14 @@ export function midiApp() {
       this.scoreUrl = url
       this.fingeringEnabled = true
 
-      // Check for stored fingerings
       const stored = await fingeringStorage.getFingerings(url)
       const hasFingerings = Object.keys(stored?.fingerings || {}).length > 0
 
       if (hasFingerings) {
-        // Load XML, inject fingerings, then render
         const xml = await loadMxlAsXml(url)
         const modified = injectFingerings(xml, stored.fingerings)
         await musicxml.renderMusicXML(modified)
       } else {
-        // No stored fingerings, load directly
         await musicxml.loadFromURL(url)
       }
 
@@ -317,7 +311,6 @@ export function midiApp() {
     async reloadWithFingerings() {
       const scrollY = window.scrollY
 
-      // Save current note validation states
       const noteStates = new Map()
       for (const measureData of musicxml.getAllNotes()) {
         for (const noteData of measureData.notes) {
@@ -336,8 +329,6 @@ export function midiApp() {
       await musicxml.renderMusicXML(modified)
       await this.afterScoreLoad()
       this.setupFingeringHandlers()
-
-      // Restore note validation states and CSS classes
       musicxml.restoreNoteStates(noteStates)
 
       window.scrollTo(0, scrollY)
