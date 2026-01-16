@@ -179,9 +179,9 @@ export function midiApp() {
     },
 
     async renderScoreWithFingerings() {
-      const stored = await fingeringStorage.getFingerings(this.scoreUrl)
+      const { fingerings } = await fingeringStorage.getFingerings(this.scoreUrl)
       const xml = await loadMxlAsXml(this.scoreUrl)
-      const modified = injectFingerings(xml, stored?.fingerings || {})
+      const modified = injectFingerings(xml, fingerings)
       await musicxml.renderMusicXML(modified)
       await this.afterScoreLoad()
       this.setupFingeringHandlers()
@@ -270,6 +270,7 @@ export function midiApp() {
     openFingeringModal(noteData) {
       this.selectedNoteKey = noteData.fingeringKey
       this.showFingeringModal = true
+
       this.fingeringKeydownHandler = (e) => {
         if (e.key >= '1' && e.key <= '5') {
           e.preventDefault()
@@ -305,13 +306,10 @@ export function midiApp() {
       const scrollY = window.scrollY
 
       const noteStates = new Map()
-      for (const measureData of musicxml.getAllNotes()) {
-        for (const noteData of measureData.notes) {
-          if (noteData.played || noteData.active) {
-            noteStates.set(noteData.fingeringKey, {
-              played: noteData.played,
-              active: noteData.active,
-            })
+      for (const { notes } of musicxml.getAllNotes()) {
+        for (const { fingeringKey, played, active } of notes) {
+          if (played || active) {
+            noteStates.set(fingeringKey, { played, active })
           }
         }
       }

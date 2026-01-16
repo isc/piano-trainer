@@ -4,6 +4,13 @@ const STORE_NAME = 'fingerings'
 
 let db = null
 
+function promisifyRequest(request) {
+  return new Promise((resolve, reject) => {
+    request.onerror = () => reject(request.error)
+    request.onsuccess = () => resolve(request.result)
+  })
+}
+
 async function openDatabase() {
   return new Promise((resolve, reject) => {
     const request = indexedDB.open(DB_NAME, DB_VERSION)
@@ -13,7 +20,6 @@ async function openDatabase() {
 
     request.onupgradeneeded = (event) => {
       const database = event.target.result
-
       if (!database.objectStoreNames.contains(STORE_NAME)) {
         database.createObjectStore(STORE_NAME, { keyPath: 'scoreUrl' })
       }
@@ -22,60 +28,39 @@ async function openDatabase() {
 }
 
 export function initFingeringStorage() {
+  async function ensureDb() {
+    if (!db) {
+      db = await openDatabase()
+    }
+    return db
+  }
+
   return {
-    async init() {
-      if (!db) {
-        db = await openDatabase()
-      }
-    },
+    init: ensureDb,
 
     async getFingerings(scoreUrl) {
-      if (!db) await this.init()
-
-      return new Promise((resolve, reject) => {
-        const transaction = db.transaction(STORE_NAME, 'readonly')
-        const store = transaction.objectStore(STORE_NAME)
-        const request = store.get(scoreUrl)
-
-        request.onerror = () => reject(request.error)
-        request.onsuccess = () => {
-          resolve(request.result || { scoreUrl, fingerings: {} })
-        }
-      })
+      await ensureDb()
+      const store = db.transaction(STORE_NAME, 'readonly').objectStore(STORE_NAME)
+      const result = await promisifyRequest(store.get(scoreUrl))
+      return result || { scoreUrl, fingerings: {} }
     },
 
     async setFingering(scoreUrl, noteKey, finger) {
-      if (!db) await this.init()
+      const data = await this.getFingerings(scoreUrl)
+      data.fingerings[noteKey] = finger
+      data.updatedAt = Date.now()
 
-      const existing = await this.getFingerings(scoreUrl)
-      existing.fingerings[noteKey] = finger
-      existing.updatedAt = Date.now()
-
-      return new Promise((resolve, reject) => {
-        const transaction = db.transaction(STORE_NAME, 'readwrite')
-        const store = transaction.objectStore(STORE_NAME)
-        const request = store.put(existing)
-
-        request.onerror = () => reject(request.error)
-        request.onsuccess = () => resolve()
-      })
+      const store = db.transaction(STORE_NAME, 'readwrite').objectStore(STORE_NAME)
+      await promisifyRequest(store.put(data))
     },
 
     async removeFingering(scoreUrl, noteKey) {
-      if (!db) await this.init()
+      const data = await this.getFingerings(scoreUrl)
+      delete data.fingerings[noteKey]
+      data.updatedAt = Date.now()
 
-      const existing = await this.getFingerings(scoreUrl)
-      delete existing.fingerings[noteKey]
-      existing.updatedAt = Date.now()
-
-      return new Promise((resolve, reject) => {
-        const transaction = db.transaction(STORE_NAME, 'readwrite')
-        const store = transaction.objectStore(STORE_NAME)
-        const request = store.put(existing)
-
-        request.onerror = () => reject(request.error)
-        request.onsuccess = () => resolve()
-      })
+      const store = db.transaction(STORE_NAME, 'readwrite').objectStore(STORE_NAME)
+      await promisifyRequest(store.put(data))
     },
   }
 }
