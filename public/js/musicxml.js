@@ -97,6 +97,7 @@ export function initMusicXML() {
     },
     setupFingeringClickHandlers,
     removeFingeringClickHandlers,
+    restoreNoteStates,
   }
 }
 
@@ -752,5 +753,27 @@ function removeFingeringClickHandlers() {
     element.removeEventListener('click', handler)
   }
   fingeringClickHandlers = []
+}
+
+// Restore note states from a saved state map (fingeringKey -> { played, active })
+function restoreNoteStates(noteStates) {
+  for (const measureData of allNotes) {
+    for (const noteData of measureData.notes) {
+      const savedState = noteStates.get(noteData.fingeringKey)
+      if (savedState) {
+        noteData.played = savedState.played
+        noteData.active = savedState.active
+        const notehead = svgNotehead(noteData)
+        if (notehead) {
+          if (savedState.played) {
+            notehead.classList.add('played-note')
+          }
+          if (savedState.active) {
+            notehead.classList.add('active-note')
+          }
+        }
+      }
+    }
+  }
 }
 

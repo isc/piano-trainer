@@ -316,12 +316,30 @@ export function midiApp() {
 
     async reloadWithFingerings() {
       const scrollY = window.scrollY
+
+      // Save current note validation states
+      const noteStates = new Map()
+      for (const measureData of musicxml.getAllNotes()) {
+        for (const noteData of measureData.notes) {
+          if (noteData.played || noteData.active) {
+            noteStates.set(noteData.fingeringKey, {
+              played: noteData.played,
+              active: noteData.active,
+            })
+          }
+        }
+      }
+
       const stored = await fingeringStorage.getFingerings(this.scoreUrl)
       const xml = await loadMxlAsXml(this.scoreUrl)
       const modified = injectFingerings(xml, stored?.fingerings || {})
       await musicxml.renderMusicXML(modified)
       await this.afterScoreLoad()
       this.setupFingeringHandlers()
+
+      // Restore note validation states and CSS classes
+      musicxml.restoreNoteStates(noteStates)
+
       window.scrollTo(0, scrollY)
     },
   }
