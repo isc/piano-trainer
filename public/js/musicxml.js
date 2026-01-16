@@ -17,6 +17,9 @@ let playedSourceMeasures = new Set() // Track source measures that have been ful
 // Set of MIDI note numbers currently held down by the player
 let heldMidiNotes = new Set()
 
+// Fingering click handlers
+let fingeringClickHandlers = []
+
 // Practice tracking variables
 let measureStartTime = null
 let measureWrongNotes = 0
@@ -54,6 +57,7 @@ export function initMusicXML() {
       activeHands = { ...activeHands, ...hands }
     },
     getOsmdInstance: () => osmdInstance,
+    getAllNotes: () => allNotes,
     getScoreMetadata: () => ({
       title: osmdInstance?.Sheet?.Title?.text || null,
       composer: osmdInstance?.Sheet?.Composer?.text || null,
@@ -91,6 +95,8 @@ export function initMusicXML() {
         }
       }
     },
+    setupFingeringClickHandlers,
+    removeFingeringClickHandlers,
   }
 }
 
@@ -675,5 +681,76 @@ function resetProgress() {
   }
   resetPlaybackState()
   window.scrollTo({ top: 0, behavior: 'smooth' })
+}
+
+// Setup click handlers for fingering annotation
+function setupFingeringClickHandlers(cbs) {
+  if (!osmdInstance || allNotes.length === 0) return
+
+  removeFingeringClickHandlers()
+
+  // Build a map from SVG notehead element to noteData for quick lookup
+  const noteheadToData = new Map()
+
+  for (const measureData of allNotes) {
+    for (const noteData of measureData.notes) {
+      const notehead = svgNotehead(noteData)
+      if (notehead) {
+        noteheadToData.set(notehead, noteData)
+
+        // Add click handler to notehead
+        const handler = (e) => {
+          e.stopPropagation()
+          cbs.onNoteClick?.(noteData)
+        }
+        notehead.addEventListener('click', handler)
+        fingeringClickHandlers.push({ element: notehead, handler })
+      }
+    }
+  }
+
+  // Also handle clicks on existing fingering elements
+  const scoreContainer = document.getElementById('score')
+  if (scoreContainer) {
+    const fingerings = scoreContainer.querySelectorAll('.vf-fingering')
+    for (const fingering of fingerings) {
+      // Find the associated noteData by traversing up to the note group
+      // OSMD structure: vf-fingering is inside a group, sibling to vf-notehead
+      const parentGroup = fingering.closest('g')
+      if (parentGroup) {
+        // Look for a sibling notehead in the same parent group or ancestors
+        let noteGroup = parentGroup
+        let noteData = null
+
+        // Walk up to find the note's SVG group and match with noteheadToData
+        while (noteGroup && !noteData) {
+          const noteheads = noteGroup.querySelectorAll('.vf-notehead')
+          for (const nh of noteheads) {
+            if (noteheadToData.has(nh)) {
+              noteData = noteheadToData.get(nh)
+              break
+            }
+          }
+          noteGroup = noteGroup.parentElement
+        }
+
+        if (noteData) {
+          const handler = (e) => {
+            e.stopPropagation()
+            cbs.onFingeringClick?.(noteData)
+          }
+          fingering.addEventListener('click', handler)
+          fingeringClickHandlers.push({ element: fingering, handler })
+        }
+      }
+    }
+  }
+}
+
+function removeFingeringClickHandlers() {
+  for (const { element, handler } of fingeringClickHandlers) {
+    element.removeEventListener('click', handler)
+  }
+  fingeringClickHandlers = []
 }
 

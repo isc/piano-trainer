@@ -41,3 +41,21 @@ svg g.vf-notehead.active-note path {
     fill: rgba(59, 130, 246, 0.8);
   }
 }
+
+/* Clickable noteheads for fingering annotation */
+#score svg .vf-notehead {
+  cursor: pointer;
+}
+
+#score svg .vf-notehead:hover path {
+  fill-opacity: 0.7;
+}
+
+/* Clickable fingerings for editing */
+#score svg .vf-fingering {
+  cursor: pointer;
+}
+
+#score svg .vf-fingering:hover {
+  fill: var(--pico-primary);
+}

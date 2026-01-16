@@ -3,12 +3,16 @@ import { initMusicXML } from './musicxml.js'
 import { initCassettes } from './cassettes.js'
 import { initPracticeTracker } from './practiceTracker.js'
 import { formatDuration, formatDate } from './utils.js'
+import { initFingeringStorage } from './fingeringStorage.js'
+import { loadMxlAsXml } from './mxlLoader.js'
+import { injectFingerings } from './fingeringInjector.js'
 
 export function midiApp() {
   const midi = initMidi()
   const musicxml = initMusicXML()
   const cassettes = initCassettes()
   const practiceTracker = initPracticeTracker()
+  const fingeringStorage = initFingeringStorage()
 
   return {
     bluetoothConnected: false,
@@ -35,11 +39,20 @@ export function midiApp() {
     showHistoryModal: false,
     scoreHistory: [],
 
+    // Fingering annotation
+    fingeringEnabled: false,
+    showFingeringModal: false,
+    selectedNoteKey: null,
+    selectedNoteName: '',
+
     async init() {
       this.loadCassettesList()
 
       // Initialize practice tracking
       await practiceTracker.init()
+
+      // Initialize fingering storage
+      await fingeringStorage.init()
 
       // Auto-connect to MIDI device silently
       await midi.connectMIDI({ silent: true, autoSelectFirst: true })
@@ -153,14 +166,32 @@ export function midiApp() {
     },
 
     async loadMusicXML(event) {
+      this.fingeringEnabled = false
+      this.scoreUrl = null
       await musicxml.loadMusicXML(event)
       await this.afterScoreLoad()
     },
 
     async loadScoreFromURL(url) {
       this.scoreUrl = url
-      await musicxml.loadFromURL(url)
+      this.fingeringEnabled = true
+
+      // Check for stored fingerings
+      const stored = await fingeringStorage.getFingerings(url)
+      const hasFingerings = Object.keys(stored?.fingerings || {}).length > 0
+
+      if (hasFingerings) {
+        // Load XML, inject fingerings, then render
+        const xml = await loadMxlAsXml(url)
+        const modified = injectFingerings(xml, stored.fingerings)
+        await musicxml.renderMusicXML(modified)
+      } else {
+        // No stored fingerings, load directly
+        await musicxml.loadFromURL(url)
+      }
+
       await this.afterScoreLoad()
+      this.setupFingeringHandlers()
 
       // Start practice tracking session in free mode
       const metadata = musicxml.getScoreMetadata()
@@ -236,5 +267,62 @@ export function midiApp() {
 
     formatDate,
     formatDuration,
+
+    // Fingering annotation methods
+    setupFingeringHandlers() {
+      if (!this.fingeringEnabled) return
+      musicxml.setupFingeringClickHandlers({
+        onNoteClick: (noteData) => this.openFingeringModal(noteData),
+        onFingeringClick: (noteData) => this.openFingeringModal(noteData),
+      })
+    },
+
+    fingeringKeydownHandler: null,
+
+    openFingeringModal(noteData) {
+      this.selectedNoteKey = noteData.fingeringKey
+      this.selectedNoteName = noteData.noteName
+      this.showFingeringModal = true
+      this.fingeringKeydownHandler = (e) => {
+        if (e.key >= '1' && e.key <= '5') {
+          e.preventDefault()
+          this.selectFingering(parseInt(e.key, 10))
+        } else if (e.key === 'Backspace' || e.key === 'Delete') {
+          e.preventDefault()
+          this.removeFingering()
+        } else if (e.key === 'Escape') {
+          this.closeFingeringModal()
+        }
+      }
+      document.addEventListener('keydown', this.fingeringKeydownHandler)
+    },
+
+    closeFingeringModal() {
+      this.showFingeringModal = false
+      document.removeEventListener('keydown', this.fingeringKeydownHandler)
+    },
+
+    async selectFingering(finger) {
+      await fingeringStorage.setFingering(this.scoreUrl, this.selectedNoteKey, finger)
+      this.closeFingeringModal()
+      await this.reloadWithFingerings()
+    },
+
+    async removeFingering() {
+      await fingeringStorage.removeFingering(this.scoreUrl, this.selectedNoteKey)
+      this.closeFingeringModal()
+      await this.reloadWithFingerings()
+    },
+
+    async reloadWithFingerings() {
+      const scrollY = window.scrollY
+      const stored = await fingeringStorage.getFingerings(this.scoreUrl)
+      const xml = await loadMxlAsXml(this.scoreUrl)
+      const modified = injectFingerings(xml, stored?.fingerings || {})
+      await musicxml.renderMusicXML(modified)
+      await this.afterScoreLoad()
+      this.setupFingeringHandlers()
+      window.scrollTo(0, scrollY)
+    },
   }
 }
