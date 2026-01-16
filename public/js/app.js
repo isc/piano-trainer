@@ -267,7 +267,6 @@ export function midiApp() {
       if (!this.fingeringEnabled) return
       musicxml.setupFingeringClickHandlers({
         onNoteClick: (noteData) => this.openFingeringModal(noteData),
-        onFingeringClick: (noteData) => this.openFingeringModal(noteData),
       })
     },
 
