@@ -172,23 +172,19 @@ export function midiApp() {
       this.scoreUrl = url
       this.fingeringEnabled = true
 
-      const stored = await fingeringStorage.getFingerings(url)
-      const hasFingerings = Object.keys(stored?.fingerings || {}).length > 0
+      await this.renderScoreWithFingerings()
 
-      if (hasFingerings) {
-        const xml = await loadMxlAsXml(url)
-        const modified = injectFingerings(xml, stored.fingerings)
-        await musicxml.renderMusicXML(modified)
-      } else {
-        await musicxml.loadFromURL(url)
-      }
-
-      await this.afterScoreLoad()
-      this.setupFingeringHandlers()
-
-      // Start practice tracking session in free mode
       const metadata = musicxml.getScoreMetadata()
       practiceTracker.startSession(url, metadata.title, metadata.composer, 'free', metadata.totalMeasures)
+    },
+
+    async renderScoreWithFingerings() {
+      const stored = await fingeringStorage.getFingerings(this.scoreUrl)
+      const xml = await loadMxlAsXml(this.scoreUrl)
+      const modified = injectFingerings(xml, stored?.fingerings || {})
+      await musicxml.renderMusicXML(modified)
+      await this.afterScoreLoad()
+      this.setupFingeringHandlers()
     },
 
     async afterScoreLoad() {
@@ -320,14 +316,8 @@ export function midiApp() {
         }
       }
 
-      const stored = await fingeringStorage.getFingerings(this.scoreUrl)
-      const xml = await loadMxlAsXml(this.scoreUrl)
-      const modified = injectFingerings(xml, stored?.fingerings || {})
-      await musicxml.renderMusicXML(modified)
-      await this.afterScoreLoad()
-      this.setupFingeringHandlers()
+      await this.renderScoreWithFingerings()
       musicxml.restoreNoteStates(noteStates)
-
       window.scrollTo(0, scrollY)
     },
   }
