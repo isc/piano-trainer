@@ -43,7 +43,6 @@ export function midiApp() {
     fingeringEnabled: false,
     showFingeringModal: false,
     selectedNoteKey: null,
-    selectedNoteName: '',
 
     async init() {
       this.loadCassettesList()
@@ -274,7 +273,6 @@ export function midiApp() {
 
     openFingeringModal(noteData) {
       this.selectedNoteKey = noteData.fingeringKey
-      this.selectedNoteName = noteData.noteName
       this.showFingeringModal = true
       this.fingeringKeydownHandler = (e) => {
         if (e.key >= '1' && e.key <= '5') {
