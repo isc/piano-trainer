@@ -193,6 +193,7 @@ export function midiApp() {
       await this.$nextTick()
       await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)))
       musicxml.renderScore()
+      document.getElementById('score').dataset.renderComplete = Date.now()
       await this.requestWakeLock()
     },
 
