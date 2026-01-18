@@ -144,6 +144,14 @@ export function initPracticeTracker(storageInstance = null) {
       }
     }
 
+    // Update title/composer if they were missing before
+    if (!aggregate.scoreTitle && session.scoreTitle) {
+      aggregate.scoreTitle = session.scoreTitle
+    }
+    if (!aggregate.composer && session.composer) {
+      aggregate.composer = session.composer
+    }
+
     const lastMeasureEndTime = getLastMeasureEndTime(session)
     aggregate.lastPlayedAt = lastMeasureEndTime.toISOString()
     aggregate.totalSessions++
