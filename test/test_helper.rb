@@ -56,7 +56,7 @@ class CapybaraTestBase < Minitest::Test
     )
     yield
   ensure
-    page.driver.browser.reset
+    Capybara.current_session.reset!
   end
 
   # Helper to simulate MIDI input events
