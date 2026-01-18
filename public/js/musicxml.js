@@ -17,6 +17,9 @@ let playedSourceMeasures = new Set() // Track source measures that have been ful
 // Set of MIDI note numbers currently held down by the player
 let heldMidiNotes = new Set()
 
+// Fingering click handlers
+let fingeringClickHandlers = []
+
 // Practice tracking variables
 let measureStartTime = null
 let measureWrongNotes = 0
@@ -42,7 +45,6 @@ let activeHands = { right: true, left: true }
 export function initMusicXML() {
   return {
     loadMusicXML,
-    loadFromURL,
     renderScore,
     renderMusicXML,
     extractNotesFromScore,
@@ -54,6 +56,7 @@ export function initMusicXML() {
       activeHands = { ...activeHands, ...hands }
     },
     getOsmdInstance: () => osmdInstance,
+    getAllNotes: () => allNotes,
     getScoreMetadata: () => ({
       title: osmdInstance?.Sheet?.Title?.text || null,
       composer: osmdInstance?.Sheet?.Composer?.text || null,
@@ -91,6 +94,9 @@ export function initMusicXML() {
         }
       }
     },
+    setupFingeringClickHandlers,
+    removeFingeringClickHandlers,
+    restoreNoteStates,
   }
 }
 
@@ -135,30 +141,6 @@ async function loadMusicXML(event) {
   } catch (error) {
     console.error('Erreur lors du chargement du MusicXML:', error)
     alert('Erreur lors du chargement du fichier MusicXML')
-  }
-}
-
-async function loadFromURL(url) {
-  try {
-    // Clear previous score before loading new one
-    if (osmdInstance) {
-      const scoreContainer = document.getElementById('score')
-      if (scoreContainer) {
-        scoreContainer.innerHTML = ''
-      }
-    }
-
-    const scoreContainer = document.getElementById('score')
-    const osmd = new opensheetmusicdisplay.OpenSheetMusicDisplay(scoreContainer)
-
-    // OSMD can load directly from URL (supports .mxl compressed files)
-    await osmd.load(url)
-
-    osmdInstance = osmd
-    window.osmdInstance = osmd
-  } catch (error) {
-    console.error('Erreur lors du chargement du MusicXML depuis URL:', error)
-    alert('Erreur lors du chargement de la partition')
   }
 }
 
@@ -675,5 +657,51 @@ function resetProgress() {
   }
   resetPlaybackState()
   window.scrollTo({ top: 0, behavior: 'smooth' })
+}
+
+function setupFingeringClickHandlers(cbs) {
+  if (!osmdInstance || allNotes.length === 0) return
+
+  removeFingeringClickHandlers()
+
+  for (const measureData of allNotes) {
+    for (const noteData of measureData.notes) {
+      const notehead = svgNotehead(noteData)
+      if (notehead) {
+        const handler = (e) => {
+          e.stopPropagation()
+          cbs.onNoteClick?.(noteData)
+        }
+        notehead.addEventListener('click', handler)
+        fingeringClickHandlers.push({ element: notehead, handler })
+      }
+    }
+  }
+}
+
+function removeFingeringClickHandlers() {
+  for (const { element, handler } of fingeringClickHandlers) {
+    element.removeEventListener('click', handler)
+  }
+  fingeringClickHandlers = []
+}
+
+// Restore note states from a saved state map (fingeringKey -> { played, active })
+function restoreNoteStates(noteStates) {
+  for (const { notes } of allNotes) {
+    for (const noteData of notes) {
+      const savedState = noteStates.get(noteData.fingeringKey)
+      if (!savedState) continue
+
+      noteData.played = savedState.played
+      noteData.active = savedState.active
+
+      const notehead = svgNotehead(noteData)
+      if (!notehead) continue
+
+      notehead.classList.toggle('played-note', savedState.played)
+      notehead.classList.toggle('active-note', savedState.active)
+    }
+  }
 }
 

@@ -124,6 +124,10 @@ function extractNotesFromSourceMeasures(sourceMeasures) {
 
   sourceMeasures.forEach((measure, measureIndex) => {
     const measureNotes = []
+    // MusicXML measure numbers are 1-based
+    const measureNumber = measureIndex + 1
+    // Track sequential note index for each (staff, voice) combination
+    const noteCounters = new Map()
 
     measure.verticalSourceStaffEntryContainers.forEach((container) => {
       if (container.staffEntries) {
@@ -132,6 +136,9 @@ function extractNotesFromSourceMeasures(sourceMeasures) {
           if (!staffEntry?.voiceEntries) continue
           for (const voiceEntry of staffEntry.voiceEntries) {
             if (!voiceEntry.notes) continue
+            // Get voice ID from OSMD (1-based in MusicXML), convert to 0-indexed
+            const voiceId = voiceEntry.ParentVoice?.VoiceId ?? 1
+            const voiceIndex = voiceId - 1
             for (let noteIndex = 0; noteIndex < voiceEntry.notes.length; noteIndex++) {
               const note = voiceEntry.notes[noteIndex]
               // Skip notes without pitch or rests (rests can have display-step/display-octave
@@ -140,6 +147,15 @@ function extractNotesFromSourceMeasures(sourceMeasures) {
               const noteInfo = pitchToMidiFromSourceNote(note.pitch)
               // Check if this note is a tie continuation (not the start of the tie)
               const isTieContinuation = note.NoteTie && note.NoteTie.StartNote !== note
+              // Get sequential note index for this (staff, voice) combination
+              const counterKey = `${staffIndex}:${voiceIndex}`
+              if (!noteCounters.has(counterKey)) {
+                noteCounters.set(counterKey, 0)
+              }
+              const sequentialNoteIndex = noteCounters.get(counterKey)
+              noteCounters.set(counterKey, sequentialNoteIndex + 1)
+              // Fingering key format: measureNumber:staffIndex:voiceIndex:sequentialNoteIndex
+              const fingeringKey = `${measureNumber}:${staffIndex}:${voiceIndex}:${sequentialNoteIndex}`
               measureNotes.push({
                 note,
                 midiNumber: noteInfo.midiNote,
@@ -155,6 +171,9 @@ function extractNotesFromSourceMeasures(sourceMeasures) {
                 noteheadCount: voiceEntry.notes.filter((n) => n.pitch).length,
                 // Staff 0 = right hand (treble clef), Staff 1 = left hand (bass clef)
                 staffIndex,
+                // Key for fingering storage
+                fingeringKey,
+                voiceIndex,
               })
             }
           }

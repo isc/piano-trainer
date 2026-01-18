@@ -12,6 +12,8 @@
       import { midiApp } from './js/app.js'
       window.midiApp = midiApp
     </script>
+    <!-- https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js -->
+    <script src="vendor/jszip.3.10.1.min.js"></script>
     <!-- https://cdn.jsdelivr.net/npm/opensheetmusicdisplay@1.8.5/build/opensheetmusicdisplay.min.js -->
     <script src="vendor/opensheetmusicdisplay.1.8.5.min.js"></script>
     <!-- https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js -->
@@ -133,6 +135,22 @@
           <a href="https://caniuse.com/?search=web%20midi">un autre navigateur</a>
           (Chrome, Edge ou Opera).
         </p>
+      </article>
+    </dialog>
+
+    <dialog id="fingeringModal" :open="showFingeringModal">
+      <article>
+        <header>
+          <button aria-label="Close" rel="prev" @click="closeFingeringModal()"></button>
+          <p><strong>Doigté</strong></p>
+        </header>
+
+        <div class="grid">
+          <template x-for="finger in [1, 2, 3, 4, 5]" :key="finger">
+            <button @click="selectFingering(finger)" x-text="finger"></button>
+          </template>
+          <button @click="removeFingering()" class="secondary outline">×</button>
+        </div>
       </article>
     </dialog>
   </body>
