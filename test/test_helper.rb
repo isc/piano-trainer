@@ -1,3 +1,4 @@
+require 'time'
 require 'capybara'
 require 'capybara/dsl'
 require 'capybara/minitest'
@@ -42,6 +43,20 @@ class CapybaraTestBase < Minitest::Test
     end
   rescue Timeout::Error
     nil
+  end
+
+  # Helper to run code with a virtual browser time
+  # Accepts a Time object or a string like "2026-01-10 12:00"
+  # Resets the browser page after the block to restore normal time behavior
+  def with_virtual_time(time)
+    time = Time.parse(time) if time.is_a?(String)
+    page.driver.browser.page.command('Emulation.setVirtualTimePolicy',
+      policy: 'advance',
+      initialVirtualTime: time.to_i
+    )
+    yield
+  ensure
+    page.driver.browser.reset
   end
 
   # Helper to simulate MIDI input events

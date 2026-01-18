@@ -67,45 +67,41 @@ class LibraryTest < CapybaraTestBase
   end
 
   def test_import_export_roundtrip
-    # Set browser time to match fixture date (2026-01-10)
-    page.driver.browser.page.command('Emulation.setVirtualTimePolicy',
-      policy: 'advance',
-      initialVirtualTime: Time.new(2026, 1, 10, 12, 0, 0).to_i
-    )
+    with_virtual_time('2026-01-10 12:00') do
+      visit '/index.html'
+      find('summary', text: '⚙️ Gestion des données').click
 
-    visit '/index.html'
-    find('summary', text: '⚙️ Gestion des données').click
+      # Import initial data from fixture
+      fixture_path = File.expand_path('fixtures/initial-backup.json', __dir__)
 
-    # Import initial data from fixture
-    fixture_path = File.expand_path('fixtures/initial-backup.json', __dir__)
+      accept_alert do
+        attach_file 'backup-import', fixture_path
+      end
 
-    accept_alert do
-      attach_file 'backup-import', fixture_path
+      # Verify imported data appears
+      within('#daily-log') do
+        assert_text 'Test Roundtrip Score'
+      end
+
+      # Export the data
+      accept_alert do
+        click_button '📤 Exporter sauvegarde'
+      end
+
+      # Wait for download to complete
+      exported_file = wait_for_download('piano-trainer-backup-*.json')
+      assert exported_file, 'Export file should be downloaded'
+
+      # Verify imported session is included in export
+      imported_data = JSON.parse(File.read(fixture_path))
+      exported_data = JSON.parse(File.read(exported_file))
+
+      assert exported_data['exportDate'], 'Export should have exportDate'
+      assert_includes exported_data['sessions'], imported_data['sessions'].first
+
+      # Clean up
+      File.delete(exported_file)
     end
-
-    # Verify imported data appears
-    within('#daily-log') do
-      assert_text 'Test Roundtrip Score'
-    end
-
-    # Export the data
-    accept_alert do
-      click_button '📤 Exporter sauvegarde'
-    end
-
-    # Wait for download to complete
-    exported_file = wait_for_download('piano-trainer-backup-*.json')
-    assert exported_file, 'Export file should be downloaded'
-
-    # Verify imported session is included in export
-    imported_data = JSON.parse(File.read(fixture_path))
-    exported_data = JSON.parse(File.read(exported_file))
-
-    assert exported_data['exportDate'], 'Export should have exportDate'
-    assert_includes exported_data['sessions'], imported_data['sessions'].first
-
-    # Clean up
-    File.delete(exported_file)
   end
 
   def test_import_invalid_backup
