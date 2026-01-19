@@ -26,12 +26,16 @@ function setCallbacks(cbs) {
 async function loadCassettesList() {
   try {
     const response = await fetch('/api/cassettes')
+    if (!response.ok) {
+      state.cassettes = []
+      return { success: false, cassettes: [] }
+    }
     state.cassettes = await response.json()
-    return state.cassettes
+    return { success: true, cassettes: state.cassettes }
   } catch (error) {
     console.error('Erreur lors du chargement des cassettes:', error)
     state.cassettes = []
-    return []
+    return { success: false, cassettes: [] }
   }
 }
 
