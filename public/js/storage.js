@@ -4,8 +4,6 @@ const FINGERINGS_STORE = 'fingerings'
 const SESSIONS_STORE = 'sessions'
 const AGGREGATES_STORE = 'aggregates'
 
-const OLD_PRACTICE_DB_NAME = 'piano-trainer-practice'
-
 function promisifyRequest(request) {
   return new Promise((resolve, reject) => {
     request.onerror = () => reject(request.error)
@@ -20,22 +18,6 @@ function promisifyTransaction(transaction) {
   })
 }
 
-async function readAllFromStore(db, storeName) {
-  const tx = db.transaction(storeName, 'readonly')
-  const store = tx.objectStore(storeName)
-  return (await promisifyRequest(store.getAll())) || []
-}
-
-async function writeAllToStore(db, storeName, items) {
-  if (items.length === 0) return
-  const tx = db.transaction(storeName, 'readwrite')
-  const store = tx.objectStore(storeName)
-  for (const item of items) {
-    store.put(item)
-  }
-  await promisifyTransaction(tx)
-}
-
 function putAllToStore(transaction, storeName, items) {
   if (!items || !Array.isArray(items)) return 0
   const store = transaction.objectStore(storeName)
@@ -45,46 +27,12 @@ function putAllToStore(transaction, storeName, items) {
   return items.length
 }
 
-async function migrateFromOldPracticeDb(newDb) {
-  const databases = (await indexedDB.databases?.()) || []
-  const oldDbExists = databases.some((d) => d.name === OLD_PRACTICE_DB_NAME)
-
-  if (!oldDbExists) return
-
-  try {
-    const oldDb = await promisifyRequest(indexedDB.open(OLD_PRACTICE_DB_NAME, 1))
-
-    if (oldDb.objectStoreNames.contains('sessions')) {
-      const oldSessions = await readAllFromStore(oldDb, 'sessions')
-      await writeAllToStore(newDb, SESSIONS_STORE, oldSessions)
-    }
-
-    if (oldDb.objectStoreNames.contains('aggregates')) {
-      const oldAggregates = await readAllFromStore(oldDb, 'aggregates')
-      await writeAllToStore(newDb, AGGREGATES_STORE, oldAggregates)
-    }
-
-    oldDb.close()
-    indexedDB.deleteDatabase(OLD_PRACTICE_DB_NAME)
-  } catch (error) {
-    console.warn('Migration from old practice database failed:', error)
-  }
-}
-
 async function openDatabase() {
   return new Promise((resolve, reject) => {
     const request = indexedDB.open(DB_NAME, DB_VERSION)
 
     request.onerror = () => reject(request.error)
-
-    request.onsuccess = async () => {
-      const database = request.result
-
-      // Migrate data from old practice database if needed
-      await migrateFromOldPracticeDb(database)
-
-      resolve(database)
-    }
+    request.onsuccess = () => resolve(request.result)
 
     request.onupgradeneeded = (event) => {
       const database = event.target.result
