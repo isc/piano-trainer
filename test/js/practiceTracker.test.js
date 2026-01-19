@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import 'fake-indexeddb/auto'
 import { initPracticeTracker } from '../../public/js/practiceTracker.js'
-import { initPracticeStorage } from '../../public/js/practiceStorage.js'
+import { initStorage } from '../../public/js/storage.js'
 
 describe('practiceTracker', () => {
   let tracker
@@ -9,7 +9,7 @@ describe('practiceTracker', () => {
 
   beforeEach(async () => {
     indexedDB = new IDBFactory()
-    storage = initPracticeStorage()
+    storage = initStorage()
     tracker = initPracticeTracker(storage)
     await tracker.init()
   })

@@ -1,7 +1,7 @@
-import { initPracticeStorage } from './practiceStorage.js'
+import { initStorage } from './storage.js'
 
 export function initPracticeTracker(storageInstance = null) {
-  const storage = storageInstance || initPracticeStorage()
+  const storage = storageInstance || initStorage()
 
   let currentSession = null
   let currentMeasureAttempt = null

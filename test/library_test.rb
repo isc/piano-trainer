@@ -99,6 +99,10 @@ class LibraryTest < CapybaraTestBase
       assert exported_data['exportDate'], 'Export should have exportDate'
       assert_includes exported_data['sessions'], imported_data['sessions'].first
 
+      # Verify fingerings are included in export
+      assert exported_data['fingerings'], 'Export should include fingerings'
+      assert_includes exported_data['fingerings'], imported_data['fingerings'].first
+
       # Clean up
       File.delete(exported_file)
     end

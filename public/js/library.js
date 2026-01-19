@@ -1,9 +1,9 @@
 import { initPracticeTracker } from './practiceTracker.js'
-import { initPracticeStorage } from './practiceStorage.js'
+import { initStorage } from './storage.js'
 import { formatDuration, formatDate } from './utils.js'
 
 export function libraryApp() {
-  const storage = initPracticeStorage()
+  const storage = initStorage()
   const practiceTracker = initPracticeTracker(storage)
 
   return {
@@ -31,19 +31,7 @@ export function libraryApp() {
         }
       }
 
-      // Fetch daily logs for the last 8 days (today + 7 previous days)
-      const logPromises = []
-      for (let i = 0; i < 8; i++) {
-        const date = new Date()
-        date.setDate(date.getDate() - i)
-        logPromises.push(
-          practiceTracker.getDailyLog(date).then((log) => ({
-            date: new Date(date),
-            log,
-          }))
-        )
-      }
-      this.dailyLogsByDate = await Promise.all(logPromises)
+      await this.reloadDailyLogs()
     },
 
     get filteredScores() {
@@ -88,7 +76,8 @@ export function libraryApp() {
           alert(
             `✅ Sauvegarde importée avec succès !\n\n` +
             `${result.importedSessions} session(s) importée(s)\n` +
-            `${result.importedAggregates} agrégat(s) importé(s)`
+            `${result.importedAggregates} agrégat(s) importé(s)\n` +
+            `${result.importedFingerings} doigté(s) importé(s)`
           )
 
           // Reload daily logs after import
@@ -127,8 +116,9 @@ export function libraryApp() {
     },
 
     async reloadDailyLogs() {
+      const DAYS_TO_SHOW = 8 // Today + 7 previous days
       const logPromises = []
-      for (let i = 0; i < 8; i++) {
+      for (let i = 0; i < DAYS_TO_SHOW; i++) {
         const date = new Date()
         date.setDate(date.getDate() - i)
         logPromises.push(
