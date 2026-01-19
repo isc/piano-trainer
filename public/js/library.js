@@ -15,7 +15,7 @@ export function libraryApp() {
 
     async init() {
       const [scoresResponse] = await Promise.all([
-        fetch('/data/scores.json'),
+        fetch('data/scores.json'),
         practiceTracker.init(),
       ])
       const data = await scoresResponse.json()

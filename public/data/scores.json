@@ -1,5 +1,5 @@
 {
-  "baseUrl": "/scores/",
+  "baseUrl": "scores/",
   "scores": [
     { "title": "Melodie", "composer": "Schumann", "file": "schumann-melodie.xml" },
     { "title": "Air on the G String", "composer": "J.S. Bach", "file": "J._S._Bach_-_Air_on_the_G_String_Piano_arrangement.mxl" },
