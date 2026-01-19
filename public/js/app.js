@@ -23,6 +23,7 @@ export function midiApp() {
     replayEnded: false,
     cassettes: [],
     selectedCassette: '',
+    cassetteApiAvailable: false,
     trainingMode: false,
 
     // Practice tracking (only for scores loaded via URL, not uploads)
@@ -45,7 +46,7 @@ export function midiApp() {
     selectedNoteKey: null,
 
     async init() {
-      this.loadCassettesList()
+      await this.loadCassettesList()
 
       await practiceTracker.init()
       await fingeringStorage.init()
@@ -153,7 +154,9 @@ export function midiApp() {
     },
 
     async loadCassettesList() {
-      this.cassettes = await cassettes.loadCassettesList()
+      const result = await cassettes.loadCassettesList()
+      this.cassetteApiAvailable = result.success
+      this.cassettes = result.cassettes
     },
 
     async replayCassette() {
