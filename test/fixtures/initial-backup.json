@@ -24,5 +24,12 @@
       ]
     }
   ],
-  "aggregates": []
+  "aggregates": [],
+  "fingerings": [
+    {
+      "scoreUrl": "/scores/test-roundtrip.xml",
+      "fingerings": { "0-60": 1, "0-64": 3 },
+      "updatedAt": 1736510400000
+    }
+  ]
 }

@@ -3,7 +3,7 @@ import { initMusicXML } from './musicxml.js'
 import { initCassettes } from './cassettes.js'
 import { initPracticeTracker } from './practiceTracker.js'
 import { formatDuration, formatDate } from './utils.js'
-import { initFingeringStorage } from './fingeringStorage.js'
+import { initStorage } from './storage.js'
 import { loadMxlAsXml } from './mxlLoader.js'
 import { injectFingerings } from './fingeringInjector.js'
 
@@ -11,8 +11,8 @@ export function midiApp() {
   const midi = initMidi()
   const musicxml = initMusicXML()
   const cassettes = initCassettes()
-  const practiceTracker = initPracticeTracker()
-  const fingeringStorage = initFingeringStorage()
+  const storage = initStorage()
+  const practiceTracker = initPracticeTracker(storage)
 
   return {
     bluetoothConnected: false,
@@ -48,8 +48,8 @@ export function midiApp() {
     async init() {
       await this.loadCassettesList()
 
+      await storage.init()
       await practiceTracker.init()
-      await fingeringStorage.init()
 
       // Auto-connect to MIDI device silently
       await midi.connectMIDI({ silent: true, autoSelectFirst: true })
@@ -182,7 +182,7 @@ export function midiApp() {
     },
 
     async renderScoreWithFingerings() {
-      const { fingerings } = await fingeringStorage.getFingerings(this.scoreUrl)
+      const { fingerings } = await storage.getFingerings(this.scoreUrl)
       const xml = await loadMxlAsXml(this.scoreUrl)
       const modified = injectFingerings(xml, fingerings)
       await musicxml.renderMusicXML(modified)
@@ -295,13 +295,13 @@ export function midiApp() {
     },
 
     async selectFingering(finger) {
-      await fingeringStorage.setFingering(this.scoreUrl, this.selectedNoteKey, finger)
+      await storage.setFingering(this.scoreUrl, this.selectedNoteKey, finger)
       this.closeFingeringModal()
       await this.reloadWithFingerings()
     },
 
     async removeFingering() {
-      await fingeringStorage.removeFingering(this.scoreUrl, this.selectedNoteKey)
+      await storage.removeFingering(this.scoreUrl, this.selectedNoteKey)
       this.closeFingeringModal()
       await this.reloadWithFingerings()
     },
