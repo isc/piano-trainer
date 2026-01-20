@@ -91,6 +91,31 @@ class PianoTrainerTest < CapybaraTestBase
     assert_selector 'svg g.vf-notehead.played-note', count: 2
   end
 
+  def test_free_play_allows_clicking_measure_to_reposition
+    load_score('repeat-endings.xml', 4)
+
+    # Measure click areas should be present even without training mode
+    assert_selector 'svg rect.measure-click-area', minimum: 4
+
+    # Play first two measures: C4 (measure 1) and D4 (measure 2)
+    simulate_midi_input("ON C4")
+    simulate_midi_input("OFF C4")
+    assert_selector 'svg g.vf-notehead.played-note', count: 1
+
+    simulate_midi_input("ON D4")
+    simulate_midi_input("OFF D4")
+    assert_selector 'svg g.vf-notehead.played-note', count: 2
+
+    # Click on measure 1 to reposition - should reset measure 1 and all following
+    click_measure(1)
+    assert_no_selector 'svg g.vf-notehead.played-note'
+
+    # Play C4 again - should validate measure 1
+    simulate_midi_input("ON C4")
+    simulate_midi_input("OFF C4")
+    assert_selector 'svg g.vf-notehead.played-note', count: 1
+  end
+
   def test_cassette_recording_saves_valid_midi_data
     cassette_name = 'test-recording'
     cassette_file = File.join(__dir__, '..', 'public', 'cassettes', "#{cassette_name}.json")
