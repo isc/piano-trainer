@@ -102,12 +102,9 @@ function setCallbacks(cbs) {
 }
 
 // Check if a note should be considered based on active hands
+// Staff 0 = right hand, Staff 1+ = left hand
 function isNoteActiveForHands(noteData) {
-  // Staff 0 = right hand, Staff 1+ = left hand
-  if (noteData.staffIndex === 0) {
-    return activeHands.right
-  }
-  return activeHands.left
+  return noteData.staffIndex === 0 ? activeHands.right : activeHands.left
 }
 
 function resetPlaybackState() {
@@ -179,15 +176,13 @@ function resetMeasureProgress(resetRepeatCount = true) {
   if (!measureData) return
 
   for (const noteData of measureData.notes) {
-    svgNotehead(noteData).classList.remove('played-note')
-    svgNotehead(noteData).classList.remove('active-note')
+    const notehead = svgNotehead(noteData)
+    notehead.classList.remove('played-note', 'active-note')
     noteData.played = false
     noteData.active = false
   }
 
-  if (resetRepeatCount) {
-    repeatCount = 0
-  }
+  if (resetRepeatCount) repeatCount = 0
   currentRepetitionIsClean = true
 
   // Reset practice tracking for new attempt
@@ -199,16 +194,10 @@ function resetMeasureProgress(resetRepeatCount = true) {
 // Reset the visual state (played-note class) for notes of a specific source measure
 // This is used when repeating a measure due to repeat endings (voltas)
 function resetSourceMeasureVisualState(sourceMeasureIndex) {
-  // Find all playback entries that reference this source measure and reset their SVG visual state
   for (const measureData of allNotes) {
-    if (measureData.sourceMeasureIndex === sourceMeasureIndex) {
-      for (const noteData of measureData.notes) {
-        const notehead = svgNotehead(noteData)
-        if (notehead) {
-          notehead.classList.remove('played-note')
-          notehead.classList.remove('active-note')
-        }
-      }
+    if (measureData.sourceMeasureIndex !== sourceMeasureIndex) continue
+    for (const noteData of measureData.notes) {
+      svgNotehead(noteData)?.classList.remove('played-note', 'active-note')
     }
   }
 }
@@ -216,33 +205,23 @@ function resetSourceMeasureVisualState(sourceMeasureIndex) {
 function updateMeasureCursor() {
   if (!osmdInstance) return
 
-  // Remove existing repeat indicators before creating new ones
-  const existingIndicators = document.getElementById('repeat-indicators')
-  existingIndicators?.remove()
+  document.getElementById('repeat-indicators')?.remove()
 
-  if (trainingMode && currentMeasureIndex < allNotes.length) {
-    // Remove 'selected' class from all measure rectangles
-    measureClickRectangles.forEach((rect) => {
-      rect.classList.remove('selected')
-    })
+  if (!trainingMode || currentMeasureIndex >= allNotes.length) return
 
-    // Add 'selected' class to current measure rectangle
-    if (currentMeasureIndex < measureClickRectangles.length) {
-      const currentRect = measureClickRectangles[currentMeasureIndex]
-      if (currentRect) {
-        currentRect.classList.add('selected')
+  measureClickRectangles.forEach((rect) => rect.classList.remove('selected'))
 
-        const measureData = allNotes[currentMeasureIndex]
-        if (measureData && measureData.notes && measureData.notes.length > 0) {
-          const noteElements = measureData.notes.map((n) => svgNote(n.note))
-          const svg = noteElements[0]?.ownerSVGElement
-          if (svg) {
-            createRepeatIndicators(noteElements, svg)
-          }
-        }
-      }
-    }
-  }
+  const currentRect = measureClickRectangles[currentMeasureIndex]
+  if (!currentRect) return
+
+  currentRect.classList.add('selected')
+
+  const measureData = allNotes[currentMeasureIndex]
+  if (!measureData?.notes?.length) return
+
+  const noteElements = measureData.notes.map((n) => svgNote(n.note))
+  const svg = noteElements[0]?.ownerSVGElement
+  if (svg) createRepeatIndicators(noteElements, svg)
 }
 
 function createRepeatIndicators(noteElements, svg) {
@@ -283,17 +262,16 @@ function updateRepeatIndicators() {
 }
 
 function getBoundingBoxesForNotes(noteElements) {
-  const boxes = []
-  for (const el of noteElements) {
-    try {
-      if (el && el.getBBox) {
-        boxes.push(el.getBBox())
+  return noteElements
+    .filter((el) => el?.getBBox)
+    .map((el) => {
+      try {
+        return el.getBBox()
+      } catch {
+        return null
       }
-    } catch (error) {
-      console.warn('Failed to get bounding box for note element:', error)
-    }
-  }
-  return boxes
+    })
+    .filter(Boolean)
 }
 
 function calculateCombinedBounds(boxes) {
@@ -399,55 +377,48 @@ function activateNote(midiNote) {
     }
   }
 
-  if (matchingIndices.length > 0) {
-    // Mark matching notes as active (highlighted but not validated yet)
-    matchingIndices.forEach((index) => {
-      const noteData = measureData.notes[index]
-      svgNotehead(noteData).classList.add('active-note')
-      measureData.notes[index].active = true
-    })
-
-    // Check if ALL notes at this timestamp are now active (only for active hands)
-    // For tie continuations, check if the MIDI note is currently held instead of requiring activation
-    const notesAtTimestamp = measureData.notes.filter(
-      (n) => n.timestamp === expectedTimestamp && isNoteActiveForHands(n),
-    )
-    const allActiveAtTimestamp = notesAtTimestamp.every(
-      (n) => n.played || n.active || (n.isTieContinuation && heldMidiNotes.has(n.midiNumber)),
-    )
-
-    if (allActiveAtTimestamp) {
-      // All polyphonic notes are held together - validate them all
-      notesAtTimestamp.forEach((noteData) => {
-        if (!noteData.played) {
-          svgNotehead(noteData).classList.remove('active-note')
-          svgNotehead(noteData).classList.add('played-note')
-          noteData.played = true
-          noteData.active = false
-        }
-      })
-
-      // Handle scroll and measure completion (use first validated note)
-      const firstValidatedNote = notesAtTimestamp[0]
-      handleNoteValidated(measureData, firstValidatedNote, notesAtTimestamp.length)
-    }
-
-    return true
-  } else {
+  if (matchingIndices.length === 0) {
     // Wrong note - mark repetition as dirty in training mode
-    if (trainingMode) {
-      currentRepetitionIsClean = false
-    }
-    // Track wrong note for practice statistics
+    if (trainingMode) currentRepetitionIsClean = false
     measureWrongNotes++
     callbacks.onWrongNote?.()
 
     const expected = activeNotes.find((n) => !n.played && !n.active)
-    if (expected) {
-      callbacks.onNoteError?.(expected.noteName, noteName(midiNote))
-    }
+    if (expected) callbacks.onNoteError?.(expected.noteName, noteName(midiNote))
     return false
   }
+
+  // Mark matching notes as active (highlighted but not validated yet)
+  for (const index of matchingIndices) {
+    const noteData = measureData.notes[index]
+    svgNotehead(noteData).classList.add('active-note')
+    noteData.active = true
+  }
+
+  // Check if ALL notes at this timestamp are now active (only for active hands)
+  // For tie continuations, check if the MIDI note is currently held instead of requiring activation
+  const notesAtTimestamp = measureData.notes.filter(
+    (n) => n.timestamp === expectedTimestamp && isNoteActiveForHands(n),
+  )
+  const allActiveAtTimestamp = notesAtTimestamp.every(
+    (n) => n.played || n.active || (n.isTieContinuation && heldMidiNotes.has(n.midiNumber)),
+  )
+
+  if (allActiveAtTimestamp) {
+    // All polyphonic notes are held together - validate them all
+    for (const noteData of notesAtTimestamp) {
+      if (noteData.played) continue
+      const notehead = svgNotehead(noteData)
+      notehead.classList.remove('active-note')
+      notehead.classList.add('played-note')
+      noteData.played = true
+      noteData.active = false
+    }
+
+    handleNoteValidated(measureData, notesAtTimestamp[0], notesAtTimestamp.length)
+  }
+
+  return true
 }
 
 // Deactivate a note when released (Note OFF) - for polyphonic validation
@@ -671,17 +642,17 @@ function setupFingeringClickHandlers(cbs) {
 
   removeFingeringClickHandlers()
 
-  for (const measureData of allNotes) {
-    for (const noteData of measureData.notes) {
+  for (const { notes } of allNotes) {
+    for (const noteData of notes) {
       const notehead = svgNotehead(noteData)
-      if (notehead) {
-        const handler = (e) => {
-          e.stopPropagation()
-          cbs.onNoteClick?.(noteData)
-        }
-        notehead.addEventListener('click', handler)
-        fingeringClickHandlers.push({ element: notehead, handler })
+      if (!notehead) continue
+
+      const handler = (e) => {
+        e.stopPropagation()
+        cbs.onNoteClick?.(noteData)
       }
+      notehead.addEventListener('click', handler)
+      fingeringClickHandlers.push({ element: notehead, handler })
     }
   }
 }
@@ -703,11 +674,8 @@ function restoreNoteStates(noteStates) {
       noteData.played = savedState.played
       noteData.active = savedState.active
 
-      const notehead = svgNotehead(noteData)
-      if (!notehead) continue
-
-      notehead.classList.toggle('played-note', savedState.played)
-      notehead.classList.toggle('active-note', savedState.active)
+      svgNotehead(noteData)?.classList.toggle('played-note', savedState.played)
+      svgNotehead(noteData)?.classList.toggle('active-note', savedState.active)
     }
   }
 }
