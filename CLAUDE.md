@@ -65,6 +65,14 @@ use PicoCSS as much as possible, avoid custom CSS code
 - **`/public/scores/`** - MusicXML score files
 - **`/public/cassettes/`** - Recorded MIDI files
 
+## Running Tests
+
+When running tests, save output to a temp file instead of piping to `tail`. This captures the full output and avoids re-running tests to see errors:
+
+```bash
+bundle exec rake test > /tmp/test-output.txt 2>&1; cat /tmp/test-output.txt
+```
+
 ## How It Works
 
 1. User navigates to library (`/index.html`) or directly to trainer
