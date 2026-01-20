@@ -77,13 +77,10 @@ export function initMusicXML() {
       resetProgress()
 
       if (enabled) {
-        setupMeasureClickHandlers()
         updateMeasureCursor()
       } else {
-        removeMeasureClickHandlers()
-        // Clean up repeat indicators
-        const existingIndicators = document.getElementById('repeat-indicators')
-        existingIndicators?.remove()
+        measureClickRectangles.forEach((rect) => rect.classList.remove('selected'))
+        document.getElementById('repeat-indicators')?.remove()
       }
     },
     jumpToMeasure: (measureIndex) => jumpToMeasure(measureIndex),
@@ -148,6 +145,7 @@ function renderScore() {
   if (!osmdInstance) return
   osmdInstance.render()
   extractNotesFromScore()
+  setupMeasureClickHandlers()
 }
 
 async function renderMusicXML(xmlContent) {
@@ -324,44 +322,46 @@ function setupMeasureClickHandlers() {
 
   removeMeasureClickHandlers()
 
+  const rectsBySvg = new Map()
+
   allNotes.forEach((measureData, measureIndex) => {
-    if (!measureData || !measureData.notes || measureData.notes.length === 0) return
+    if (!measureData?.notes?.length) return
 
     const noteElements = measureData.notes.map((n) => svgNote(n.note))
-    if (noteElements.length === 0) return
-
     const boxes = getBoundingBoxesForNotes(noteElements)
     if (boxes.length === 0) return
-
-    const bounds = calculateCombinedBounds(boxes)
 
     const svg = noteElements[0].ownerSVGElement
     if (!svg) return
 
-    // Store the playback index (measureIndex) for click handling
+    const bounds = calculateCombinedBounds(boxes)
     const rect = createMeasureRectangle(svg, bounds, measureIndex)
     rect.addEventListener('click', () => jumpToMeasure(measureIndex))
 
-    svg.appendChild(rect)
+    if (!rectsBySvg.has(svg)) rectsBySvg.set(svg, [])
+    rectsBySvg.get(svg).push(rect)
     measureClickRectangles.push(rect)
   })
+
+  for (const [svg, rects] of rectsBySvg) {
+    const group = document.createElementNS('http://www.w3.org/2000/svg', 'g')
+    group.classList.add('measure-click-areas')
+    rects.forEach((rect) => group.appendChild(rect))
+    svg.insertBefore(group, svg.firstChild)
+  }
 }
 
 function removeMeasureClickHandlers() {
-  measureClickRectangles.forEach((rect) => {
-    rect.parentNode?.removeChild(rect)
-  })
-
+  document.querySelectorAll('g.measure-click-areas').forEach((g) => g.remove())
   measureClickRectangles = []
 }
 
 function jumpToMeasure(measureIndex) {
   if (measureIndex < 0 || measureIndex >= allNotes.length) return
-  resetMeasureProgress()
   currentMeasureIndex = measureIndex
+  resetNotesFromIndex(measureIndex)
+  resetMeasureProgress()
   updateMeasureCursor()
-
-  // Notify callback
   updateRepeatIndicators()
 }
 
@@ -644,17 +644,24 @@ function getSystemIndexForNote(note) {
   }
 }
 
-function resetProgress() {
-  if (!osmdInstance) return
-
-  for (const measureData of allNotes) {
+function resetNotesFromIndex(fromIndex = 0) {
+  for (let i = fromIndex; i < allNotes.length; i++) {
+    const measureData = allNotes[i]
+    if (!measureData) continue
     for (const noteData of measureData.notes) {
-      svgNotehead(noteData).classList.remove('played-note')
-      svgNotehead(noteData).classList.remove('active-note')
+      const notehead = svgNotehead(noteData)
+      if (notehead) {
+        notehead.classList.remove('played-note', 'active-note')
+      }
       noteData.played = false
       noteData.active = false
     }
   }
+}
+
+function resetProgress() {
+  if (!osmdInstance) return
+  resetNotesFromIndex()
   resetPlaybackState()
   window.scrollTo({ top: 0, behavior: 'smooth' })
 }
