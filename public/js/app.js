@@ -262,10 +262,10 @@ export function midiApp() {
     formatDuration,
 
     formatPlaythroughs(playthroughs) {
+      const formatter = new Intl.ListFormat('fr', { style: 'long', type: 'conjunction' })
       // Reverse to show chronological order (oldest first)
       const durations = [...playthroughs].reverse().map((pt) => formatDuration(pt.durationMs))
-      const joined = durations.length <= 2 ? durations.join(' et ') : durations.slice(0, -1).join(', ') + ' et ' + durations.at(-1)
-      return `${playthroughs.length}× en entier (${joined})`
+      return `${playthroughs.length}× en entier (${formatter.format(durations)})`
     },
 
     // Fingering annotation methods

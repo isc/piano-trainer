@@ -260,17 +260,15 @@ export function initPracticeTracker(storageInstance = null) {
     const playthroughs = []
     for (const session of sessions) {
       // Flatten all attempts from all measures and sort chronologically
-      const allAttempts = []
-      for (const measure of session.measures) {
-        for (const attempt of measure.attempts) {
-          allAttempts.push({
+      const allAttempts = session.measures
+        .flatMap((measure) =>
+          measure.attempts.map((attempt) => ({
             measureIndex: Number(measure.sourceMeasureIndex),
             startedAt: attempt.startedAt,
             durationMs: attempt.durationMs,
-          })
-        }
-      }
-      allAttempts.sort((a, b) => new Date(a.startedAt) - new Date(b.startedAt))
+          }))
+        )
+        .sort((a, b) => new Date(a.startedAt) - new Date(b.startedAt))
 
       // Track complete playthroughs: measures must be played in sequential order
       let expectedMeasure = 0
