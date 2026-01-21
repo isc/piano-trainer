@@ -261,6 +261,13 @@ export function midiApp() {
     formatDate,
     formatDuration,
 
+    formatPlaythroughs(playthroughs) {
+      // Reverse to show chronological order (oldest first)
+      const durations = [...playthroughs].reverse().map((pt) => formatDuration(pt.durationMs))
+      const joined = durations.length <= 2 ? durations.join(' et ') : durations.slice(0, -1).join(', ') + ' et ' + durations.at(-1)
+      return `${playthroughs.length}× en entier (${joined})`
+    },
+
     // Fingering annotation methods
     setupFingeringHandlers() {
       if (!this.fingeringEnabled) return

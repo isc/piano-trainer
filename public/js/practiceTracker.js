@@ -251,9 +251,13 @@ export function initPracticeTracker(storageInstance = null) {
   }
 
   function countFullPlaythroughs(sessions, totalMeasures) {
-    if (!totalMeasures) return 0
+    return getFullPlaythroughs(sessions, totalMeasures).length
+  }
 
-    let count = 0
+  function getFullPlaythroughs(sessions, totalMeasures) {
+    if (!totalMeasures) return []
+
+    const playthroughs = []
     for (const session of sessions) {
       // Flatten all attempts from all measures and sort chronologically
       const allAttempts = []
@@ -262,22 +266,46 @@ export function initPracticeTracker(storageInstance = null) {
           allAttempts.push({
             measureIndex: Number(measure.sourceMeasureIndex),
             startedAt: attempt.startedAt,
+            durationMs: attempt.durationMs,
           })
         }
       }
       allAttempts.sort((a, b) => new Date(a.startedAt) - new Date(b.startedAt))
 
-      // Count complete playthroughs in chronological order
-      const measuresPlayed = new Set()
+      // Track complete playthroughs: measures must be played in sequential order
+      let expectedMeasure = 0
+      let playthroughStartedAt = null
+      let lastAttemptEndMs = 0
+
       for (const attempt of allAttempts) {
-        measuresPlayed.add(attempt.measureIndex)
-        if (measuresPlayed.size >= totalMeasures) {
-          count++
-          measuresPlayed.clear()
+        if (attempt.measureIndex === 0) {
+          // Starting a new potential playthrough
+          expectedMeasure = 1
+          playthroughStartedAt = attempt.startedAt
+          lastAttemptEndMs = new Date(attempt.startedAt).getTime() + attempt.durationMs
+        } else if (attempt.measureIndex === expectedMeasure) {
+          // Continuing the sequence
+          expectedMeasure++
+          lastAttemptEndMs = new Date(attempt.startedAt).getTime() + attempt.durationMs
+
+          if (expectedMeasure >= totalMeasures) {
+            // Completed a full playthrough
+            const startMs = new Date(playthroughStartedAt).getTime()
+            playthroughs.push({
+              startedAt: playthroughStartedAt,
+              durationMs: lastAttemptEndMs - startMs,
+            })
+            expectedMeasure = 0
+            playthroughStartedAt = null
+          }
         }
+        // If measure doesn't match expected, ignore it (could be practice/repeat)
       }
     }
-    return count
+
+    // Sort by start time descending (most recent first)
+    playthroughs.sort((a, b) => new Date(b.startedAt) - new Date(a.startedAt))
+    return playthroughs
   }
 
   function getSessionDuration(session) {
@@ -434,12 +462,16 @@ export function initPracticeTracker(storageInstance = null) {
     }
 
     return Array.from(dateMap.values())
-      .map((entry) => ({
-        ...entry,
-        measuresWorked: Array.from(entry.measuresWorked).sort((a, b) => a - b),
-        measuresReinforced: Array.from(entry.measuresReinforced).sort((a, b) => a - b),
-        timesPlayedInFull: countFullPlaythroughs(entry.sessions, entry.totalMeasures),
-      }))
+      .map((entry) => {
+        const fullPlaythroughs = getFullPlaythroughs(entry.sessions, entry.totalMeasures)
+        return {
+          ...entry,
+          measuresWorked: Array.from(entry.measuresWorked).sort((a, b) => a - b),
+          measuresReinforced: Array.from(entry.measuresReinforced).sort((a, b) => a - b),
+          timesPlayedInFull: fullPlaythroughs.length,
+          fullPlaythroughs,
+        }
+      })
       .sort((a, b) => new Date(b.date) - new Date(a.date))
   }
 
