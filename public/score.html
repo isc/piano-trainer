@@ -110,9 +110,15 @@
           <div>
             <strong x-text="formatDate(day.date)"></strong>
             <span x-text="' ' + formatDuration(day.totalPracticeTimeMs)"></span>
-            <div x-show="day.timesPlayedInFull === 0 && day.measuresWorked.length > 0"><small x-text="day.measuresWorked.length + ' mesures travaillées'"></small></div>
-            <div x-show="day.measuresReinforced.length > 0"><small x-text="day.measuresReinforced.length + ' mesures renforcées'"></small></div>
-            <div x-show="day.fullPlaythroughs.length > 0"><small x-text="formatPlaythroughs(day.fullPlaythroughs)"></small></div>
+            <div x-show="day.timesPlayedInFull === 0 && day.measuresWorked.length > 0">
+              <small x-text="day.measuresWorked.length + ' mesures jouées'"></small>
+            </div>
+            <div x-show="day.measuresReinforced.length > 0">
+              <small x-text="day.measuresReinforced.length + ' mesures renforcées'"></small>
+            </div>
+            <div x-show="day.fullPlaythroughs.length > 0">
+              <small x-text="formatPlaythroughs(day.fullPlaythroughs)"></small>
+            </div>
           </div>
         </template>
       </article>
