@@ -15,7 +15,7 @@ svg g.vf-notehead.active-note path {
   fill: #f59e0b;
 }
 
-/* Clickable areas for measures in training mode */
+/* Clickable areas for measures */
 .measure-click-area {
   fill: transparent;
   stroke: none;
@@ -26,7 +26,7 @@ svg g.vf-notehead.active-note path {
     fill: rgba(59, 130, 246, 0.05);
   }
 
-  /* Selected (current) measure in training mode */
+  /* Selected (current) measure */
   &.selected {
     fill: rgba(59, 130, 246, 0.15);
   }
