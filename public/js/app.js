@@ -37,6 +37,8 @@ export function midiApp() {
     errorMessage: null,
     trainingComplete: false,
     showScoreCompleteModal: false,
+    currentPlaythroughDuration: null,
+    previousPlaythroughs: [],
     showHistoryModal: false,
     scoreHistory: [],
 
@@ -66,10 +68,15 @@ export function midiApp() {
 
       musicxml.setCallbacks({
         onScoreCompleted: async (measureIndex) => {
-          if (!this.trainingMode) {
-            this.showScoreComplete()
-          }
           await practiceTracker.endSession()
+
+          if (!this.trainingMode && this.scoreUrl) {
+            const allPlaythroughs = await practiceTracker.getAllPlaythroughs(this.scoreUrl)
+            this.showScoreComplete(allPlaythroughs)
+          } else if (!this.trainingMode) {
+            this.showScoreComplete([])
+          }
+
           // Start new session for next playthrough
           const metadata = musicxml.getScoreMetadata()
           practiceTracker.startSession(this.scoreUrl, metadata.title, metadata.composer, 'free', metadata.totalMeasures)
@@ -238,11 +245,20 @@ export function midiApp() {
       this.trainingComplete = true
     },
 
-    showScoreComplete() {
+    showScoreComplete(allPlaythroughs) {
+      // Most recent by date is the one we just finished
+      const sortedByDate = [...allPlaythroughs].sort((a, b) => new Date(b.startedAt) - new Date(a.startedAt))
+      const currentStartedAt = sortedByDate[0]?.startedAt || null
+      this.currentPlaythroughDuration = sortedByDate[0]?.durationMs || null
+      // All playthroughs sorted by duration, with current one marked
+      this.previousPlaythroughs = allPlaythroughs
+        .map((pt) => ({ ...pt, isCurrent: pt.startedAt === currentStartedAt }))
+        .sort((a, b) => a.durationMs - b.durationMs)
       this.showScoreCompleteModal = true
-      setTimeout(() => {
-        this.showScoreCompleteModal = false
-      }, 3000)
+    },
+
+    closeScoreCompleteModal() {
+      this.showScoreCompleteModal = false
     },
 
     updateActiveHands() {
