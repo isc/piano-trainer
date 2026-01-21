@@ -20,7 +20,7 @@ export function formatDate(date) {
   const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24))
 
   if (diffDays === 0) return "Aujourd'hui"
-  if (diffDays === 1) return 'Hier'
+  if (diffDays === 1) return 'hier'
 
   const options = { weekday: 'long', day: 'numeric', month: 'long' }
   return compareDate.toLocaleDateString('fr-FR', options)
