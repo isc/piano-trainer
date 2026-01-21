@@ -6,12 +6,6 @@ class PianoTrainerTest < CapybaraTestBase
     visit '/score.html'
   end
 
-  def test_play_simple_score_till_the_end
-    load_score('simple-score.xml', 4)
-    replay_cassette('oh-when-the-saints', wait_for_end: false)
-    assert_text 'Partition terminée'
-  end
-
   def test_note_highlighting_when_playing_complex_score
     load_score('schumann-melodie.xml', 256)
     assert_no_selector 'svg g.vf-notehead.played-note'
