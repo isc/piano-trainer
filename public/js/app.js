@@ -67,14 +67,12 @@ export function midiApp() {
       })
 
       musicxml.setCallbacks({
-        onScoreCompleted: async (measureIndex) => {
+        onScoreCompleted: async () => {
           await practiceTracker.endSession()
 
-          if (!this.trainingMode && this.scoreUrl) {
-            const allPlaythroughs = await practiceTracker.getAllPlaythroughs(this.scoreUrl)
+          if (!this.trainingMode) {
+            const allPlaythroughs = this.scoreUrl ? await practiceTracker.getAllPlaythroughs(this.scoreUrl) : []
             this.showScoreComplete(allPlaythroughs)
-          } else if (!this.trainingMode) {
-            this.showScoreComplete([])
           }
 
           // Start new session for next playthrough
@@ -246,14 +244,19 @@ export function midiApp() {
     },
 
     showScoreComplete(allPlaythroughs) {
-      // Most recent by date is the one we just finished
-      const sortedByDate = [...allPlaythroughs].sort((a, b) => new Date(b.startedAt) - new Date(a.startedAt))
-      const currentStartedAt = sortedByDate[0]?.startedAt || null
-      this.currentPlaythroughDuration = sortedByDate[0]?.durationMs || null
-      // All playthroughs sorted by duration, with current one marked
+      // Find the most recent playthrough (the one just completed)
+      const mostRecent = allPlaythroughs.reduce(
+        (latest, pt) => (!latest || new Date(pt.startedAt) > new Date(latest.startedAt) ? pt : latest),
+        null
+      )
+
+      this.currentPlaythroughDuration = mostRecent?.durationMs || null
+
+      // Sort all playthroughs by duration (fastest first), marking the current one
       this.previousPlaythroughs = allPlaythroughs
-        .map((pt) => ({ ...pt, isCurrent: pt.startedAt === currentStartedAt }))
+        .map((pt) => ({ ...pt, isCurrent: pt === mostRecent }))
         .sort((a, b) => a.durationMs - b.durationMs)
+
       this.showScoreCompleteModal = true
     },
 
