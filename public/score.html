@@ -107,22 +107,12 @@
           <p>Aucun historique pour cette partition.</p>
         </template>
         <template x-for="day in scoreHistory" :key="day.date">
-          <div style="margin-bottom: 1rem;">
+          <div>
             <strong x-text="formatDate(day.date)"></strong>
-            <ul style="margin: 0.5rem 0; padding-left: 1.5rem;">
-              <li>
-                <span x-text="formatDuration(day.totalPracticeTimeMs)"></span>
-                <template x-if="day.timesPlayedInFull > 0">
-                  <span x-text="' - ' + day.timesPlayedInFull + '× en entier'"></span>
-                </template>
-                <template x-if="day.timesPlayedInFull === 0 && day.measuresWorked.length > 0">
-                  <span x-text="' - ' + day.measuresWorked.length + ' mesures travaillées'"></span>
-                </template>
-                <template x-if="day.measuresReinforced.length > 0">
-                  <span x-text="' - ' + day.measuresReinforced.length + ' mesures renforcées'"></span>
-                </template>
-              </li>
-            </ul>
+            <span x-text="' ' + formatDuration(day.totalPracticeTimeMs)"></span>
+            <div x-show="day.timesPlayedInFull === 0 && day.measuresWorked.length > 0"><small x-text="day.measuresWorked.length + ' mesures travaillées'"></small></div>
+            <div x-show="day.measuresReinforced.length > 0"><small x-text="day.measuresReinforced.length + ' mesures renforcées'"></small></div>
+            <div x-show="day.fullPlaythroughs.length > 0"><small x-text="formatPlaythroughs(day.fullPlaythroughs)"></small></div>
           </div>
         </template>
       </article>

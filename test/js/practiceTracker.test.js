@@ -286,6 +286,37 @@ describe('practiceTracker', () => {
       expect(log).toHaveLength(1)
       expect(log[0].timesPlayedInFull).toBe(0)
     })
+
+    it('counts only sequential playthroughs when restarting mid-piece', async () => {
+      tracker.startSession('/scores/test.xml', 'Test', 'Composer', 'free', 3)
+
+      // Start playing measures 0, 1
+      tracker.startMeasureAttempt(0)
+      await new Promise((resolve) => setTimeout(resolve, 5))
+      tracker.endMeasureAttempt(true)
+      tracker.startMeasureAttempt(1)
+      await new Promise((resolve) => setTimeout(resolve, 5))
+      tracker.endMeasureAttempt(true)
+
+      // Restart from beginning and play all measures in order
+      tracker.startMeasureAttempt(0)
+      await new Promise((resolve) => setTimeout(resolve, 5))
+      tracker.endMeasureAttempt(true)
+      tracker.startMeasureAttempt(1)
+      await new Promise((resolve) => setTimeout(resolve, 5))
+      tracker.endMeasureAttempt(true)
+      tracker.startMeasureAttempt(2)
+      await new Promise((resolve) => setTimeout(resolve, 5))
+      tracker.endMeasureAttempt(true)
+
+      await tracker.endSession()
+
+      const log = await tracker.getDailyLog(new Date())
+
+      expect(log).toHaveLength(1)
+      // Should count as 1 playthrough (the complete one), not 2
+      expect(log[0].timesPlayedInFull).toBe(1)
+    })
   })
 
   describe('getScoreHistory', () => {
@@ -299,6 +330,27 @@ describe('practiceTracker', () => {
       expect(history[0].measuresWorked).toEqual([0, 1])
       expect(history[0].measuresReinforced).toEqual([0, 1])
       expect(history[0].timesPlayedInFull).toBe(1)
+    })
+
+    it('calculates playthrough duration as end of last measure minus start of first', async () => {
+      tracker.startSession('/scores/test.xml', 'Test', 'Composer', 'free', 2)
+
+      tracker.startMeasureAttempt(0)
+      await new Promise((resolve) => setTimeout(resolve, 50))
+      tracker.endMeasureAttempt(true)
+
+      tracker.startMeasureAttempt(1)
+      await new Promise((resolve) => setTimeout(resolve, 50))
+      tracker.endMeasureAttempt(true)
+
+      await tracker.endSession()
+
+      const history = await tracker.getScoreHistory('/scores/test.xml')
+
+      expect(history[0].fullPlaythroughs).toHaveLength(1)
+      // Duration should be ~100ms (time from start of measure 0 to end of measure 1)
+      expect(history[0].fullPlaythroughs[0].durationMs).toBeGreaterThan(80)
+      expect(history[0].fullPlaythroughs[0].durationMs).toBeLessThan(200)
     })
 
     it('does not track measuresReinforced for free mode', async () => {
