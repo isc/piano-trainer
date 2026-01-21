@@ -53,7 +53,7 @@ class PracticeTrackingTest < CapybaraTestBase
 
     # Verify daily log shows today's practice
     within '#daily-log' do
-      assert_text "Aujourd'hui"
+      assert_text "aujourd'hui"
       assert_text 'Simple Score' # Score title from fixture
     end
   end
