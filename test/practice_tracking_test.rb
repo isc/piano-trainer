@@ -5,6 +5,47 @@ class PracticeTrackingTest < CapybaraTestBase
     page.driver.set_cookie('test-env', 'true')
   end
 
+  def test_score_complete_modal_shows_playthrough_time
+    visit "/score.html?url=/test-fixtures/simple-score.xml"
+    assert_selector 'svg g.vf-stavenote', count: 4
+    sleep 0.2
+
+    # Play the complete score (C4, E4, F4, G4)
+    play_notes(%w[C4 E4 F4 G4])
+
+    # Verify modal appears with time
+    assert_selector 'dialog[open]'
+    assert_text 'Partition terminée'
+    # First playthrough shows just the time (no table yet)
+    assert_selector 'p strong' # Time display
+
+    # Close modal
+    find('button[aria-label="Close"]').click
+    assert_no_selector 'dialog[open]'
+  end
+
+  def test_score_complete_modal_shows_ranking_after_multiple_playthroughs
+    # Use two-measures score: 2 measures with C4 and D4
+    visit "/score.html?url=/test-fixtures/two-measures.xml"
+    assert_selector 'svg g.vf-stavenote', count: 2
+    sleep 0.2
+
+    # First playthrough
+    play_notes(%w[C4 D4])
+    assert_selector 'dialog[open]'
+    find('button[aria-label="Close"]').click
+    sleep 0.5 # Wait for session to be saved and new session to start
+
+    # Second playthrough
+    play_notes(%w[C4 D4])
+
+    # Verify modal shows ranking table with both playthroughs
+    assert_selector 'dialog[open]'
+    sleep 0.3 # Wait for async data loading
+    assert_selector 'table tbody tr', minimum: 2
+    assert_text 'maintenant'
+  end
+
   def test_daily_log_shows_practiced_score
     # Play a score to generate practice data
     visit "/score.html?url=/test-fixtures/simple-score.xml"
@@ -29,6 +70,16 @@ class PracticeTrackingTest < CapybaraTestBase
     within '#daily-log' do
       assert_text "Aujourd'hui"
       assert_text 'Simple Score' # Score title from fixture
+    end
+  end
+
+  private
+
+  def play_notes(notes)
+    notes.each do |note|
+      simulate_midi_input("ON #{note}")
+      simulate_midi_input("OFF #{note}")
+      sleep 0.05
     end
   end
 end
