@@ -5,27 +5,7 @@ class PracticeTrackingTest < CapybaraTestBase
     page.driver.set_cookie('test-env', 'true')
   end
 
-  def test_score_complete_modal_shows_playthrough_time
-    visit "/score.html?url=/test-fixtures/simple-score.xml"
-    assert_selector 'svg g.vf-stavenote', count: 4
-    sleep 0.2
-
-    # Play the complete score (C4, E4, F4, G4)
-    play_notes(%w[C4 E4 F4 G4])
-
-    # Verify modal appears with time
-    assert_selector 'dialog[open]'
-    assert_text 'Partition terminée'
-    # First playthrough shows just the time (no table yet)
-    assert_selector 'p strong' # Time display
-
-    # Close modal
-    find('button[aria-label="Close"]').click
-    assert_no_selector 'dialog[open]'
-  end
-
-  def test_score_complete_modal_shows_ranking_after_multiple_playthroughs
-    # Use two-measures score: 2 measures with C4 and D4
+  def test_score_complete_modal_shows_time_and_ranking
     visit "/score.html?url=/test-fixtures/two-measures.xml"
     assert_selector 'svg g.vf-stavenote', count: 2
     sleep 0.2
@@ -33,8 +13,13 @@ class PracticeTrackingTest < CapybaraTestBase
     # First playthrough
     play_notes(%w[C4 D4])
     assert_selector 'dialog[open]'
+    assert_text 'Partition terminée'
+    assert_selector 'p strong' # Time display (no table yet for first playthrough)
+
+    # Close modal
     find('button[aria-label="Close"]').click
-    sleep 0.5 # Wait for session to be saved and new session to start
+    assert_no_selector 'dialog[open]'
+    sleep 0.5 # Wait for session to be saved
 
     # Second playthrough
     play_notes(%w[C4 D4])
