@@ -26,8 +26,9 @@ class LibraryTest < CapybaraTestBase
   end
 
   def test_clicking_score_navigates_to_score_page
-    fill_in 'Rechercher une partition', with: 'Air on the G String'
-    click_link 'Air on the G String'
+    page.driver.set_cookie('test-env', 'true')
+    fill_in 'Rechercher une partition', with: 'Carol of the Bells'
+    click_link 'Carol of the Bells', match: :first
 
     assert_current_path %r{/score\.html\?url=}
     assert_text 'Bibliothèque' # Back link
@@ -37,6 +38,15 @@ class LibraryTest < CapybaraTestBase
     click_on 'Historique'
     assert_selector 'dialog[open]'
     assert_text 'Historique de pratique'
+    find('button[aria-label="Close"]').click
+
+    # Play the first measure (C B C A) to create a session
+    play_notes(%w[C5 B4 C5 A4])
+    assert_selector 'svg g.vf-notehead.played-note', minimum: 4
+
+    # Go back to library and verify the score is now first (most recently played)
+    click_on 'Bibliothèque'
+    assert_equal 'Carol of the Bells (Easy)', first('td a').text
   end
 
   def test_charger_ma_partition_link

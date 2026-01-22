@@ -71,6 +71,15 @@ class CapybaraTestBase < Minitest::Test
     JS
   end
 
+  # Helper to play a sequence of notes
+  def play_notes(notes)
+    notes.each do |note|
+      simulate_midi_input("ON #{note}")
+      simulate_midi_input("OFF #{note}")
+      sleep 0.05
+    end
+  end
+
   private
 
   def parse_midi_notation(notation)

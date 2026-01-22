@@ -19,7 +19,6 @@ export function libraryApp() {
         practiceTracker.init(),
       ])
       const data = await scoresResponse.json()
-      this.scores = data.scores
       this.baseUrl = data.baseUrl
 
       // Build map of scoreId -> most recent play time
@@ -30,6 +29,9 @@ export function libraryApp() {
           this.lastPlayedByScore[session.scoreId] = session.startedAt
         }
       }
+
+      // Set scores only after lastPlayedByScore is ready, so the table renders sorted
+      this.scores = data.scores
 
       await this.reloadDailyLogs()
     },
