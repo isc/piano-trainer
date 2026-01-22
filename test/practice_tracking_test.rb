@@ -58,13 +58,4 @@ class PracticeTrackingTest < CapybaraTestBase
     end
   end
 
-  private
-
-  def play_notes(notes)
-    notes.each do |note|
-      simulate_midi_input("ON #{note}")
-      simulate_midi_input("OFF #{note}")
-      sleep 0.05
-    end
-  end
 end
