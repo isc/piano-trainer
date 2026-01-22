@@ -18,9 +18,15 @@ export function initPracticeTracker(storageInstance = null) {
     getMeasuresToReinforce,
     getDailyLog,
     getScoreHistory,
+    getAllPlaythroughs,
     getAllScores,
     computeScoreStatus,
     getCurrentSession: () => currentSession,
+  }
+
+  async function getAllPlaythroughs(scoreId) {
+    const history = await getScoreHistory(scoreId)
+    return history.flatMap((day) => day.fullPlaythroughs)
   }
 
   function generateId() {

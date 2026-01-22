@@ -54,11 +54,29 @@
       </article>
 
       <dialog :open="showScoreCompleteModal">
-        <article class="success">
+        <article>
           <header>
-            <strong>🎉 Félicitations !</strong>
+            <button aria-label="Close" rel="prev" @click="closeScoreCompleteModal()"></button>
+            <p><strong>🎉 Partition terminée !</strong></p>
           </header>
-          <p>Partition terminée !</p>
+          <table x-show="previousPlaythroughs.length > 0">
+            <tbody>
+              <template x-for="(pt, idx) in previousPlaythroughs" :key="idx">
+                <tr>
+                  <td>
+                    <strong x-show="pt.isCurrent" x-text="formatDuration(pt.durationMs)"></strong>
+                    <span x-show="!pt.isCurrent" x-text="formatDuration(pt.durationMs)"></span>
+                  </td>
+                  <td>
+                    <small x-text="pt.isCurrent ? 'maintenant' : formatDate(pt.startedAt)"></small>
+                  </td>
+                </tr>
+              </template>
+            </tbody>
+          </table>
+          <p x-show="currentPlaythroughDuration && previousPlaythroughs.length === 0">
+            Temps : <strong x-text="formatDuration(currentPlaythroughDuration)"></strong>
+          </p>
         </article>
       </dialog>
 
