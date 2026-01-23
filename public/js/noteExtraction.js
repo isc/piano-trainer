@@ -124,8 +124,8 @@ function extractNotesFromSourceMeasures(sourceMeasures) {
 
   sourceMeasures.forEach((measure, measureIndex) => {
     const measureNotes = []
-    // MusicXML measure numbers are 1-based
-    const measureNumber = measureIndex + 1
+    // Use actual MusicXML measure number (pickup measures have number 0)
+    const measureNumber = measure.MeasureNumber
     // Track sequential note index for each (staff, voice) combination
     const noteCounters = new Map()
 
