@@ -1,6 +1,7 @@
 import { initPracticeTracker } from './practiceTracker.js'
 import { initStorage } from './storage.js'
 import { formatDuration, formatDate } from './utils.js'
+import { migratePlaythroughData } from './migrations.js'
 
 export function libraryApp() {
   const storage = initStorage()
@@ -114,6 +115,20 @@ export function libraryApp() {
       } catch (error) {
         console.error('Export error:', error)
         alert(`❌ Erreur lors de l'export : ${error.message}`)
+      }
+    },
+
+    async migrateData() {
+      try {
+        const result = await migratePlaythroughData()
+        alert(
+          `✅ Migration terminée !\n\n` +
+            `${result.migratedCount} session(s) migrée(s) sur ${result.totalSessions} session(s) total.`
+        )
+        await this.reloadDailyLogs()
+      } catch (error) {
+        console.error('Migration error:', error)
+        alert(`❌ Erreur lors de la migration : ${error.message}`)
       }
     },
 
