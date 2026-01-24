@@ -88,19 +88,11 @@ describe('practiceTracker', () => {
       tracker.startSession('/scores/test.xml', 'Test', 'Composer', 'training')
 
       // Wait 100ms to simulate user delay before starting to play
-      await new Promise((resolve) => setTimeout(resolve, 100))
+      await sleep(100)
 
-      const measureStart = Date.now()
-
-      // Play first measure
-      tracker.startMeasureAttempt(0)
-      await new Promise((resolve) => setTimeout(resolve, 50))
-      tracker.endMeasureAttempt(true)
-
-      // Play second measure
-      tracker.startMeasureAttempt(1)
-      await new Promise((resolve) => setTimeout(resolve, 50))
-      tracker.endMeasureAttempt(true)
+      // Play first and second measures
+      await playMeasure(0, 50)
+      await playMeasure(1, 50)
 
       await tracker.endSession()
 
@@ -117,11 +109,9 @@ describe('practiceTracker', () => {
       tracker.startSession('/scores/test.xml', 'Test Score', 'Composer', 'training')
 
       // Wait before starting to play
-      await new Promise((resolve) => setTimeout(resolve, 100))
+      await sleep(100)
 
-      tracker.startMeasureAttempt(0)
-      await new Promise((resolve) => setTimeout(resolve, 50))
-      tracker.endMeasureAttempt(true)
+      await playMeasure(0, 50)
 
       await tracker.endSession()
 
@@ -245,20 +235,12 @@ describe('practiceTracker', () => {
       tracker.startSession('/scores/test.xml', 'Test', 'Composer', 'training', 2)
 
       // First complete playthrough
-      tracker.startMeasureAttempt(0)
-      await new Promise((resolve) => setTimeout(resolve, 5))
-      tracker.endMeasureAttempt(true)
-      tracker.startMeasureAttempt(1)
-      await new Promise((resolve) => setTimeout(resolve, 5))
-      tracker.endMeasureAttempt(true)
+      await playMeasure(0, 5)
+      await playMeasure(1, 5)
 
       // Second complete playthrough in the same session
-      tracker.startMeasureAttempt(0)
-      await new Promise((resolve) => setTimeout(resolve, 5))
-      tracker.endMeasureAttempt(true)
-      tracker.startMeasureAttempt(1)
-      await new Promise((resolve) => setTimeout(resolve, 5))
-      tracker.endMeasureAttempt(true)
+      await playMeasure(0, 5)
+      await playMeasure(1, 5)
 
       await tracker.endSession()
 
@@ -291,23 +273,13 @@ describe('practiceTracker', () => {
       tracker.startSession('/scores/test.xml', 'Test', 'Composer', 'free', 3)
 
       // Start playing measures 0, 1
-      tracker.startMeasureAttempt(0)
-      await new Promise((resolve) => setTimeout(resolve, 5))
-      tracker.endMeasureAttempt(true)
-      tracker.startMeasureAttempt(1)
-      await new Promise((resolve) => setTimeout(resolve, 5))
-      tracker.endMeasureAttempt(true)
+      await playMeasure(0, 5)
+      await playMeasure(1, 5)
 
       // Restart from beginning and play all measures in order
-      tracker.startMeasureAttempt(0)
-      await new Promise((resolve) => setTimeout(resolve, 5))
-      tracker.endMeasureAttempt(true)
-      tracker.startMeasureAttempt(1)
-      await new Promise((resolve) => setTimeout(resolve, 5))
-      tracker.endMeasureAttempt(true)
-      tracker.startMeasureAttempt(2)
-      await new Promise((resolve) => setTimeout(resolve, 5))
-      tracker.endMeasureAttempt(true)
+      await playMeasure(0, 5)
+      await playMeasure(1, 5)
+      await playMeasure(2, 5)
 
       await tracker.endSession()
 
@@ -316,6 +288,86 @@ describe('practiceTracker', () => {
       expect(log).toHaveLength(1)
       // Should count as 1 playthrough (the complete one), not 2
       expect(log[0].timesPlayedInFull).toBe(1)
+    })
+
+    it('counts playthrough with repeats when markScoreCompleted is called', async () => {
+      // Simulate a score with repeats (like Fur Elise)
+      // Source measures: 0-4, but with repeat: 0,1,2,0,1,3,4
+      tracker.startSession('/scores/test.xml', 'Test', 'Composer', 'free', 5)
+
+      // First section: 0, 1, 2
+      await playMeasure(0, 5)
+      await playMeasure(1, 5)
+      await playMeasure(2, 5)
+
+      // Repeat: back to 0, 1 (this would break sequential detection)
+      await playMeasure(0, 5)
+      await playMeasure(1, 5)
+
+      // Continue with 3, 4
+      await playMeasure(3, 5)
+      await playMeasure(4, 5)
+
+      // Mark as completed (this is what onScoreCompleted does)
+      tracker.markScoreCompleted()
+      await tracker.endSession()
+
+      const log = await tracker.getDailyLog(new Date())
+
+      expect(log).toHaveLength(1)
+      // Should count as 1 playthrough because markScoreCompleted was called
+      expect(log[0].timesPlayedInFull).toBe(1)
+    })
+
+    it('does not count playthrough with repeats without markScoreCompleted', async () => {
+      // Same sequence but without markScoreCompleted - tests backwards compatibility
+      tracker.startSession('/scores/test.xml', 'Test', 'Composer', 'free', 5)
+
+      // First section: 0, 1, 2
+      await playMeasure(0, 5)
+      await playMeasure(1, 5)
+      await playMeasure(2, 5)
+
+      // Repeat: back to 0, 1
+      await playMeasure(0, 5)
+      await playMeasure(1, 5)
+
+      // Continue with 3, 4
+      await playMeasure(3, 5)
+      await playMeasure(4, 5)
+
+      // No markScoreCompleted - old behavior
+      await tracker.endSession()
+
+      const log = await tracker.getDailyLog(new Date())
+
+      expect(log).toHaveLength(1)
+      // Sequential detection fails due to repeat, so 0 playthroughs
+      expect(log[0].timesPlayedInFull).toBe(0)
+    })
+
+    it('playthrough duration excludes time before restarting from measure 0', async () => {
+      tracker.startSession('/scores/test.xml', 'Test', 'Composer', 'free', 3)
+
+      // Play measures 1, 2 first (simulates clicking on measure 1)
+      await playMeasure(1, 50)
+      await playMeasure(2, 50)
+
+      // Now restart from measure 0 and play complete
+      await playMeasure(0, 30)
+      await playMeasure(1, 30)
+      await playMeasure(2, 30)
+
+      tracker.markScoreCompleted()
+      await tracker.endSession()
+
+      const history = await tracker.getScoreHistory('/scores/test.xml')
+
+      expect(history[0].fullPlaythroughs).toHaveLength(1)
+      // Duration should be ~90ms (from last measure 0 start to completion)
+      // NOT ~190ms (which would include the initial measures 1, 2)
+      expect(history[0].fullPlaythroughs[0].durationMs).toBeGreaterThan(70)
+      expect(history[0].fullPlaythroughs[0].durationMs).toBeLessThan(150)
     })
   })
 
@@ -335,13 +387,8 @@ describe('practiceTracker', () => {
     it('calculates playthrough duration as end of last measure minus start of first', async () => {
       tracker.startSession('/scores/test.xml', 'Test', 'Composer', 'free', 2)
 
-      tracker.startMeasureAttempt(0)
-      await new Promise((resolve) => setTimeout(resolve, 50))
-      tracker.endMeasureAttempt(true)
-
-      tracker.startMeasureAttempt(1)
-      await new Promise((resolve) => setTimeout(resolve, 50))
-      tracker.endMeasureAttempt(true)
+      await playMeasure(0, 50)
+      await playMeasure(1, 50)
 
       await tracker.endSession()
 
@@ -363,11 +410,20 @@ describe('practiceTracker', () => {
     })
   })
 
+  function sleep(ms) {
+    return new Promise((resolve) => setTimeout(resolve, ms))
+  }
+
+  async function playMeasure(measureIndex, delayMs = 0) {
+    tracker.startMeasureAttempt(measureIndex)
+    if (delayMs > 0) await sleep(delayMs)
+    tracker.endMeasureAttempt(true)
+  }
+
   async function playSession(scoreId, measures, mode = 'training', totalMeasures = null) {
     tracker.startSession(scoreId, 'Test', 'Composer', mode, totalMeasures)
     for (const m of measures) {
-      tracker.startMeasureAttempt(m)
-      tracker.endMeasureAttempt(true)
+      await playMeasure(m)
     }
     await tracker.endSession()
   }

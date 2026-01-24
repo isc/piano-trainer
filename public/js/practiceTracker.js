@@ -13,6 +13,7 @@ export function initPracticeTracker(storageInstance = null) {
     startMeasureAttempt,
     recordWrongNote,
     endMeasureAttempt,
+    markScoreCompleted,
     endSession,
     getScoreStats,
     getMeasuresToReinforce,
@@ -113,6 +114,12 @@ export function initPracticeTracker(storageInstance = null) {
     storage.saveSession({ ...currentSession })
 
     return completedAttempt
+  }
+
+  function markScoreCompleted() {
+    if (!currentSession) return null
+    currentSession.completedAt = new Date().toISOString()
+    return currentSession
   }
 
   async function endSession() {
@@ -265,6 +272,22 @@ export function initPracticeTracker(storageInstance = null) {
 
     const playthroughs = []
     for (const session of sessions) {
+      // If session has explicit completedAt flag, use it (handles repeats correctly)
+      if (session.completedAt) {
+        // Find the last time measure 0 was started (the actual playthrough start)
+        const lastMeasure0Start = getLastMeasure0Start(session)
+        if (lastMeasure0Start) {
+          const completedAtMs = new Date(session.completedAt).getTime()
+          const startMs = new Date(lastMeasure0Start).getTime()
+          playthroughs.push({
+            startedAt: lastMeasure0Start,
+            durationMs: completedAtMs - startMs,
+          })
+        }
+        continue
+      }
+
+      // Fall back to sequential detection for old sessions without completedAt
       // Flatten all attempts from all measures and sort chronologically
       const allAttempts = session.measures
         .flatMap((measure) =>
@@ -310,6 +333,18 @@ export function initPracticeTracker(storageInstance = null) {
     // Sort by start time descending (most recent first)
     playthroughs.sort((a, b) => new Date(b.startedAt) - new Date(a.startedAt))
     return playthroughs
+  }
+
+  function getLastMeasure0Start(session) {
+    // Find the last time measure 0 was started (for calculating playthrough duration)
+    const measure0 = session.measures.find((m) => Number(m.sourceMeasureIndex) === 0)
+    if (!measure0 || measure0.attempts.length === 0) return null
+
+    // Get the last attempt on measure 0 (most recent start of a playthrough)
+    const sortedAttempts = [...measure0.attempts].sort(
+      (a, b) => new Date(b.startedAt) - new Date(a.startedAt)
+    )
+    return sortedAttempts[0].startedAt
   }
 
   function getSessionDuration(session) {
