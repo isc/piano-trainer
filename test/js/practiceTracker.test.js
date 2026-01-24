@@ -369,6 +369,39 @@ describe('practiceTracker', () => {
       expect(history[0].fullPlaythroughs[0].durationMs).toBeGreaterThan(70)
       expect(history[0].fullPlaythroughs[0].durationMs).toBeLessThan(150)
     })
+
+    it('consecutive playthroughs have correct independent timings', async () => {
+      // First playthrough: slow (~150ms)
+      tracker.startSession('/scores/test.xml', 'Test', 'Composer', 'free', 2)
+      await playMeasure(0, 75)
+      await playMeasure(1, 75)
+      tracker.markScoreCompleted()
+      await tracker.endSession()
+
+      // Second playthrough: fast (~60ms)
+      tracker.startSession('/scores/test.xml', 'Test', 'Composer', 'free', 2)
+      await playMeasure(0, 30)
+      await playMeasure(1, 30)
+      tracker.markScoreCompleted()
+      await tracker.endSession()
+
+      const history = await tracker.getScoreHistory('/scores/test.xml')
+
+      // Both playthroughs are on the same day, so 1 history entry with 2 playthroughs
+      expect(history).toHaveLength(1)
+      expect(history[0].fullPlaythroughs).toHaveLength(2)
+
+      // Playthroughs are sorted by most recent first
+      const [secondPlaythrough, firstPlaythrough] = history[0].fullPlaythroughs
+
+      // First playthrough should be ~150ms
+      expect(firstPlaythrough.durationMs).toBeGreaterThan(120)
+      expect(firstPlaythrough.durationMs).toBeLessThan(200)
+
+      // Second playthrough should be ~60ms (not affected by first)
+      expect(secondPlaythrough.durationMs).toBeGreaterThan(40)
+      expect(secondPlaythrough.durationMs).toBeLessThan(100)
+    })
   })
 
   describe('getScoreHistory', () => {
