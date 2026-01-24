@@ -88,7 +88,6 @@ export function midiApp() {
         },
         onTrainingComplete: async () => {
           this.showTrainingComplete()
-          practiceTracker.markScoreCompleted()
           await practiceTracker.endSession()
           // Start new session for next playthrough
           const metadata = musicxml.getScoreMetadata()
