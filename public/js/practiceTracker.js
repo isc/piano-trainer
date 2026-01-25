@@ -281,33 +281,19 @@ export function initPracticeTracker(storageInstance = null) {
 
     const playthroughs = []
     for (const session of sessions) {
-      if (!session.completedAt) continue
+      if (!session.completedAt || !session.playthroughStartedAt) continue
 
-      // Use playthroughStartedAt if available, otherwise fall back to first measure 0 attempt
-      const startedAt = session.playthroughStartedAt || getFirstMeasure0Start(session)
-      if (startedAt) {
-        const completedAtMs = new Date(session.completedAt).getTime()
-        const startMs = new Date(startedAt).getTime()
-        playthroughs.push({
-          startedAt,
-          durationMs: completedAtMs - startMs,
-        })
-      }
+      const completedAtMs = new Date(session.completedAt).getTime()
+      const startMs = new Date(session.playthroughStartedAt).getTime()
+      playthroughs.push({
+        startedAt: session.playthroughStartedAt,
+        durationMs: completedAtMs - startMs,
+      })
     }
 
     // Sort by start time descending (most recent first)
     playthroughs.sort((a, b) => new Date(b.startedAt) - new Date(a.startedAt))
     return playthroughs
-  }
-
-  function getFirstMeasure0Start(session) {
-    const measure0 = session.measures.find((m) => Number(m.sourceMeasureIndex) === 0)
-    if (!measure0 || measure0.attempts.length === 0) return null
-
-    const sortedAttempts = [...measure0.attempts].sort(
-      (a, b) => new Date(a.startedAt) - new Date(b.startedAt)
-    )
-    return sortedAttempts[0].startedAt
   }
 
   function getSessionDuration(session) {
