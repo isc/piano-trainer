@@ -305,7 +305,8 @@ describe('practiceTracker', () => {
       await playMeasure(1, 50)
       await playMeasure(2, 50)
 
-      // Now restart from measure 0 and play complete
+      // Now restart from measure 0 (simulates clicking on measure 0)
+      tracker.restartPlaythrough()
       await playMeasure(0, 30)
       await playMeasure(1, 30)
       await playMeasure(2, 30)
@@ -316,7 +317,7 @@ describe('practiceTracker', () => {
       const history = await tracker.getScoreHistory('/scores/test.xml')
 
       expect(history[0].fullPlaythroughs).toHaveLength(1)
-      // Duration should be ~90ms (from last measure 0 start to completion)
+      // Duration should be ~90ms (from restart to completion)
       // NOT ~190ms (which would include the initial measures 1, 2)
       expect(history[0].fullPlaythroughs[0].durationMs).toBeGreaterThan(70)
       expect(history[0].fullPlaythroughs[0].durationMs).toBeLessThan(150)

@@ -102,6 +102,9 @@ export function midiApp() {
         onWrongNote: () => {
           practiceTracker.recordWrongNote()
         },
+        onPlaythroughRestart: () => {
+          practiceTracker.restartPlaythrough()
+        },
       })
 
       cassettes.setCallbacks({

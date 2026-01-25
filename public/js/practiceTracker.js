@@ -14,6 +14,7 @@ export function initPracticeTracker(storageInstance = null) {
     recordWrongNote,
     endMeasureAttempt,
     markScoreCompleted,
+    restartPlaythrough,
     endSession,
     getScoreStats,
     getMeasuresToReinforce,
@@ -37,6 +38,7 @@ export function initPracticeTracker(storageInstance = null) {
   function startSession(scoreId, scoreTitle, composer, mode, totalMeasures = null) {
     if (!scoreId) return null
 
+    const now = new Date().toISOString()
     currentSession = {
       id: generateId(),
       scoreId,
@@ -44,7 +46,8 @@ export function initPracticeTracker(storageInstance = null) {
       composer: composer || null,
       totalMeasures: totalMeasures || null,
       mode,
-      startedAt: new Date().toISOString(),
+      startedAt: now,
+      playthroughStartedAt: now,
       endedAt: null,
       measures: [],
     }
@@ -119,6 +122,12 @@ export function initPracticeTracker(storageInstance = null) {
   function markScoreCompleted() {
     if (!currentSession) return null
     currentSession.completedAt = new Date().toISOString()
+    return currentSession
+  }
+
+  function restartPlaythrough() {
+    if (!currentSession) return null
+    currentSession.playthroughStartedAt = new Date().toISOString()
     return currentSession
   }
 
@@ -274,12 +283,13 @@ export function initPracticeTracker(storageInstance = null) {
     for (const session of sessions) {
       if (!session.completedAt) continue
 
-      const lastMeasure0Start = getLastMeasure0Start(session)
-      if (lastMeasure0Start) {
+      // Use playthroughStartedAt if available, otherwise fall back to first measure 0 attempt
+      const startedAt = session.playthroughStartedAt || getFirstMeasure0Start(session)
+      if (startedAt) {
         const completedAtMs = new Date(session.completedAt).getTime()
-        const startMs = new Date(lastMeasure0Start).getTime()
+        const startMs = new Date(startedAt).getTime()
         playthroughs.push({
-          startedAt: lastMeasure0Start,
+          startedAt,
           durationMs: completedAtMs - startMs,
         })
       }
@@ -290,14 +300,12 @@ export function initPracticeTracker(storageInstance = null) {
     return playthroughs
   }
 
-  function getLastMeasure0Start(session) {
-    // Find the last time measure 0 was started (for calculating playthrough duration)
+  function getFirstMeasure0Start(session) {
     const measure0 = session.measures.find((m) => Number(m.sourceMeasureIndex) === 0)
     if (!measure0 || measure0.attempts.length === 0) return null
 
-    // Get the last attempt on measure 0 (most recent start of a playthrough)
     const sortedAttempts = [...measure0.attempts].sort(
-      (a, b) => new Date(b.startedAt) - new Date(a.startedAt)
+      (a, b) => new Date(a.startedAt) - new Date(b.startedAt)
     )
     return sortedAttempts[0].startedAt
   }

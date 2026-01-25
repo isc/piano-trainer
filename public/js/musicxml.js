@@ -37,6 +37,7 @@ let callbacks = {
   onMeasureStarted: null,
   onMeasureCompleted: null,
   onWrongNote: null,
+  onPlaythroughRestart: null,
 }
 
 // Hand selection: by default both hands are active
@@ -342,6 +343,10 @@ function jumpToMeasure(measureIndex) {
   resetMeasureProgress()
   updateMeasureCursor()
   updateRepeatIndicators()
+  // Notify tracker that user is restarting from measure 0
+  if (measureIndex === 0) {
+    callbacks.onPlaythroughRestart?.()
+  }
 }
 
 // Activate a note when pressed (Note ON) - for polyphonic validation
