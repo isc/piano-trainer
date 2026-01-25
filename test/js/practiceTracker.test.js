@@ -34,18 +34,20 @@ describe('practiceTracker', () => {
     })
 
     it('toggleMode preserves metadata and saves previous session', async () => {
-      tracker.startSession('/scores/test.xml', 'Test Score', 'Composer', 'free')
+      tracker.startSession('/scores/test.xml', 'Test Score', 'Test Composer', 'free')
       tracker.startMeasureAttempt(0)
       tracker.endMeasureAttempt(true)
 
       const newSession = await tracker.toggleMode('training')
 
       expect(newSession.scoreId).toBe('/scores/test.xml')
-      expect(newSession.scoreTitle).toBe('Test Score')
       expect(newSession.mode).toBe('training')
 
+      // Metadata is stored in aggregates, not in session
       const stats = await tracker.getScoreStats('/scores/test.xml')
       expect(stats.totalSessions).toBe(1)
+      expect(stats.scoreTitle).toBe('Test Score')
+      expect(stats.composer).toBe('Test Composer')
     })
   })
 

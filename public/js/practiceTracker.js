@@ -5,6 +5,9 @@ export function initPracticeTracker(storageInstance = null) {
 
   let currentSession = null
   let currentMeasureAttempt = null
+  // Store metadata separately from session (not persisted in session object)
+  let currentScoreTitle = null
+  let currentComposer = null
 
   return {
     init: () => storage.init(),
@@ -38,12 +41,14 @@ export function initPracticeTracker(storageInstance = null) {
   function startSession(scoreId, scoreTitle, composer, mode, totalMeasures = null) {
     if (!scoreId) return null
 
+    // Store metadata separately (used for updating aggregates, not stored in session)
+    currentScoreTitle = scoreTitle || null
+    currentComposer = composer || null
+
     const now = new Date().toISOString()
     currentSession = {
       id: generateId(),
       scoreId,
-      scoreTitle: scoreTitle || null,
-      composer: composer || null,
       totalMeasures: totalMeasures || null,
       mode,
       startedAt: now,
@@ -57,7 +62,10 @@ export function initPracticeTracker(storageInstance = null) {
   async function toggleMode(newMode) {
     if (!currentSession) return null
 
-    const { scoreId, scoreTitle, composer, totalMeasures } = currentSession
+    const { scoreId, totalMeasures } = currentSession
+    // Preserve metadata from instance variables
+    const scoreTitle = currentScoreTitle
+    const composer = currentComposer
     await endSession()
     return startSession(scoreId, scoreTitle, composer, newMode, totalMeasures)
   }
@@ -158,8 +166,8 @@ export function initPracticeTracker(storageInstance = null) {
     if (!aggregate) {
       aggregate = {
         scoreId: session.scoreId,
-        scoreTitle: session.scoreTitle,
-        composer: session.composer,
+        scoreTitle: currentScoreTitle,
+        composer: currentComposer,
         status: 'dechiffrage',
         firstPlayedAt: session.startedAt,
         lastPlayedAt: session.endedAt,
@@ -169,12 +177,12 @@ export function initPracticeTracker(storageInstance = null) {
       }
     }
 
-    // Update title/composer if they were missing before
-    if (!aggregate.scoreTitle && session.scoreTitle) {
-      aggregate.scoreTitle = session.scoreTitle
+    // Update title/composer if they were missing before (use instance variables)
+    if (!aggregate.scoreTitle && currentScoreTitle) {
+      aggregate.scoreTitle = currentScoreTitle
     }
-    if (!aggregate.composer && session.composer) {
-      aggregate.composer = session.composer
+    if (!aggregate.composer && currentComposer) {
+      aggregate.composer = currentComposer
     }
 
     const lastMeasureEndTime = getLastMeasureEndTime(session)
@@ -360,10 +368,13 @@ export function initPracticeTracker(storageInstance = null) {
 
     for (const session of sessions) {
       if (!scoreMap.has(session.scoreId)) {
+        // Look up metadata from aggregate (single source of truth)
+        const aggregate = await storage.getAggregate(session.scoreId)
+
         scoreMap.set(session.scoreId, {
           scoreId: session.scoreId,
-          scoreTitle: session.scoreTitle,
-          composer: session.composer,
+          scoreTitle: aggregate?.scoreTitle || null,
+          composer: aggregate?.composer || null,
           totalMeasures: null,
           sessions: [],
           measuresWorked: new Set(),
