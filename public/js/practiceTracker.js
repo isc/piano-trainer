@@ -47,7 +47,7 @@ export function initPracticeTracker(storageInstance = null) {
       totalMeasures: totalMeasures || null,
       mode,
       startedAt: now,
-      playthroughStartedAt: now,
+      playthroughStartedAt: null,
       endedAt: null,
       measures: [],
     }
@@ -64,6 +64,11 @@ export function initPracticeTracker(storageInstance = null) {
 
   function startMeasureAttempt(sourceMeasureIndex) {
     if (!currentSession) return null
+
+    // Set playthroughStartedAt when user starts playing from measure 0
+    if (sourceMeasureIndex === 0 && !currentSession.playthroughStartedAt) {
+      currentSession.playthroughStartedAt = new Date().toISOString()
+    }
 
     currentMeasureAttempt = {
       sourceMeasureIndex,
