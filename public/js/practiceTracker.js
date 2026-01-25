@@ -120,15 +120,13 @@ export function initPracticeTracker(storageInstance = null) {
   }
 
   function markScoreCompleted() {
-    if (!currentSession) return null
+    if (!currentSession) return
     currentSession.completedAt = new Date().toISOString()
-    return currentSession
   }
 
   function restartPlaythrough() {
-    if (!currentSession) return null
+    if (!currentSession) return
     currentSession.playthroughStartedAt = new Date().toISOString()
-    return currentSession
   }
 
   async function endSession() {
