@@ -13,6 +13,8 @@ export function initPracticeTracker(storageInstance = null) {
     startMeasureAttempt,
     recordWrongNote,
     endMeasureAttempt,
+    markScoreCompleted,
+    restartPlaythrough,
     endSession,
     getScoreStats,
     getMeasuresToReinforce,
@@ -36,6 +38,7 @@ export function initPracticeTracker(storageInstance = null) {
   function startSession(scoreId, scoreTitle, composer, mode, totalMeasures = null) {
     if (!scoreId) return null
 
+    const now = new Date().toISOString()
     currentSession = {
       id: generateId(),
       scoreId,
@@ -43,7 +46,8 @@ export function initPracticeTracker(storageInstance = null) {
       composer: composer || null,
       totalMeasures: totalMeasures || null,
       mode,
-      startedAt: new Date().toISOString(),
+      startedAt: now,
+      playthroughStartedAt: null,
       endedAt: null,
       measures: [],
     }
@@ -60,6 +64,11 @@ export function initPracticeTracker(storageInstance = null) {
 
   function startMeasureAttempt(sourceMeasureIndex) {
     if (!currentSession) return null
+
+    // Set playthroughStartedAt when user starts playing from measure 0
+    if (sourceMeasureIndex === 0 && !currentSession.playthroughStartedAt) {
+      currentSession.playthroughStartedAt = new Date().toISOString()
+    }
 
     currentMeasureAttempt = {
       sourceMeasureIndex,
@@ -113,6 +122,16 @@ export function initPracticeTracker(storageInstance = null) {
     storage.saveSession({ ...currentSession })
 
     return completedAttempt
+  }
+
+  function markScoreCompleted() {
+    if (!currentSession) return
+    currentSession.completedAt = new Date().toISOString()
+  }
+
+  function restartPlaythrough() {
+    if (!currentSession) return
+    currentSession.playthroughStartedAt = new Date().toISOString()
   }
 
   async function endSession() {
@@ -265,46 +284,14 @@ export function initPracticeTracker(storageInstance = null) {
 
     const playthroughs = []
     for (const session of sessions) {
-      // Flatten all attempts from all measures and sort chronologically
-      const allAttempts = session.measures
-        .flatMap((measure) =>
-          measure.attempts.map((attempt) => ({
-            measureIndex: Number(measure.sourceMeasureIndex),
-            startedAt: attempt.startedAt,
-            durationMs: attempt.durationMs,
-          }))
-        )
-        .sort((a, b) => new Date(a.startedAt) - new Date(b.startedAt))
+      if (!session.completedAt || !session.playthroughStartedAt) continue
 
-      // Track complete playthroughs: measures must be played in sequential order
-      let expectedMeasure = 0
-      let playthroughStartedAt = null
-      let lastAttemptEndMs = 0
-
-      for (const attempt of allAttempts) {
-        if (attempt.measureIndex === 0) {
-          // Starting a new potential playthrough
-          expectedMeasure = 1
-          playthroughStartedAt = attempt.startedAt
-          lastAttemptEndMs = new Date(attempt.startedAt).getTime() + attempt.durationMs
-        } else if (attempt.measureIndex === expectedMeasure) {
-          // Continuing the sequence
-          expectedMeasure++
-          lastAttemptEndMs = new Date(attempt.startedAt).getTime() + attempt.durationMs
-
-          if (expectedMeasure >= totalMeasures) {
-            // Completed a full playthrough
-            const startMs = new Date(playthroughStartedAt).getTime()
-            playthroughs.push({
-              startedAt: playthroughStartedAt,
-              durationMs: lastAttemptEndMs - startMs,
-            })
-            expectedMeasure = 0
-            playthroughStartedAt = null
-          }
-        }
-        // If measure doesn't match expected, ignore it (could be practice/repeat)
-      }
+      const completedAtMs = new Date(session.completedAt).getTime()
+      const startMs = new Date(session.playthroughStartedAt).getTime()
+      playthroughs.push({
+        startedAt: session.playthroughStartedAt,
+        durationMs: completedAtMs - startMs,
+      })
     }
 
     // Sort by start time descending (most recent first)

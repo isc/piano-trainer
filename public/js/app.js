@@ -68,6 +68,7 @@ export function midiApp() {
 
       musicxml.setCallbacks({
         onScoreCompleted: async () => {
+          practiceTracker.markScoreCompleted()
           await practiceTracker.endSession()
 
           if (!this.trainingMode) {
@@ -100,6 +101,9 @@ export function midiApp() {
         },
         onWrongNote: () => {
           practiceTracker.recordWrongNote()
+        },
+        onPlaythroughRestart: () => {
+          practiceTracker.restartPlaythrough()
         },
       })
 

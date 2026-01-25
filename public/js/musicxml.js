@@ -37,6 +37,7 @@ let callbacks = {
   onMeasureStarted: null,
   onMeasureCompleted: null,
   onWrongNote: null,
+  onPlaythroughRestart: null,
 }
 
 // Hand selection: by default both hands are active
@@ -337,10 +338,15 @@ function removeMeasureClickHandlers() {
 function jumpToMeasure(measureIndex) {
   if (measureIndex < 0 || measureIndex >= allNotes.length) return
   currentMeasureIndex = measureIndex
+  // Don't clear playedSourceMeasures - we want to track all measures played across jumps
   resetNotesFromIndex(measureIndex)
   resetMeasureProgress()
   updateMeasureCursor()
   updateRepeatIndicators()
+  // Notify tracker that user is restarting from measure 0
+  if (measureIndex === 0) {
+    callbacks.onPlaythroughRestart?.()
+  }
 }
 
 // Activate a note when pressed (Note ON) - for polyphonic validation
@@ -564,7 +570,12 @@ function handleNoteValidated(measureData, noteData, validatedCount) {
         measureStartTime = null
         measureWrongNotes = 0
       } else {
-        callbacks.onScoreCompleted?.(currentMeasureIndex)
+        // Only trigger completion if all unique source measures were played
+        const allSourceMeasures = new Set(allNotes.map((m) => m.sourceMeasureIndex))
+        const allMeasuresPlayed = [...allSourceMeasures].every((sm) => playedSourceMeasures.has(sm))
+        if (allMeasuresPlayed) {
+          callbacks.onScoreCompleted?.(currentMeasureIndex)
+        }
         setTimeout(() => {
           resetProgress()
         }, TRAINING_RESET_DELAY_MS)
