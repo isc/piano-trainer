@@ -210,38 +210,17 @@ describe('practiceTracker', () => {
 
     it('counts timesPlayedInFull across multiple sessions', async () => {
       // First session: complete playthrough
-      tracker.startSession('/scores/test.xml', 'Test', 'Composer', 'training', 2)
-      tracker.startMeasureAttempt(0)
-      tracker.endMeasureAttempt(true)
-      tracker.startMeasureAttempt(1)
-      tracker.endMeasureAttempt(true)
+      tracker.startSession('/scores/test.xml', 'Test', 'Composer', 'free', 2)
+      await playMeasure(0)
+      await playMeasure(1)
+      tracker.markScoreCompleted()
       await tracker.endSession()
 
       // Second session: another complete playthrough
-      tracker.startSession('/scores/test.xml', 'Test', 'Composer', 'training', 2)
-      tracker.startMeasureAttempt(0)
-      tracker.endMeasureAttempt(true)
-      tracker.startMeasureAttempt(1)
-      tracker.endMeasureAttempt(true)
-      await tracker.endSession()
-
-      const log = await tracker.getDailyLog(new Date())
-
-      expect(log).toHaveLength(1)
-      expect(log[0].timesPlayedInFull).toBe(2)
-    })
-
-    it('counts timesPlayedInFull=2 when played twice in same session', async () => {
-      tracker.startSession('/scores/test.xml', 'Test', 'Composer', 'training', 2)
-
-      // First complete playthrough
-      await playMeasure(0, 5)
-      await playMeasure(1, 5)
-
-      // Second complete playthrough in the same session
-      await playMeasure(0, 5)
-      await playMeasure(1, 5)
-
+      tracker.startSession('/scores/test.xml', 'Test', 'Composer', 'free', 2)
+      await playMeasure(0)
+      await playMeasure(1)
+      tracker.markScoreCompleted()
       await tracker.endSession()
 
       const log = await tracker.getDailyLog(new Date())
@@ -269,24 +248,24 @@ describe('practiceTracker', () => {
       expect(log[0].timesPlayedInFull).toBe(0)
     })
 
-    it('counts only sequential playthroughs when restarting mid-piece', async () => {
+    it('counts playthrough when markScoreCompleted is called after restart', async () => {
       tracker.startSession('/scores/test.xml', 'Test', 'Composer', 'free', 3)
 
-      // Start playing measures 0, 1
+      // Start playing measures 0, 1 (incomplete)
       await playMeasure(0, 5)
       await playMeasure(1, 5)
 
-      // Restart from beginning and play all measures in order
+      // Restart from beginning and play all measures
       await playMeasure(0, 5)
       await playMeasure(1, 5)
       await playMeasure(2, 5)
 
+      tracker.markScoreCompleted()
       await tracker.endSession()
 
       const log = await tracker.getDailyLog(new Date())
 
       expect(log).toHaveLength(1)
-      // Should count as 1 playthrough (the complete one), not 2
       expect(log[0].timesPlayedInFull).toBe(1)
     })
 
@@ -317,33 +296,6 @@ describe('practiceTracker', () => {
       expect(log).toHaveLength(1)
       // Should count as 1 playthrough because markScoreCompleted was called
       expect(log[0].timesPlayedInFull).toBe(1)
-    })
-
-    it('does not count playthrough with repeats without markScoreCompleted', async () => {
-      // Same sequence but without markScoreCompleted - tests backwards compatibility
-      tracker.startSession('/scores/test.xml', 'Test', 'Composer', 'free', 5)
-
-      // First section: 0, 1, 2
-      await playMeasure(0, 5)
-      await playMeasure(1, 5)
-      await playMeasure(2, 5)
-
-      // Repeat: back to 0, 1
-      await playMeasure(0, 5)
-      await playMeasure(1, 5)
-
-      // Continue with 3, 4
-      await playMeasure(3, 5)
-      await playMeasure(4, 5)
-
-      // No markScoreCompleted - old behavior
-      await tracker.endSession()
-
-      const log = await tracker.getDailyLog(new Date())
-
-      expect(log).toHaveLength(1)
-      // Sequential detection fails due to repeat, so 0 playthroughs
-      expect(log[0].timesPlayedInFull).toBe(0)
     })
 
     it('playthrough duration excludes time before restarting from measure 0', async () => {
@@ -406,7 +358,7 @@ describe('practiceTracker', () => {
 
   describe('getScoreHistory', () => {
     it('returns history for specific score only, with correct data', async () => {
-      await playSession('/scores/test1.xml', [0, 1], 'training', 2)
+      await playSession('/scores/test1.xml', [0, 1], 'training', 2, true)
       await playSession('/scores/test2.xml', [0])
 
       const history = await tracker.getScoreHistory('/scores/test1.xml')
@@ -423,6 +375,7 @@ describe('practiceTracker', () => {
       await playMeasure(0, 50)
       await playMeasure(1, 50)
 
+      tracker.markScoreCompleted()
       await tracker.endSession()
 
       const history = await tracker.getScoreHistory('/scores/test.xml')
@@ -453,11 +406,12 @@ describe('practiceTracker', () => {
     tracker.endMeasureAttempt(true)
   }
 
-  async function playSession(scoreId, measures, mode = 'training', totalMeasures = null) {
+  async function playSession(scoreId, measures, mode = 'training', totalMeasures = null, markComplete = false) {
     tracker.startSession(scoreId, 'Test', 'Composer', mode, totalMeasures)
     for (const m of measures) {
       await playMeasure(m)
     }
+    if (markComplete) tracker.markScoreCompleted()
     await tracker.endSession()
   }
 

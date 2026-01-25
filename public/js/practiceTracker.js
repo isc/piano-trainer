@@ -272,61 +272,16 @@ export function initPracticeTracker(storageInstance = null) {
 
     const playthroughs = []
     for (const session of sessions) {
-      // If session has explicit completedAt flag, use it (handles repeats correctly)
-      if (session.completedAt) {
-        // Find the last time measure 0 was started (the actual playthrough start)
-        const lastMeasure0Start = getLastMeasure0Start(session)
-        if (lastMeasure0Start) {
-          const completedAtMs = new Date(session.completedAt).getTime()
-          const startMs = new Date(lastMeasure0Start).getTime()
-          playthroughs.push({
-            startedAt: lastMeasure0Start,
-            durationMs: completedAtMs - startMs,
-          })
-        }
-        continue
-      }
+      if (!session.completedAt) continue
 
-      // Fall back to sequential detection for old sessions without completedAt
-      // Flatten all attempts from all measures and sort chronologically
-      const allAttempts = session.measures
-        .flatMap((measure) =>
-          measure.attempts.map((attempt) => ({
-            measureIndex: Number(measure.sourceMeasureIndex),
-            startedAt: attempt.startedAt,
-            durationMs: attempt.durationMs,
-          }))
-        )
-        .sort((a, b) => new Date(a.startedAt) - new Date(b.startedAt))
-
-      // Track complete playthroughs: measures must be played in sequential order
-      let expectedMeasure = 0
-      let playthroughStartedAt = null
-      let lastAttemptEndMs = 0
-
-      for (const attempt of allAttempts) {
-        if (attempt.measureIndex === 0) {
-          // Starting a new potential playthrough
-          expectedMeasure = 1
-          playthroughStartedAt = attempt.startedAt
-          lastAttemptEndMs = new Date(attempt.startedAt).getTime() + attempt.durationMs
-        } else if (attempt.measureIndex === expectedMeasure) {
-          // Continuing the sequence
-          expectedMeasure++
-          lastAttemptEndMs = new Date(attempt.startedAt).getTime() + attempt.durationMs
-
-          if (expectedMeasure >= totalMeasures) {
-            // Completed a full playthrough
-            const startMs = new Date(playthroughStartedAt).getTime()
-            playthroughs.push({
-              startedAt: playthroughStartedAt,
-              durationMs: lastAttemptEndMs - startMs,
-            })
-            expectedMeasure = 0
-            playthroughStartedAt = null
-          }
-        }
-        // If measure doesn't match expected, ignore it (could be practice/repeat)
+      const lastMeasure0Start = getLastMeasure0Start(session)
+      if (lastMeasure0Start) {
+        const completedAtMs = new Date(session.completedAt).getTime()
+        const startMs = new Date(lastMeasure0Start).getTime()
+        playthroughs.push({
+          startedAt: lastMeasure0Start,
+          durationMs: completedAtMs - startMs,
+        })
       }
     }
 
