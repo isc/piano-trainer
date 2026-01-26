@@ -73,7 +73,6 @@ export function midiApp() {
 
           if (!this.trainingMode) {
             const allPlaythroughs = this.scoreUrl ? await practiceTracker.getAllPlaythroughs(this.scoreUrl) : []
-            window.scrollTo({ top: 0, behavior: 'smooth' })
             this.showScoreComplete(allPlaythroughs)
           }
 
