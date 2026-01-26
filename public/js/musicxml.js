@@ -645,7 +645,6 @@ function resetProgress() {
   if (!osmdInstance) return
   resetNotesFromIndex()
   resetPlaybackState()
-  window.scrollTo({ top: 0, behavior: 'smooth' })
 }
 
 function setupFingeringClickHandlers(cbs) {
