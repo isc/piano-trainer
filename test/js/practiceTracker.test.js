@@ -170,29 +170,96 @@ describe('practiceTracker', () => {
     })
   })
 
-  describe('measures to reinforce', () => {
-    it('returns measures sorted by error rate', async () => {
-      tracker.startSession('/scores/test.xml', 'Test', 'Composer', 'training')
+  describe('analyzeMeasuresFromSession', () => {
+    it('returns empty array for null session', () => {
+      const result = tracker.analyzeMeasuresFromSession(null)
+      expect(result).toEqual([])
+    })
 
-      // Measure 0: 75% error rate (1 clean, 3 dirty)
-      tracker.startMeasureAttempt(0)
-      tracker.endMeasureAttempt(true)
-      for (let i = 0; i < 3; i++) {
-        tracker.startMeasureAttempt(0)
-        tracker.endMeasureAttempt(false)
+    it('returns empty array for session with no measures', () => {
+      const result = tracker.analyzeMeasuresFromSession({ measures: [] })
+      expect(result).toEqual([])
+    })
+
+    it('excludes measures with no wrong notes', () => {
+      const session = {
+        measures: [
+          { sourceMeasureIndex: 0, attempts: [{ wrongNotes: 0, durationMs: 100 }] },
+          { sourceMeasureIndex: 1, attempts: [{ wrongNotes: 2, durationMs: 100 }] },
+        ],
       }
+      const result = tracker.analyzeMeasuresFromSession(session)
+      expect(result).toHaveLength(1)
+      expect(result[0].sourceMeasureIndex).toBe(1)
+    })
 
-      // Measure 1: 0% error rate (2 clean)
-      for (let i = 0; i < 2; i++) {
-        tracker.startMeasureAttempt(1)
-        tracker.endMeasureAttempt(true)
+    it('sorts by total wrong notes descending', () => {
+      const session = {
+        measures: [
+          { sourceMeasureIndex: 0, attempts: [{ wrongNotes: 1, durationMs: 100 }] },
+          { sourceMeasureIndex: 1, attempts: [{ wrongNotes: 3, durationMs: 100 }] },
+          { sourceMeasureIndex: 2, attempts: [{ wrongNotes: 2, durationMs: 100 }] },
+        ],
       }
+      const result = tracker.analyzeMeasuresFromSession(session)
+      expect(result.map((m) => m.sourceMeasureIndex)).toEqual([1, 2, 0])
+    })
 
-      await tracker.endSession()
+    it('uses duration as secondary sort criterion', () => {
+      const session = {
+        measures: [
+          { sourceMeasureIndex: 0, attempts: [{ wrongNotes: 2, durationMs: 100 }] },
+          { sourceMeasureIndex: 1, attempts: [{ wrongNotes: 2, durationMs: 300 }] },
+          { sourceMeasureIndex: 2, attempts: [{ wrongNotes: 2, durationMs: 200 }] },
+        ],
+      }
+      const result = tracker.analyzeMeasuresFromSession(session)
+      expect(result.map((m) => m.sourceMeasureIndex)).toEqual([1, 2, 0])
+    })
 
-      const toReinforce = await tracker.getMeasuresToReinforce('/scores/test.xml', 2)
-      expect(toReinforce[0].sourceMeasureIndex).toBe(0)
-      expect(toReinforce[1].sourceMeasureIndex).toBe(1)
+    it('sums wrong notes across multiple attempts', () => {
+      const session = {
+        measures: [
+          {
+            sourceMeasureIndex: 0,
+            attempts: [
+              { wrongNotes: 1, durationMs: 100 },
+              { wrongNotes: 2, durationMs: 100 },
+            ],
+          },
+        ],
+      }
+      const result = tracker.analyzeMeasuresFromSession(session)
+      expect(result[0].wrongNotes).toBe(3)
+    })
+
+    it('uses last attempt duration', () => {
+      const session = {
+        measures: [
+          {
+            sourceMeasureIndex: 0,
+            attempts: [
+              { wrongNotes: 1, durationMs: 100 },
+              { wrongNotes: 1, durationMs: 200 },
+            ],
+          },
+        ],
+      }
+      const result = tracker.analyzeMeasuresFromSession(session)
+      expect(result[0].durationMs).toBe(200)
+    })
+
+    it('respects limit parameter', () => {
+      const session = {
+        measures: [
+          { sourceMeasureIndex: 0, attempts: [{ wrongNotes: 3, durationMs: 100 }] },
+          { sourceMeasureIndex: 1, attempts: [{ wrongNotes: 2, durationMs: 100 }] },
+          { sourceMeasureIndex: 2, attempts: [{ wrongNotes: 1, durationMs: 100 }] },
+        ],
+      }
+      const result = tracker.analyzeMeasuresFromSession(session, 2)
+      expect(result).toHaveLength(2)
+      expect(result.map((m) => m.sourceMeasureIndex)).toEqual([0, 1])
     })
   })
 
