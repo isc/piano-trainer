@@ -74,12 +74,10 @@ export function midiApp() {
           practiceTracker.markScoreCompleted()
           const completedSession = await practiceTracker.endSession()
 
-          if (!this.trainingMode) {
-            const measuresToReinforce = practiceTracker.analyzeMeasuresFromSession(completedSession)
-            const allPlaythroughs = this.scoreUrl ? await practiceTracker.getAllPlaythroughs(this.scoreUrl) : []
-            window.scrollTo({ top: 0, behavior: 'smooth' })
-            this.showScoreComplete(allPlaythroughs, measuresToReinforce)
-          }
+          const measuresToReinforce = practiceTracker.analyzeMeasuresFromSession(completedSession)
+          const allPlaythroughs = this.scoreUrl ? await practiceTracker.getAllPlaythroughs(this.scoreUrl) : []
+          window.scrollTo({ top: 0, behavior: 'smooth' })
+          this.showScoreComplete(allPlaythroughs, measuresToReinforce)
 
           // Start new session for next playthrough
           const metadata = musicxml.getScoreMetadata()
