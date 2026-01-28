@@ -108,12 +108,12 @@ export function initMusicXML() {
       reinforcementMeasures = measures.map((m) => m.sourceMeasureIndex)
       reinforcementIndex = 0
 
-      // Activate the training mode standard
+      // Enable training mode (resets repeatCount and currentRepetitionIsClean)
       trainingMode = true
       repeatCount = 0
       currentRepetitionIsClean = true
 
-      // Go to the first measure to reinforce
+      // Jump to the first measure to reinforce
       const firstMeasure = reinforcementMeasures[0]
       const playbackIndex = allNotes.findIndex((m) => m.sourceMeasureIndex === firstMeasure)
       if (playbackIndex >= 0) {
@@ -123,12 +123,14 @@ export function initMusicXML() {
     findMeasureIndexBySource: (sourceMeasureIndex) => {
       return allNotes.findIndex((m) => m.sourceMeasureIndex === sourceMeasureIndex)
     },
-    exitReinforcementMode: () => {
-      reinforcementMode = false
-      reinforcementMeasures = []
-      reinforcementIndex = 0
-    },
+    exitReinforcementMode: resetReinforcementState,
   }
+}
+
+function resetReinforcementState() {
+  reinforcementMode = false
+  reinforcementMeasures = []
+  reinforcementIndex = 0
 }
 
 function setCallbacks(cbs) {
@@ -151,9 +153,7 @@ function resetPlaybackState() {
   playedSourceMeasures.clear()
   measureStartTime = null
   measureWrongNotes = 0
-  reinforcementMode = false
-  reinforcementMeasures = []
-  reinforcementIndex = 0
+  resetReinforcementState()
 }
 
 async function loadMusicXML(event) {
@@ -561,14 +561,11 @@ function handleNoteValidated(measureData, noteData, validatedCount) {
 
       if (repeatCount >= targetRepeatCount) {
         if (reinforcementMode) {
-          // Move to the next measure in the reinforcement list
           reinforcementIndex++
           if (reinforcementIndex >= reinforcementMeasures.length) {
             // All reinforcement measures completed
+            resetReinforcementState()
             callbacks.onReinforcementComplete?.()
-            reinforcementMode = false
-            reinforcementMeasures = []
-            reinforcementIndex = 0
           } else {
             // Go to the next measure to reinforce
             const nextSourceMeasure = reinforcementMeasures[reinforcementIndex]

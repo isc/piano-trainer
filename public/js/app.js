@@ -260,10 +260,8 @@ export function midiApp() {
 
     showScoreComplete(allPlaythroughs, measuresToReinforce = []) {
       // Find the most recent playthrough (the one just completed)
-      const mostRecent = allPlaythroughs.reduce(
-        (latest, pt) => (!latest || new Date(pt.startedAt) > new Date(latest.startedAt) ? pt : latest),
-        null
-      )
+      const sorted = [...allPlaythroughs].sort((a, b) => new Date(b.startedAt) - new Date(a.startedAt))
+      const mostRecent = sorted[0] || null
 
       this.currentPlaythroughDuration = mostRecent?.durationMs || null
 
@@ -286,11 +284,12 @@ export function midiApp() {
       this.closeScoreCompleteModal()
       this.reinforcementMode = true
       this.trainingMode = true
-      musicxml.setReinforcementMode(measures)
 
-      // Start new training session
+      // Start new training session before activating reinforcement mode
       const metadata = musicxml.getScoreMetadata()
       practiceTracker.startSession(this.scoreUrl, metadata.title, metadata.composer, 'training', metadata.totalMeasures)
+
+      musicxml.setReinforcementMode(measures)
     },
 
     updateActiveHands() {
