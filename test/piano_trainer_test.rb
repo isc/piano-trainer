@@ -487,8 +487,8 @@ class PianoTrainerTest < CapybaraTestBase
     simulate_midi_input("ON F4")
     simulate_midi_input("OFF F4")
 
-    # Wait for IndexedDB operations and modal to appear
-    sleep 1.0
+    # Wait for async IndexedDB operations to complete
+    sleep 0.5
 
     # Verify completion modal with reinforcement suggestions
     assert_text 'Partition terminée'
