@@ -118,6 +118,7 @@ export function initMusicXML() {
       const playbackIndex = allNotes.findIndex((m) => m.sourceMeasureIndex === firstMeasure)
       if (playbackIndex >= 0) {
         jumpToMeasure(playbackIndex)
+        scrollToMeasure(playbackIndex)
       }
     },
     findMeasureIndexBySource: (sourceMeasureIndex) => {
@@ -385,6 +386,13 @@ function jumpToMeasure(measureIndex) {
   }
 }
 
+function scrollToMeasure(measureIndex) {
+  const rect = measureClickRectangles[measureIndex]
+  if (rect) {
+    rect.scrollIntoView({ behavior: 'smooth', block: 'center' })
+  }
+}
+
 // Activate a note when pressed (Note ON) - for polyphonic validation
 function activateNote(midiNote) {
   // Track all held notes globally (for tie continuation validation)
@@ -573,6 +581,7 @@ function handleNoteValidated(measureData, noteData, validatedCount) {
             setTimeout(() => {
               resetMeasureProgress()
               jumpToMeasure(nextPlaybackIndex)
+              scrollToMeasure(nextPlaybackIndex)
             }, TRAINING_RESET_DELAY_MS)
           }
         } else if (currentMeasureIndex + 1 >= allNotes.length) {
