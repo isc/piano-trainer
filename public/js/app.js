@@ -111,6 +111,7 @@ export function midiApp() {
         onReinforcementComplete: async () => {
           this.reinforcementMode = false
           this.trainingMode = false
+          musicxml.setTrainingMode(false)
           await practiceTracker.endSession()
           this.showReinforcementCompleteModal = true
         },

@@ -512,6 +512,8 @@ class PianoTrainerTest < CapybaraTestBase
 
     # Reinforcement should be complete (only 1 measure to reinforce)
     assert_text 'Renforcement terminé'
+    assert_no_selector 'svg rect.measure-click-area.selected'
+    assert_no_selector 'svg circle.repeat-indicator'
   end
 
   def test_rests_with_display_position_are_not_treated_as_notes
