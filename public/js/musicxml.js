@@ -388,9 +388,11 @@ function jumpToMeasure(measureIndex) {
 
 function scrollToMeasure(measureIndex) {
   const rect = measureClickRectangles[measureIndex]
-  if (rect) {
-    rect.scrollIntoView({ behavior: 'smooth', block: 'center' })
-  }
+  if (!rect) return
+
+  const bbox = rect.getBoundingClientRect()
+  const targetY = window.scrollY + bbox.top - window.innerHeight / 2 + bbox.height / 2
+  window.scrollTo({ top: targetY, behavior: 'smooth' })
 }
 
 // Activate a note when pressed (Note ON) - for polyphonic validation
