@@ -451,6 +451,69 @@ class PianoTrainerTest < CapybaraTestBase
     end
   end
 
+  def test_reinforcement_mode_after_playthrough_with_mistakes
+    # Use URL-based loading which enables practice tracking
+    Capybara.reset_sessions!
+    page.driver.set_cookie('test-env', 'true')
+    visit '/score.html?url=/test-fixtures/repeat-endings.xml'
+    assert_selector 'svg g.vf-stavenote', count: 4
+
+    # Play with mistakes on measure 1
+    # Sequence: C4 -> D4 -> E4 -> C4 -> D4 -> F4
+
+    # Measure 1 (first pass) - play wrong note then correct
+    simulate_midi_input("ON D4")  # Wrong note (expected C4)
+    simulate_midi_input("OFF D4")
+    simulate_midi_input("ON C4")  # Correct
+    simulate_midi_input("OFF C4")
+
+    # Measure 2 (first pass) - clean
+    simulate_midi_input("ON D4")
+    simulate_midi_input("OFF D4")
+
+    # Measure 3 (volta 1) - triggers repeat
+    simulate_midi_input("ON E4")
+    simulate_midi_input("OFF E4")
+
+    # Measure 1 (second pass) - clean
+    simulate_midi_input("ON C4")
+    simulate_midi_input("OFF C4")
+
+    # Measure 2 (second pass) - clean
+    simulate_midi_input("ON D4")
+    simulate_midi_input("OFF D4")
+
+    # Measure 4 (volta 2) - completes score
+    simulate_midi_input("ON F4")
+    simulate_midi_input("OFF F4")
+
+    # Wait for IndexedDB operations and modal to appear
+    sleep 1.0
+
+    # Verify completion modal with reinforcement suggestions
+    assert_text 'Partition terminée'
+    assert_text 'Mesures à renforcer'
+    assert_text 'Mesure 1'
+    assert_text '1 erreur'
+
+    # Start reinforcement mode
+    click_button 'Renforcer ces mesures'
+
+    # Verify we're in training mode on measure 1
+    assert_text 'Mode Entraînement Actif'
+    assert_selector 'svg rect.measure-click-area.selected'
+
+    # Play measure 1 three times cleanly
+    3.times do
+      simulate_midi_input("ON C4")
+      simulate_midi_input("OFF C4")
+      sleep 0.25
+    end
+
+    # Reinforcement should be complete (only 1 measure to reinforce)
+    assert_text 'Renforcement terminé'
+  end
+
   def test_rests_with_display_position_are_not_treated_as_notes
     # Regression test: OSMD interprets rests with display-step/display-octave as notes with pitch.
     # This caused a phantom G5 note to appear in measure 5 of Kinderscenen, breaking note order.

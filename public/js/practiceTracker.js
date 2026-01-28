@@ -20,7 +20,7 @@ export function initPracticeTracker(storageInstance = null) {
     restartPlaythrough,
     endSession,
     getScoreStats,
-    getMeasuresToReinforce,
+    analyzeMeasuresFromSession,
     getDailyLog,
     getScoreHistory,
     getAllPlaythroughs,
@@ -262,25 +262,24 @@ export function initPracticeTracker(storageInstance = null) {
     return storage.getAggregate(scoreId)
   }
 
-  async function getMeasuresToReinforce(scoreId, limit = 5) {
-    const aggregate = await storage.getAggregate(scoreId)
-    if (!aggregate) return []
+  function analyzeMeasuresFromSession(session, limit = 5) {
+    if (!session?.measures?.length) return []
 
-    const measures = Object.entries(aggregate.measures).map(([index, data]) => ({
-      sourceMeasureIndex: parseInt(index),
-      ...data,
-    }))
-
-    measures.sort((a, b) => {
-      if (b.errorRate !== a.errorRate) {
-        return b.errorRate - a.errorRate
+    const measureStats = session.measures.map((measure) => {
+      const lastAttempt = measure.attempts[measure.attempts.length - 1]
+      const totalWrongNotes = measure.attempts.reduce((sum, a) => sum + a.wrongNotes, 0)
+      return {
+        sourceMeasureIndex: measure.sourceMeasureIndex,
+        wrongNotes: totalWrongNotes,
+        durationMs: lastAttempt?.durationMs || 0,
       }
-      const aDate = a.lastPlayedAt ? new Date(a.lastPlayedAt) : new Date(0)
-      const bDate = b.lastPlayedAt ? new Date(b.lastPlayedAt) : new Date(0)
-      return aDate - bDate
     })
 
-    return measures.slice(0, limit)
+    // Filter measures with errors, sort by nb errors then duration
+    return measureStats
+      .filter((m) => m.wrongNotes > 0)
+      .sort((a, b) => b.wrongNotes - a.wrongNotes || b.durationMs - a.durationMs)
+      .slice(0, limit)
   }
 
   function countFullPlaythroughs(sessions, totalMeasures) {

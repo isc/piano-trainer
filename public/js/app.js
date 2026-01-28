@@ -41,6 +41,9 @@ export function midiApp() {
     previousPlaythroughs: [],
     showHistoryModal: false,
     scoreHistory: [],
+    measuresToReinforce: [],
+    reinforcementMode: false,
+    showReinforcementCompleteModal: false,
 
     // Fingering annotation
     fingeringEnabled: false,
@@ -69,12 +72,13 @@ export function midiApp() {
       musicxml.setCallbacks({
         onScoreCompleted: async () => {
           practiceTracker.markScoreCompleted()
-          await practiceTracker.endSession()
+          const completedSession = await practiceTracker.endSession()
 
           if (!this.trainingMode) {
+            const measuresToReinforce = practiceTracker.analyzeMeasuresFromSession(completedSession)
             const allPlaythroughs = this.scoreUrl ? await practiceTracker.getAllPlaythroughs(this.scoreUrl) : []
             window.scrollTo({ top: 0, behavior: 'smooth' })
-            this.showScoreComplete(allPlaythroughs)
+            this.showScoreComplete(allPlaythroughs, measuresToReinforce)
           }
 
           // Start new session for next playthrough
@@ -105,6 +109,12 @@ export function midiApp() {
         },
         onPlaythroughRestart: () => {
           practiceTracker.restartPlaythrough()
+        },
+        onReinforcementComplete: async () => {
+          this.reinforcementMode = false
+          this.trainingMode = false
+          await practiceTracker.endSession()
+          this.showReinforcementCompleteModal = true
         },
       })
 
@@ -248,7 +258,7 @@ export function midiApp() {
       this.trainingComplete = true
     },
 
-    showScoreComplete(allPlaythroughs) {
+    showScoreComplete(allPlaythroughs, measuresToReinforce = []) {
       // Find the most recent playthrough (the one just completed)
       const mostRecent = allPlaythroughs.reduce(
         (latest, pt) => (!latest || new Date(pt.startedAt) > new Date(latest.startedAt) ? pt : latest),
@@ -262,11 +272,25 @@ export function midiApp() {
         .map((pt) => ({ ...pt, isCurrent: pt === mostRecent }))
         .sort((a, b) => a.durationMs - b.durationMs)
 
+      this.measuresToReinforce = measuresToReinforce
       this.showScoreCompleteModal = true
     },
 
     closeScoreCompleteModal() {
       this.showScoreCompleteModal = false
+      this.measuresToReinforce = []
+    },
+
+    startReinforcementMode() {
+      const measures = this.measuresToReinforce
+      this.closeScoreCompleteModal()
+      this.reinforcementMode = true
+      this.trainingMode = true
+      musicxml.setReinforcementMode(measures)
+
+      // Start new training session
+      const metadata = musicxml.getScoreMetadata()
+      practiceTracker.startSession(this.scoreUrl, metadata.title, metadata.composer, 'training', metadata.totalMeasures)
     },
 
     updateActiveHands() {

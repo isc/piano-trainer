@@ -77,6 +77,23 @@
           <p x-show="currentPlaythroughDuration && previousPlaythroughs.length === 0">
             Temps : <strong x-text="formatDuration(currentPlaythroughDuration)"></strong>
           </p>
+          <template x-if="measuresToReinforce.length > 0">
+            <div>
+              <hr />
+              <p><strong>Mesures à renforcer</strong></p>
+              <ul>
+                <template x-for="measure in measuresToReinforce" :key="measure.sourceMeasureIndex">
+                  <li>
+                    Mesure <span x-text="measure.sourceMeasureIndex + 1"></span>
+                    <small x-text="'(' + measure.wrongNotes + ' erreur' + (measure.wrongNotes > 1 ? 's' : '') + ')'"></small>
+                  </li>
+                </template>
+              </ul>
+              <button @click="startReinforcementMode()" class="secondary">
+                Renforcer ces mesures
+              </button>
+            </div>
+          </template>
         </article>
       </dialog>
 
@@ -149,6 +166,16 @@
           <a href="https://caniuse.com/?search=web%20midi">un autre navigateur</a>
           (Chrome, Edge ou Opera).
         </p>
+      </article>
+    </dialog>
+
+    <dialog :open="showReinforcementCompleteModal">
+      <article>
+        <header>
+          <button aria-label="Close" rel="prev" @click="showReinforcementCompleteModal = false"></button>
+          <p><strong>Renforcement terminé !</strong></p>
+        </header>
+        <p>Toutes les mesures ont été renforcées.</p>
       </article>
     </dialog>
 
