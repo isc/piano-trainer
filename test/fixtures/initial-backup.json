@@ -4,8 +4,6 @@
     {
       "id": "test-session-1",
       "scoreId": "/scores/test-roundtrip.xml",
-      "scoreTitle": "Test Roundtrip Score",
-      "composer": "Test Composer",
       "mode": "free",
       "startedAt": "2026-01-10T12:00:00.000Z",
       "endedAt": "2026-01-10T12:00:00.000Z",
@@ -24,7 +22,19 @@
       ]
     }
   ],
-  "aggregates": [],
+  "aggregates": [
+    {
+      "scoreId": "/scores/test-roundtrip.xml",
+      "scoreTitle": "Test Roundtrip Score",
+      "composer": "Test Composer",
+      "status": "dechiffrage",
+      "firstPlayedAt": "2026-01-10T12:00:00.000Z",
+      "lastPlayedAt": "2026-01-10T12:00:00.000Z",
+      "totalPracticeTimeMs": 1500,
+      "totalMeasuresPlayed": 1,
+      "uniqueMeasuresPlayed": 1
+    }
+  ],
   "fingerings": [
     {
       "scoreUrl": "/scores/test-roundtrip.xml",
