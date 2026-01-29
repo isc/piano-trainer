@@ -497,12 +497,11 @@ class PianoTrainerTest < CapybaraTestBase
     click_on 'Close'
 
     # Verify reinforcement encart is visible at the top
-    assert_text 'Mesures à renforcer'
-    assert_text 'Mesure 1'
-    assert_text '1 erreur'
+    assert_text 'À renforcer'
+    assert_text 'mesure 1'
 
     # Start reinforcement mode from the encart
-    click_button 'Renforcer ces mesures'
+    click_button 'Renforcer'
 
     # Verify we're in training mode on measure 1
     assert_text 'Mode Entraînement Actif'

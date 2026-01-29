@@ -80,19 +80,16 @@
         </article>
       </dialog>
 
-      <article x-show="measuresToReinforce.length > 0 && !trainingMode" class="reinforcement-suggestions">
-        <p><strong>Mesures à renforcer</strong> (dernier playthrough)</p>
-        <ul>
-          <template x-for="measure in measuresToReinforce" :key="measure.sourceMeasureIndex">
-            <li>
-              Mesure <span x-text="measure.sourceMeasureIndex + 1"></span>
-              <small x-text="'(' + measure.wrongNotes + ' erreur' + (measure.wrongNotes > 1 ? 's' : '') + ')'"></small>
-            </li>
+      <article x-show="measuresToReinforce.length > 0 && !trainingMode" role="group">
+        <span>
+          <strong>À renforcer :</strong>
+          <template x-for="(measure, idx) in measuresToReinforce" :key="measure.sourceMeasureIndex">
+            <span>
+              <span x-show="idx > 0">, </span>mesure <span x-text="measure.sourceMeasureIndex + 1"></span>
+            </span>
           </template>
-        </ul>
-        <button @click="startReinforcementMode()" class="secondary">
-          Renforcer ces mesures
-        </button>
+        </span>
+        <button @click="startReinforcementMode()" class="secondary">Renforcer</button>
       </article>
 
       <section id="score" x-show="!!osmdInstance"></section>
