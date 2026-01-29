@@ -80,17 +80,9 @@
         </article>
       </dialog>
 
-      <article x-show="measuresToReinforce.length > 0 && !trainingMode" role="group">
-        <span>
-          <strong>À renforcer :</strong>
-          <template x-for="(measure, idx) in measuresToReinforce" :key="measure.sourceMeasureIndex">
-            <span>
-              <span x-show="idx > 0">, </span>mesure <span x-text="measure.sourceMeasureIndex + 1"></span>
-            </span>
-          </template>
-        </span>
-        <button @click="startReinforcementMode()" class="secondary">Renforcer</button>
-      </article>
+      <p x-show="measuresToReinforce.length > 0 && !trainingMode">
+        <a href="#" @click.prevent="startReinforcementMode()">Renforcer <span x-text="measuresToReinforce.length"></span> mesure<span x-show="measuresToReinforce.length > 1">s</span></a>
+      </p>
 
       <section id="score" x-show="!!osmdInstance"></section>
 

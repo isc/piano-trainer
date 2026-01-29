@@ -496,12 +496,11 @@ class PianoTrainerTest < CapybaraTestBase
     # Close the completion modal
     click_on 'Close'
 
-    # Verify reinforcement encart is visible at the top
-    assert_text 'À renforcer'
-    assert_text 'mesure 1'
+    # Verify reinforcement link is visible at the top
+    assert_text 'Renforcer 1 mesure'
 
-    # Start reinforcement mode from the encart
-    click_button 'Renforcer'
+    # Start reinforcement mode
+    click_on 'Renforcer 1 mesure'
 
     # Verify we're in training mode on measure 1
     assert_text 'Mode Entraînement Actif'
