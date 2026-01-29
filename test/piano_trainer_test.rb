@@ -490,13 +490,18 @@ class PianoTrainerTest < CapybaraTestBase
     # Wait for async IndexedDB operations to complete
     sleep 0.5
 
-    # Verify completion modal with reinforcement suggestions
+    # Verify completion modal appears
     assert_text 'Partition terminée'
+
+    # Close the completion modal
+    find('dialog[open] button[aria-label="Close"]').click
+
+    # Verify reinforcement encart is visible at the top
     assert_text 'Mesures à renforcer'
     assert_text 'Mesure 1'
     assert_text '1 erreur'
 
-    # Start reinforcement mode
+    # Start reinforcement mode from the encart
     click_button 'Renforcer ces mesures'
 
     # Verify we're in training mode on measure 1

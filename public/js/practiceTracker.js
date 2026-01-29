@@ -21,6 +21,7 @@ export function initPracticeTracker(storageInstance = null) {
     endSession,
     getScoreStats,
     analyzeMeasuresFromSession,
+    getLastCompletedSession,
     getDailyLog,
     getScoreHistory,
     getAllPlaythroughs,
@@ -280,6 +281,15 @@ export function initPracticeTracker(storageInstance = null) {
       .filter((m) => m.wrongNotes > 0)
       .sort((a, b) => b.wrongNotes - a.wrongNotes || b.durationMs - a.durationMs)
       .slice(0, limit)
+  }
+
+  async function getLastCompletedSession(scoreId) {
+    const sessions = await storage.getSessions(scoreId)
+    const completed = sessions.filter((s) => s.completedAt)
+    if (completed.length === 0) return null
+    // Sort by completedAt descending and return the most recent
+    completed.sort((a, b) => new Date(b.completedAt) - new Date(a.completedAt))
+    return completed[0]
   }
 
   function countFullPlaythroughs(sessions, totalMeasures) {

@@ -77,25 +77,23 @@
           <p x-show="currentPlaythroughDuration && previousPlaythroughs.length === 0">
             Temps : <strong x-text="formatDuration(currentPlaythroughDuration)"></strong>
           </p>
-          <template x-if="measuresToReinforce.length > 0">
-            <div>
-              <hr />
-              <p><strong>Mesures à renforcer</strong></p>
-              <ul>
-                <template x-for="measure in measuresToReinforce" :key="measure.sourceMeasureIndex">
-                  <li>
-                    Mesure <span x-text="measure.sourceMeasureIndex + 1"></span>
-                    <small x-text="'(' + measure.wrongNotes + ' erreur' + (measure.wrongNotes > 1 ? 's' : '') + ')'"></small>
-                  </li>
-                </template>
-              </ul>
-              <button @click="startReinforcementMode()" class="secondary">
-                Renforcer ces mesures
-              </button>
-            </div>
-          </template>
         </article>
       </dialog>
+
+      <article x-show="measuresToReinforce.length > 0 && !trainingMode" class="reinforcement-suggestions">
+        <p><strong>Mesures à renforcer</strong> (dernier playthrough)</p>
+        <ul>
+          <template x-for="measure in measuresToReinforce" :key="measure.sourceMeasureIndex">
+            <li>
+              Mesure <span x-text="measure.sourceMeasureIndex + 1"></span>
+              <small x-text="'(' + measure.wrongNotes + ' erreur' + (measure.wrongNotes > 1 ? 's' : '') + ')'"></small>
+            </li>
+          </template>
+        </ul>
+        <button @click="startReinforcementMode()" class="secondary">
+          Renforcer ces mesures
+        </button>
+      </article>
 
       <section id="score" x-show="!!osmdInstance"></section>
 
