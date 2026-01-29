@@ -121,10 +121,6 @@ export function initMusicXML() {
         scrollToMeasure(playbackIndex)
       }
     },
-    findMeasureIndexBySource: (sourceMeasureIndex) => {
-      return allNotes.findIndex((m) => m.sourceMeasureIndex === sourceMeasureIndex)
-    },
-    exitReinforcementMode: resetReinforcementState,
   }
 }
 
