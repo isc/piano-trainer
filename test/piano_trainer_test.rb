@@ -494,7 +494,7 @@ class PianoTrainerTest < CapybaraTestBase
     assert_text 'Partition terminée'
 
     # Close the completion modal
-    find('dialog[open] button[aria-label="Close"]').click
+    click_on 'Close'
 
     # Verify reinforcement encart is visible at the top
     assert_text 'Mesures à renforcer'
