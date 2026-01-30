@@ -41,6 +41,9 @@ export function midiApp() {
     previousPlaythroughs: [],
     showHistoryModal: false,
     scoreHistory: [],
+    measuresToReinforce: [],
+    reinforcementMode: false,
+    showReinforcementCompleteModal: false,
 
     // Fingering annotation
     fingeringEnabled: false,
@@ -71,15 +74,16 @@ export function midiApp() {
           practiceTracker.markScoreCompleted()
           await practiceTracker.endSession()
 
-          if (!this.trainingMode) {
-            const allPlaythroughs = this.scoreUrl ? await practiceTracker.getAllPlaythroughs(this.scoreUrl) : []
-            window.scrollTo({ top: 0, behavior: 'smooth' })
-            this.showScoreComplete(allPlaythroughs)
-          }
+          const allPlaythroughs = this.scoreUrl ? await practiceTracker.getAllPlaythroughs(this.scoreUrl) : []
+          window.scrollTo({ top: 0, behavior: 'smooth' })
+          this.showScoreComplete(allPlaythroughs)
 
           // Start new session for next playthrough
           const metadata = musicxml.getScoreMetadata()
           practiceTracker.startSession(this.scoreUrl, metadata.title, metadata.composer, 'free', metadata.totalMeasures)
+
+          // Refresh reinforcement suggestions from the just-completed session
+          await this.refreshReinforcementSuggestions()
         },
         onNoteError: (expected, played) => {
           this.errorMessage = `❌ Erreur: attendu ${expected}, joué ${played}`
@@ -105,6 +109,13 @@ export function midiApp() {
         },
         onPlaythroughRestart: () => {
           practiceTracker.restartPlaythrough()
+        },
+        onReinforcementComplete: async () => {
+          this.reinforcementMode = false
+          this.trainingMode = false
+          musicxml.setTrainingMode(false)
+          await practiceTracker.endSession()
+          this.showReinforcementCompleteModal = true
         },
       })
 
@@ -189,6 +200,9 @@ export function midiApp() {
 
       const metadata = musicxml.getScoreMetadata()
       practiceTracker.startSession(url, metadata.title, metadata.composer, 'free', metadata.totalMeasures)
+
+      // Load reinforcement suggestions from last completed playthrough
+      await this.refreshReinforcementSuggestions()
     },
 
     async renderScoreWithFingerings() {
@@ -250,10 +264,8 @@ export function midiApp() {
 
     showScoreComplete(allPlaythroughs) {
       // Find the most recent playthrough (the one just completed)
-      const mostRecent = allPlaythroughs.reduce(
-        (latest, pt) => (!latest || new Date(pt.startedAt) > new Date(latest.startedAt) ? pt : latest),
-        null
-      )
+      const sorted = [...allPlaythroughs].sort((a, b) => new Date(b.startedAt) - new Date(a.startedAt))
+      const mostRecent = sorted[0] || null
 
       this.currentPlaythroughDuration = mostRecent?.durationMs || null
 
@@ -267,6 +279,26 @@ export function midiApp() {
 
     closeScoreCompleteModal() {
       this.showScoreCompleteModal = false
+    },
+
+    async refreshReinforcementSuggestions() {
+      if (!this.scoreUrl) {
+        this.measuresToReinforce = []
+        return
+      }
+      const lastSession = await practiceTracker.getLastCompletedSession(this.scoreUrl)
+      this.measuresToReinforce = practiceTracker.analyzeMeasuresFromSession(lastSession)
+    },
+
+    startReinforcementMode() {
+      this.reinforcementMode = true
+      this.trainingMode = true
+
+      // Start new training session before activating reinforcement mode
+      const metadata = musicxml.getScoreMetadata()
+      practiceTracker.startSession(this.scoreUrl, metadata.title, metadata.composer, 'training', metadata.totalMeasures)
+
+      musicxml.setReinforcementMode(this.measuresToReinforce)
     },
 
     updateActiveHands() {

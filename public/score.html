@@ -80,6 +80,10 @@
         </article>
       </dialog>
 
+      <p x-show="measuresToReinforce.length > 0 && !trainingMode">
+        <a href="#" @click.prevent="startReinforcementMode()">Renforcer <span x-text="measuresToReinforce.length"></span> mesure<span x-show="measuresToReinforce.length > 1">s</span></a>
+      </p>
+
       <section id="score" x-show="!!osmdInstance"></section>
 
       <article x-show="errorMessage != null">
@@ -149,6 +153,16 @@
           <a href="https://caniuse.com/?search=web%20midi">un autre navigateur</a>
           (Chrome, Edge ou Opera).
         </p>
+      </article>
+    </dialog>
+
+    <dialog :open="showReinforcementCompleteModal">
+      <article>
+        <header>
+          <button aria-label="Close" rel="prev" @click="showReinforcementCompleteModal = false"></button>
+          <p><strong>Renforcement terminé !</strong></p>
+        </header>
+        <p>Toutes les mesures ont été renforcées.</p>
       </article>
     </dialog>
 

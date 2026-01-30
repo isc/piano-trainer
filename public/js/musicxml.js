@@ -14,6 +14,11 @@ let currentSystemIndex = null
 let measureClickRectangles = []
 let playedSourceMeasures = new Set() // Track source measures that have been fully played
 
+// Reinforcement mode variables
+let reinforcementMode = false
+let reinforcementMeasures = [] // List of sourceMeasureIndex to reinforce
+let reinforcementIndex = 0 // Current index in reinforcementMeasures
+
 // Set of MIDI note numbers currently held down by the player
 let heldMidiNotes = new Set()
 
@@ -38,6 +43,7 @@ let callbacks = {
   onMeasureCompleted: null,
   onWrongNote: null,
   onPlaythroughRestart: null,
+  onReinforcementComplete: null,
 }
 
 // Hand selection: by default both hands are active
@@ -95,7 +101,33 @@ export function initMusicXML() {
     setupFingeringClickHandlers,
     removeFingeringClickHandlers,
     restoreNoteStates,
+    setReinforcementMode: (measures) => {
+      if (!measures || measures.length === 0) return
+
+      reinforcementMode = true
+      reinforcementMeasures = measures.map((m) => m.sourceMeasureIndex)
+      reinforcementIndex = 0
+
+      // Enable training mode (resets repeatCount and currentRepetitionIsClean)
+      trainingMode = true
+      repeatCount = 0
+      currentRepetitionIsClean = true
+
+      // Jump to the first measure to reinforce
+      const firstMeasure = reinforcementMeasures[0]
+      const playbackIndex = allNotes.findIndex((m) => m.sourceMeasureIndex === firstMeasure)
+      if (playbackIndex >= 0) {
+        jumpToMeasure(playbackIndex)
+        scrollToMeasure(playbackIndex)
+      }
+    },
   }
+}
+
+function resetReinforcementState() {
+  reinforcementMode = false
+  reinforcementMeasures = []
+  reinforcementIndex = 0
 }
 
 function setCallbacks(cbs) {
@@ -118,6 +150,7 @@ function resetPlaybackState() {
   playedSourceMeasures.clear()
   measureStartTime = null
   measureWrongNotes = 0
+  resetReinforcementState()
 }
 
 async function loadMusicXML(event) {
@@ -349,6 +382,15 @@ function jumpToMeasure(measureIndex) {
   }
 }
 
+function scrollToMeasure(measureIndex) {
+  const rect = measureClickRectangles[measureIndex]
+  if (!rect) return
+
+  const bbox = rect.getBoundingClientRect()
+  const targetY = window.scrollY + bbox.top - window.innerHeight / 2 + bbox.height / 2
+  window.scrollTo({ top: targetY, behavior: 'smooth' })
+}
+
 // Activate a note when pressed (Note ON) - for polyphonic validation
 function activateNote(midiNote) {
   // Track all held notes globally (for tie continuation validation)
@@ -386,6 +428,14 @@ function activateNote(midiNote) {
   if (matchingIndices.length === 0) {
     // Wrong note - mark repetition as dirty in training mode
     if (trainingMode) currentRepetitionIsClean = false
+
+    // Initialize practice tracking on first wrong note if not already set
+    if (measureStartTime === null) {
+      measureStartTime = Date.now()
+      measureWrongNotes = 0
+      callbacks.onMeasureStarted?.(measureData.sourceMeasureIndex)
+    }
+
     measureWrongNotes++
     callbacks.onWrongNote?.()
 
@@ -516,7 +566,23 @@ function handleNoteValidated(measureData, noteData, validatedCount) {
       updateRepeatIndicators()
 
       if (repeatCount >= targetRepeatCount) {
-        if (currentMeasureIndex + 1 >= allNotes.length) {
+        if (reinforcementMode) {
+          reinforcementIndex++
+          if (reinforcementIndex >= reinforcementMeasures.length) {
+            // All reinforcement measures completed
+            resetReinforcementState()
+            callbacks.onReinforcementComplete?.()
+          } else {
+            // Go to the next measure to reinforce
+            const nextSourceMeasure = reinforcementMeasures[reinforcementIndex]
+            const nextPlaybackIndex = allNotes.findIndex((m) => m.sourceMeasureIndex === nextSourceMeasure)
+            setTimeout(() => {
+              resetMeasureProgress()
+              jumpToMeasure(nextPlaybackIndex)
+              scrollToMeasure(nextPlaybackIndex)
+            }, TRAINING_RESET_DELAY_MS)
+          }
+        } else if (currentMeasureIndex + 1 >= allNotes.length) {
           callbacks.onTrainingComplete?.()
           setTimeout(() => {
             resetProgress()
