@@ -287,6 +287,40 @@ class PianoTrainerTest < CapybaraTestBase
     assert_text 'Partition terminée'
   end
 
+  def test_turn_ornament_notes_expanded_sequentially
+    # Turn ornaments (grupettos) expand to 4 notes: upper, main, lower, main
+    # Score has: C5 with turn (Db/C# above, B natural below) -> G5
+    # Visual notes: 2 (C5, G5), but validation expects 5 notes: C#5, C5, B4, C5, G5
+    #
+    # In training mode, playing the correct turn sequence should result in a
+    # clean repetition (filled circle). If turn expansion wasn't working,
+    # C#5 would be a wrong note and the circle wouldn't be filled.
+    load_score('turn-ornament.xml', 2)
+
+    click_on 'Mode Entraînement'
+    assert_text 'Mode Entraînement Actif'
+
+    # Play turn sequence: C#5 (upper), C5 (main), B4 (lower), C5 (main again), G5
+    simulate_midi_input("ON C#5")
+    simulate_midi_input("OFF C#5")
+
+    simulate_midi_input("ON C5")
+    simulate_midi_input("OFF C5")
+
+    simulate_midi_input("ON B4")
+    simulate_midi_input("OFF B4")
+
+    simulate_midi_input("ON C5")
+    simulate_midi_input("OFF C5")
+
+    simulate_midi_input("ON G5")
+    simulate_midi_input("OFF G5")
+
+    # Should have 1 filled repeat indicator (clean repetition)
+    # This proves the turn notes were expected and validated correctly
+    assert_selector 'svg circle.repeat-indicator.filled', count: 1
+  end
+
   def test_repeat_endings_playback_sequence
     # Score has:
     # - Measure 1: C4 (repeat start)
