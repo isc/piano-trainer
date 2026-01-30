@@ -288,19 +288,22 @@ class PianoTrainerTest < CapybaraTestBase
   end
 
   def test_turn_ornament_notes_expanded_sequentially
-    # Turn ornaments (grupettos) expand to 4 notes: upper, main, lower, main
+    # Turn ornaments (grupettos) expand to 5 notes: main, upper, main, lower, main
     # Score has: C5 with turn (Db/C# above, B natural below) -> G5
-    # Visual notes: 2 (C5, G5), but validation expects 5 notes: C#5, C5, B4, C5, G5
+    # Visual notes: 2 (C5, G5), but validation expects 6 notes: C5, C#5, C5, B4, C5, G5
     #
     # In training mode, playing the correct turn sequence should result in a
     # clean repetition (filled circle). If turn expansion wasn't working,
-    # C#5 would be a wrong note and the circle wouldn't be filled.
+    # playing the turn sequence would include wrong notes.
     load_score('turn-ornament.xml', 2)
 
     click_on 'Mode Entraînement'
     assert_text 'Mode Entraînement Actif'
 
-    # Play turn sequence: C#5 (upper), C5 (main), B4 (lower), C5 (main again), G5
+    # Play turn sequence: C5 (main), C#5 (upper), C5 (main), B4 (lower), C5 (main), G5
+    simulate_midi_input("ON C5")
+    simulate_midi_input("OFF C5")
+
     simulate_midi_input("ON C#5")
     simulate_midi_input("OFF C#5")
 

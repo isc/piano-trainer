@@ -27,8 +27,8 @@
           <line>2</line>
         </clef>
       </attributes>
-      <!-- C5 with turn ornament: D-flat above, B-natural below -->
-      <!-- Expected sequence: Db5, C5, B4, C5 -->
+      <!-- C5 with delayed turn ornament: D-flat above, B-natural below -->
+      <!-- Expected sequence: C5, Db5, C5, B4, C5 (5 notes) -->
       <note>
         <pitch>
           <step>C</step>
@@ -38,7 +38,7 @@
         <type>quarter</type>
         <notations>
           <ornaments>
-            <turn/>
+            <delayed-turn/>
             <accidental-mark placement="above">flat</accidental-mark>
             <accidental-mark placement="below">natural</accidental-mark>
           </ornaments>

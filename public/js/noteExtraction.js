@@ -29,9 +29,10 @@ const TURN_TYPES = [
   OrnamentEnum.DelayedInvertedTurn,
 ]
 const INVERTED_TURN_TYPES = [OrnamentEnum.InvertedTurn, OrnamentEnum.DelayedInvertedTurn]
+const DELAYED_TURN_TYPES = [OrnamentEnum.DelayedTurn, OrnamentEnum.DelayedInvertedTurn]
 
 // Calculate upper/lower note MIDI numbers for a turn ornament
-// Returns { upperMidi, lowerMidi, isInverted } or null if not a turn
+// Returns { upperMidi, lowerMidi, isInverted, isDelayed } or null if not a turn
 function getTurnNotes(mainMidiNote, ornamentContainer) {
   if (!ornamentContainer) return null
 
@@ -59,6 +60,7 @@ function getTurnNotes(mainMidiNote, ornamentContainer) {
     upperMidi: mainMidiNote + upperOffset,
     lowerMidi: mainMidiNote + lowerOffset,
     isInverted: INVERTED_TURN_TYPES.includes(ornamentType),
+    isDelayed: DELAYED_TURN_TYPES.includes(ornamentType),
   }
 }
 
@@ -76,13 +78,24 @@ function expandTurnNotes(measureNotes) {
       const turnInfo = getTurnNotes(noteData.midiNumber, ornamentContainer)
 
       if (turnInfo) {
-        const { upperMidi, lowerMidi, isInverted } = turnInfo
+        const { upperMidi, lowerMidi, isInverted, isDelayed } = turnInfo
+        const mainMidi = noteData.midiNumber
 
         // Build the turn sequence with adjusted timestamps
-        // Each note in the sequence gets a slightly different timestamp
-        const sequence = isInverted
-          ? [lowerMidi, noteData.midiNumber, upperMidi, noteData.midiNumber]
-          : [upperMidi, noteData.midiNumber, lowerMidi, noteData.midiNumber]
+        // Regular turn: upper → main → lower → main (4 notes)
+        // Inverted turn: lower → main → upper → main (4 notes)
+        // Delayed turn: main → upper → main → lower → main (5 notes)
+        // Delayed inverted: main → lower → main → upper → main (5 notes)
+        let sequence
+        if (isDelayed) {
+          sequence = isInverted
+            ? [mainMidi, lowerMidi, mainMidi, upperMidi, mainMidi]
+            : [mainMidi, upperMidi, mainMidi, lowerMidi, mainMidi]
+        } else {
+          sequence = isInverted
+            ? [lowerMidi, mainMidi, upperMidi, mainMidi]
+            : [upperMidi, mainMidi, lowerMidi, mainMidi]
+        }
 
         for (let i = 0; i < sequence.length; i++) {
           const midiNumber = sequence[i]
