@@ -769,53 +769,39 @@ function restoreNoteStates(noteStates) {
   }
 }
 
+// Find noteData in allNotes by fingeringKey
+function findNoteDataByKey(fingeringKey) {
+  for (const { notes } of allNotes) {
+    const found = notes.find((n) => n.fingeringKey === fingeringKey)
+    if (found) return found
+  }
+  return null
+}
+
 // Find the FingeringEntry for a note by its fingeringKey
 // fingeringKey format: measureNumber:staffIndex:voiceIndex:noteIndex
 function findFingeringEntry(fingeringKey) {
   if (!osmdInstance?.graphic?.MeasureList) return null
 
-  // Parse the fingeringKey
   const [measureNumber, staffIndex] = fingeringKey.split(':').map(Number)
 
-  // Find the source measure with this measure number
   const sourceMeasures = osmdInstance.Sheet.SourceMeasures
   const sourceMeasureIndex = sourceMeasures.findIndex((m) => m.MeasureNumber === measureNumber)
   if (sourceMeasureIndex < 0) return null
 
-  // Get the graphical measures for this source measure
-  const graphicalMeasures = osmdInstance.graphic.MeasureList[sourceMeasureIndex]
-  if (!graphicalMeasures || !graphicalMeasures[staffIndex]) return null
+  const graphicalMeasure = osmdInstance.graphic.MeasureList[sourceMeasureIndex]?.[staffIndex]
+  if (!graphicalMeasure) return null
 
-  const graphicalMeasure = graphicalMeasures[staffIndex]
-
-  // Find the noteData in allNotes to get the note reference
-  let targetNoteData = null
-  for (const { notes } of allNotes) {
-    for (const noteData of notes) {
-      if (noteData.fingeringKey === fingeringKey) {
-        targetNoteData = noteData
-        break
-      }
-    }
-    if (targetNoteData) break
-  }
+  const targetNoteData = findNoteDataByKey(fingeringKey)
   if (!targetNoteData) return null
 
-  // Find the staffEntry that contains this note
   for (const staffEntry of graphicalMeasure.staffEntries || []) {
-    for (const gve of staffEntry.graphicalVoiceEntries || []) {
-      for (const graphicalNote of gve.notes || []) {
-        if (graphicalNote.sourceNote === targetNoteData.note) {
-          // Found the matching staffEntry, return its FingeringEntries
-          // FingeringEntries is an array, we need to find the one for this specific note
-          // For now, return the first one (handles single-note case)
-          // TODO: handle chords with multiple fingerings
-          if (staffEntry.FingeringEntries && staffEntry.FingeringEntries.length > 0) {
-            return staffEntry.FingeringEntries[0]
-          }
-          return null
-        }
-      }
+    const hasMatchingNote = staffEntry.graphicalVoiceEntries?.some((gve) =>
+      gve.notes?.some((gn) => gn.sourceNote === targetNoteData.note),
+    )
+    if (hasMatchingNote) {
+      // TODO: handle chords with multiple fingerings (return first for now)
+      return staffEntry.FingeringEntries?.[0] || null
     }
   }
 
@@ -826,17 +812,15 @@ function findFingeringEntry(fingeringKey) {
 // Returns true if successful, false if no existing fingering found
 function updateFingeringSVG(fingeringKey, newFinger) {
   const fingeringEntry = findFingeringEntry(fingeringKey)
-  if (!fingeringEntry || !fingeringEntry.SVGNode) return false
-
-  // Update the SVG text element
-  const textEl = fingeringEntry.SVGNode.querySelector('text')
+  const textEl = fingeringEntry?.SVGNode?.querySelector('text')
   if (!textEl) return false
 
-  textEl.textContent = newFinger.toString()
+  const fingerText = newFinger.toString()
+  textEl.textContent = fingerText
 
   // Also update the label text for consistency
   if (fingeringEntry.label) {
-    fingeringEntry.label.text = newFinger.toString()
+    fingeringEntry.label.text = fingerText
   }
 
   return true
@@ -844,7 +828,6 @@ function updateFingeringSVG(fingeringKey, newFinger) {
 
 // Check if a note has an existing rendered fingering
 function hasRenderedFingering(fingeringKey) {
-  const fingeringEntry = findFingeringEntry(fingeringKey)
-  return fingeringEntry !== null && fingeringEntry.SVGNode !== null
+  return findFingeringEntry(fingeringKey)?.SVGNode != null
 }
 
