@@ -362,10 +362,8 @@ export function midiApp() {
       this.closeFingeringModal()
 
       // Try to update SVG directly if fingering already exists (instant update)
-      if (musicxml.hasRenderedFingering(this.selectedNoteKey)) {
-        musicxml.updateFingeringSVG(this.selectedNoteKey, finger)
-      } else {
-        // No existing fingering, need full re-render
+      // Falls back to full re-render if no existing fingering
+      if (!musicxml.updateFingeringSVG(this.selectedNoteKey, finger)) {
         await this.reloadWithFingerings()
       }
     },

@@ -102,7 +102,6 @@ export function initMusicXML() {
     removeFingeringClickHandlers,
     restoreNoteStates,
     updateFingeringSVG,
-    hasRenderedFingering,
     setReinforcementMode: (measures) => {
       if (!measures || measures.length === 0) return
 
@@ -837,10 +836,5 @@ function updateFingeringSVG(fingeringKey, newFinger) {
   }
 
   return true
-}
-
-// Check if a note has an existing rendered fingering
-function hasRenderedFingering(fingeringKey) {
-  return findFingeringEntry(fingeringKey)?.SVGNode != null
 }
 
