@@ -177,6 +177,7 @@ function renderScore() {
   osmdInstance.render()
   extractNotesFromScore()
   setupMeasureClickHandlers()
+  styleMeasureNumbers()
 }
 
 async function renderMusicXML(xmlContent) {
@@ -189,6 +190,7 @@ async function renderMusicXML(xmlContent) {
     window.osmdInstance = osmd
 
     extractNotesFromScore()
+    styleMeasureNumbers()
   } catch (error) {
     console.error('Erreur lors du rendu MusicXML avec OSMD:', error)
   }
@@ -201,6 +203,18 @@ function extractNotesFromScore() {
   const result = extractNotes(osmdInstance)
   allNotes = result.allNotes
   playbackSequence = result.playbackSequence
+}
+
+function styleMeasureNumbers() {
+  if (!osmdInstance?.graphic?.musicPages) return
+
+  for (const page of osmdInstance.graphic.musicPages) {
+    for (const system of page.MusicSystems || []) {
+      for (const label of system.MeasureNumberLabels || []) {
+        label.SVGNode?.classList.add('measure-number')
+      }
+    }
+  }
 }
 
 function resetMeasureProgress(resetRepeatCount = true) {
