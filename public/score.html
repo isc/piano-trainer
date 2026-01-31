@@ -40,10 +40,6 @@
         </label>
       </section>
 
-      <article x-show="errorMessage != null">
-        <div class="error-message" x-text="errorMessage" x-transition></div>
-      </article>
-
       <article x-show="!osmdInstance">
         <label for="musicxml-upload">📄 Charger partition MusicXML</label>
         <input type="file" accept=".xml,.musicxml,.mxl" @change="loadMusicXML($event)" id="musicxml-upload" />
@@ -89,6 +85,10 @@
       </p>
 
       <section id="score" x-show="!!osmdInstance"></section>
+
+      <article x-show="errorMessage != null">
+        <div x-show="errorMessage != null" class="error-message" x-text="errorMessage" x-transition></div>
+      </article>
 
       <!-- Gestion des cassettes (hidden when API unavailable, e.g. on GitHub Pages) -->
       <template x-if="cassetteApiAvailable">
