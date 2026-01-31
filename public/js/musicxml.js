@@ -188,9 +188,6 @@ async function renderMusicXML(xmlContent) {
     await osmd.load(xmlContent)
     osmdInstance = osmd
     window.osmdInstance = osmd
-
-    extractNotesFromScore()
-    styleMeasureNumbers()
   } catch (error) {
     console.error('Erreur lors du rendu MusicXML avec OSMD:', error)
   }
