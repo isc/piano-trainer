@@ -796,13 +796,26 @@ function findFingeringEntry(fingeringKey) {
   if (!targetNoteData) return null
 
   for (const staffEntry of graphicalMeasure.staffEntries || []) {
-    const hasMatchingNote = staffEntry.graphicalVoiceEntries?.some((gve) =>
-      gve.notes?.some((gn) => gn.sourceNote === targetNoteData.note),
-    )
-    if (hasMatchingNote) {
-      // TODO: handle chords with multiple fingerings (return first for now)
-      return staffEntry.FingeringEntries?.[0] || null
+    // Collect all graphical notes in this staff entry
+    const graphicalNotes = []
+    for (const gve of staffEntry.graphicalVoiceEntries || []) {
+      for (const gn of gve.notes || []) {
+        if (gn.sourceNote?.Pitch) {
+          graphicalNotes.push(gn)
+        }
+      }
     }
+
+    // Find our target note among them
+    const targetGn = graphicalNotes.find((gn) => gn.sourceNote === targetNoteData.note)
+    if (!targetGn) continue
+
+    // For chords with multiple fingerings, OSMD orders FingeringEntries by pitch (lowest to highest)
+    // Sort notes by pitch to find the correct index
+    graphicalNotes.sort((a, b) => a.sourceNote.Pitch.getHalfTone() - b.sourceNote.Pitch.getHalfTone())
+    const noteIndex = graphicalNotes.indexOf(targetGn)
+
+    return staffEntry.FingeringEntries?.[noteIndex] || null
   }
 
   return null
