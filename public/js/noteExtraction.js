@@ -1,5 +1,131 @@
 import { NOTE_NAMES } from './midi.js'
 
+// Ornament types from OSMD
+const OrnamentEnum = {
+  Trill: 0,
+  Turn: 1,
+  InvertedTurn: 2,
+  DelayedTurn: 3,
+  DelayedInvertedTurn: 4,
+  Mordent: 5,
+  InvertedMordent: 6,
+}
+
+// Accidental types from OSMD
+const AccidentalEnum = {
+  SHARP: 0,
+  FLAT: 1,
+  NONE: 2,
+  NATURAL: 3,
+  DOUBLESHARP: 4,
+  DOUBLEFLAT: 5,
+}
+
+// Turn ornament types
+const TURN_TYPES = [
+  OrnamentEnum.Turn,
+  OrnamentEnum.InvertedTurn,
+  OrnamentEnum.DelayedTurn,
+  OrnamentEnum.DelayedInvertedTurn,
+]
+const INVERTED_TURN_TYPES = [OrnamentEnum.InvertedTurn, OrnamentEnum.DelayedInvertedTurn]
+const DELAYED_TURN_TYPES = [OrnamentEnum.DelayedTurn, OrnamentEnum.DelayedInvertedTurn]
+
+// Calculate upper/lower note MIDI numbers for a turn ornament
+// Returns { upperMidi, lowerMidi, isInverted, isDelayed } or null if not a turn
+function getTurnNotes(mainMidiNote, ornamentContainer) {
+  if (!ornamentContainer) return null
+
+  const ornamentType = ornamentContainer.GetOrnament
+  if (!TURN_TYPES.includes(ornamentType)) return null
+
+  // Default: whole step (2 semitones) above and below
+  let upperOffset = 2
+  let lowerOffset = -2
+
+  // Adjust based on accidentals shown on the turn symbol
+  // FLAT above means the upper note is lowered (e.g., D♭ instead of D)
+  // NATURAL/SHARP below means the lower note is raised (e.g., B♮ instead of B♭)
+  const { AccidentalAbove, AccidentalBelow } = ornamentContainer
+
+  if (AccidentalAbove === AccidentalEnum.FLAT) {
+    upperOffset = 1
+  }
+
+  if (AccidentalBelow === AccidentalEnum.NATURAL || AccidentalBelow === AccidentalEnum.SHARP) {
+    lowerOffset = -1
+  }
+
+  return {
+    upperMidi: mainMidiNote + upperOffset,
+    lowerMidi: mainMidiNote + lowerOffset,
+    isInverted: INVERTED_TURN_TYPES.includes(ornamentType),
+    isDelayed: DELAYED_TURN_TYPES.includes(ornamentType),
+  }
+}
+
+// Expand turn ornaments into their constituent notes
+// Turn sequence: upper → main → lower → main
+// Inverted turn: lower → main → upper → main
+function expandTurnNotes(measureNotes) {
+  const TURN_NOTE_OFFSET = 0.00001
+  const expandedNotes = []
+
+  for (const noteData of measureNotes) {
+    try {
+      // Check if this note has a turn ornament
+      const ornamentContainer = noteData.voiceEntry?.OrnamentContainer
+      const turnInfo = getTurnNotes(noteData.midiNumber, ornamentContainer)
+
+      if (turnInfo) {
+        const { upperMidi, lowerMidi, isInverted, isDelayed } = turnInfo
+        const mainMidi = noteData.midiNumber
+
+        // Build the turn sequence with adjusted timestamps
+        // Regular turn: upper → main → lower → main (4 notes)
+        // Inverted turn: lower → main → upper → main (4 notes)
+        // Delayed turn: main → upper → main → lower → main (5 notes)
+        // Delayed inverted: main → lower → main → upper → main (5 notes)
+        let sequence
+        if (isDelayed) {
+          sequence = isInverted
+            ? [mainMidi, lowerMidi, mainMidi, upperMidi, mainMidi]
+            : [mainMidi, upperMidi, mainMidi, lowerMidi, mainMidi]
+        } else {
+          sequence = isInverted
+            ? [lowerMidi, mainMidi, upperMidi, mainMidi]
+            : [upperMidi, mainMidi, lowerMidi, mainMidi]
+        }
+
+        for (let i = 0; i < sequence.length; i++) {
+          const midiNumber = sequence[i]
+          const noteNameStd = NOTE_NAMES[midiNumber % 12]
+          const octaveStd = Math.floor(midiNumber / 12) - 1
+
+          expandedNotes.push({
+            ...noteData,
+            midiNumber,
+            noteName: `${noteNameStd}${octaveStd}`,
+            timestamp: noteData.timestamp + i * TURN_NOTE_OFFSET,
+            isTurnNote: true,
+            // Only the last note of the turn should highlight the original notehead
+            noteheadIndex: i === sequence.length - 1 ? noteData.noteheadIndex : -1,
+          })
+        }
+      } else {
+        // Not a turn, keep the note as-is
+        expandedNotes.push(noteData)
+      }
+    } catch (e) {
+      // If turn expansion fails, keep the original note
+      console.warn('Turn expansion failed for note:', noteData, e)
+      expandedNotes.push(noteData)
+    }
+  }
+
+  return expandedNotes
+}
+
 // Repetition instruction types from OSMD
 const RepetitionType = {
   StartLine: 0,
@@ -158,6 +284,7 @@ function extractNotesFromSourceMeasures(sourceMeasures) {
               const fingeringKey = `${measureNumber}:${staffIndex}:${voiceIndex}:${sequentialNoteIndex}`
               measureNotes.push({
                 note,
+                voiceEntry,
                 midiNumber: noteInfo.midiNote,
                 noteName: noteInfo.noteName,
                 timestamp: measureIndex + voiceEntry.timestamp.realValue,
@@ -184,11 +311,14 @@ function extractNotesFromSourceMeasures(sourceMeasures) {
     // Adjust grace note timestamps so they are played sequentially before main notes
     adjustGraceNoteTimestamps(measureNotes)
 
-    // Ensure notes are ordered by (possibly adjusted) timestamp for sequential validation
-    measureNotes.sort((a, b) => a.timestamp - b.timestamp)
+    // Expand turn ornaments into their constituent notes
+    const expandedNotes = expandTurnNotes(measureNotes)
 
-    if (measureNotes.length > 0) {
-      notesByMeasure.set(measureIndex, measureNotes)
+    // Ensure notes are ordered by (possibly adjusted) timestamp for sequential validation
+    expandedNotes.sort((a, b) => a.timestamp - b.timestamp)
+
+    if (expandedNotes.length > 0) {
+      notesByMeasure.set(measureIndex, expandedNotes)
     }
   })
 

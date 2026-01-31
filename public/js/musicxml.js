@@ -211,7 +211,7 @@ function resetMeasureProgress(resetRepeatCount = true) {
 
   for (const noteData of measureData.notes) {
     const notehead = svgNotehead(noteData)
-    notehead.classList.remove('played-note', 'active-note')
+    notehead?.classList.remove('played-note', 'active-note')
     noteData.played = false
     noteData.active = false
   }
@@ -447,7 +447,7 @@ function activateNote(midiNote) {
   // Mark matching notes as active (highlighted but not validated yet)
   for (const index of matchingIndices) {
     const noteData = measureData.notes[index]
-    svgNotehead(noteData).classList.add('active-note')
+    svgNotehead(noteData)?.classList.add('active-note')
     noteData.active = true
   }
 
@@ -465,8 +465,9 @@ function activateNote(midiNote) {
     for (const noteData of notesAtTimestamp) {
       if (noteData.played) continue
       const notehead = svgNotehead(noteData)
-      notehead.classList.remove('active-note')
-      notehead.classList.add('played-note')
+      // Turn notes without visual noteheads (noteheadIndex = -1) won't have a notehead element
+      notehead?.classList.remove('active-note')
+      notehead?.classList.add('played-note')
       noteData.played = true
       noteData.active = false
     }
@@ -491,7 +492,7 @@ function deactivateNote(midiNote) {
   // Find active notes with this MIDI number and deactivate them
   for (const noteData of measureData.notes) {
     if (noteData.active && noteData.midiNumber === midiNote) {
-      svgNotehead(noteData).classList.remove('active-note')
+      svgNotehead(noteData)?.classList.remove('active-note')
       noteData.active = false
     }
   }

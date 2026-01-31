@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE score-partwise PUBLIC "-//Recordare//DTD MusicXML 3.0 Partwise//EN" "http://www.musicxml.org/dtds/partwise.dtd">
+<score-partwise version="3.0">
+  <work>
+    <work-title>Turn Ornament Test</work-title>
+  </work>
+  <part-list>
+    <score-part id="P1">
+      <part-name/>
+    </score-part>
+  </part-list>
+  <part id="P1">
+    <measure number="1">
+      <attributes>
+        <divisions>4</divisions>
+        <key>
+          <!-- E-flat major: 3 flats (B, E, A) -->
+          <fifths>-3</fifths>
+          <mode>major</mode>
+        </key>
+        <time>
+          <beats>4</beats>
+          <beat-type>4</beat-type>
+        </time>
+        <clef>
+          <sign>G</sign>
+          <line>2</line>
+        </clef>
+      </attributes>
+      <!-- C5 with delayed turn ornament: D-flat above, B-natural below -->
+      <!-- Expected sequence: C5, Db5, C5, B4, C5 (5 notes) -->
+      <note>
+        <pitch>
+          <step>C</step>
+          <octave>5</octave>
+        </pitch>
+        <duration>4</duration>
+        <type>quarter</type>
+        <notations>
+          <ornaments>
+            <delayed-turn/>
+            <accidental-mark placement="above">flat</accidental-mark>
+            <accidental-mark placement="below">natural</accidental-mark>
+          </ornaments>
+        </notations>
+      </note>
+      <!-- E5 with regular turn ornament (not delayed) -->
+      <!-- Default: whole steps (+2/-2 semitones), so F#5 above, D5 below -->
+      <!-- Expected sequence: F#5, E5, D5, E5 (4 notes - starts with upper) -->
+      <note>
+        <pitch>
+          <step>E</step>
+          <octave>5</octave>
+        </pitch>
+        <duration>4</duration>
+        <type>quarter</type>
+        <notations>
+          <ornaments>
+            <turn/>
+          </ornaments>
+        </notations>
+      </note>
+      <!-- Regular note to end measure -->
+      <note>
+        <pitch>
+          <step>G</step>
+          <octave>5</octave>
+        </pitch>
+        <duration>8</duration>
+        <type>half</type>
+      </note>
+    </measure>
+  </part>
+</score-partwise>
