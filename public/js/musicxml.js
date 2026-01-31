@@ -184,7 +184,9 @@ function renderScore() {
 async function renderMusicXML(xmlContent) {
   try {
     const scoreContainer = document.getElementById('score')
-    const osmd = new opensheetmusicdisplay.OpenSheetMusicDisplay(scoreContainer)
+    const osmd = new opensheetmusicdisplay.OpenSheetMusicDisplay(scoreContainer, {
+      drawPartNames: false,
+    })
     await osmd.load(xmlContent)
     osmdInstance = osmd
     window.osmdInstance = osmd
