@@ -360,7 +360,14 @@ export function midiApp() {
     async selectFingering(finger) {
       await storage.setFingering(this.scoreUrl, this.selectedNoteKey, finger)
       this.closeFingeringModal()
-      await this.reloadWithFingerings()
+
+      // Try to update SVG directly if fingering already exists (instant update)
+      if (musicxml.hasRenderedFingering(this.selectedNoteKey)) {
+        musicxml.updateFingeringSVG(this.selectedNoteKey, finger)
+      } else {
+        // No existing fingering, need full re-render
+        await this.reloadWithFingerings()
+      }
     },
 
     async removeFingering() {
