@@ -101,6 +101,7 @@ export function initMusicXML() {
     setupFingeringClickHandlers,
     removeFingeringClickHandlers,
     restoreNoteStates,
+    updateFingeringSVG,
     setReinforcementMode: (measures) => {
       if (!measures || measures.length === 0) return
 
@@ -184,7 +185,6 @@ async function renderMusicXML(xmlContent) {
   try {
     const scoreContainer = document.getElementById('score')
     const osmd = new opensheetmusicdisplay.OpenSheetMusicDisplay(scoreContainer)
-
     await osmd.load(xmlContent)
     osmdInstance = osmd
     window.osmdInstance = osmd
@@ -766,5 +766,75 @@ function restoreNoteStates(noteStates) {
       svgNotehead(noteData)?.classList.toggle('active-note', savedState.active)
     }
   }
+}
+
+// Find noteData in allNotes by fingeringKey
+function findNoteDataByKey(fingeringKey) {
+  for (const { notes } of allNotes) {
+    const found = notes.find((n) => n.fingeringKey === fingeringKey)
+    if (found) return found
+  }
+  return null
+}
+
+// Find the FingeringEntry for a note by its fingeringKey
+// fingeringKey format: measureNumber:staffIndex:voiceIndex:noteIndex
+function findFingeringEntry(fingeringKey) {
+  if (!osmdInstance?.graphic?.MeasureList) return null
+
+  const [measureNumber, staffIndex] = fingeringKey.split(':').map(Number)
+
+  const sourceMeasures = osmdInstance.Sheet.SourceMeasures
+  const sourceMeasureIndex = sourceMeasures.findIndex((m) => m.MeasureNumber === measureNumber)
+  if (sourceMeasureIndex < 0) return null
+
+  const graphicalMeasure = osmdInstance.graphic.MeasureList[sourceMeasureIndex]?.[staffIndex]
+  if (!graphicalMeasure) return null
+
+  const targetNoteData = findNoteDataByKey(fingeringKey)
+  if (!targetNoteData) return null
+
+  for (const staffEntry of graphicalMeasure.staffEntries || []) {
+    // Collect all graphical notes in this staff entry
+    const graphicalNotes = []
+    for (const gve of staffEntry.graphicalVoiceEntries || []) {
+      for (const gn of gve.notes || []) {
+        if (gn.sourceNote?.Pitch) {
+          graphicalNotes.push(gn)
+        }
+      }
+    }
+
+    // Find our target note among them
+    const targetGn = graphicalNotes.find((gn) => gn.sourceNote === targetNoteData.note)
+    if (!targetGn) continue
+
+    // For chords with multiple fingerings, OSMD orders FingeringEntries by pitch (lowest to highest)
+    // Sort notes by pitch to find the correct index
+    graphicalNotes.sort((a, b) => a.sourceNote.Pitch.getHalfTone() - b.sourceNote.Pitch.getHalfTone())
+    const noteIndex = graphicalNotes.indexOf(targetGn)
+
+    return staffEntry.FingeringEntries?.[noteIndex] || null
+  }
+
+  return null
+}
+
+// Update an existing fingering's SVG directly without re-rendering
+// Returns true if successful, false if no existing fingering found
+function updateFingeringSVG(fingeringKey, newFinger) {
+  const fingeringEntry = findFingeringEntry(fingeringKey)
+  const textEl = fingeringEntry?.SVGNode?.querySelector('text')
+  if (!textEl) return false
+
+  const fingerText = newFinger.toString()
+  textEl.textContent = fingerText
+
+  // Also update the label text for consistency
+  if (fingeringEntry.label) {
+    fingeringEntry.label.text = fingerText
+  }
+
+  return true
 }
 
