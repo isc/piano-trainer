@@ -288,19 +288,20 @@ class PianoTrainerTest < CapybaraTestBase
   end
 
   def test_turn_ornament_notes_expanded_sequentially
-    # Turn ornaments (grupettos) expand to 5 notes: main, upper, main, lower, main
-    # Score has: C5 with turn (Db/C# above, B natural below) -> G5
-    # Visual notes: 2 (C5, G5), but validation expects 6 notes: C5, C#5, C5, B4, C5, G5
+    # Tests both delayed and regular turns in the same measure:
+    # - Delayed turn on C5 (Db above, B natural below): C5, Db5, C5, B4, C5 (5 notes)
+    # - Regular turn on E5 (default whole steps): F#5, E5, D5, E5 (4 notes)
+    # - Final note: G5
+    # Visual notes: 3 (C5, E5, G5), but validation expects 10 notes total
     #
-    # In training mode, playing the correct turn sequence should result in a
-    # clean repetition (filled circle). If turn expansion wasn't working,
-    # playing the turn sequence would include wrong notes.
-    load_score('turn-ornament.xml', 2)
+    # In training mode, playing the correct sequences should result in a
+    # clean repetition (filled circle).
+    load_score('turn-ornament.xml', 3)
 
     click_on 'Mode Entraînement'
     assert_text 'Mode Entraînement Actif'
 
-    # Play turn sequence: C5 (main), C#5 (upper), C5 (main), B4 (lower), C5 (main), G5
+    # Delayed turn on C5: main, upper, main, lower, main
     simulate_midi_input("ON C5")
     simulate_midi_input("OFF C5")
 
@@ -316,11 +317,25 @@ class PianoTrainerTest < CapybaraTestBase
     simulate_midi_input("ON C5")
     simulate_midi_input("OFF C5")
 
+    # Regular turn on E5: upper (+2 semitones), main, lower (-2 semitones), main
+    simulate_midi_input("ON F#5")
+    simulate_midi_input("OFF F#5")
+
+    simulate_midi_input("ON E5")
+    simulate_midi_input("OFF E5")
+
+    simulate_midi_input("ON D5")
+    simulate_midi_input("OFF D5")
+
+    simulate_midi_input("ON E5")
+    simulate_midi_input("OFF E5")
+
+    # Final note G5
     simulate_midi_input("ON G5")
     simulate_midi_input("OFF G5")
 
     # Should have 1 filled repeat indicator (clean repetition)
-    # This proves the turn notes were expected and validated correctly
+    # This proves both turn types were expanded and validated correctly
     assert_selector 'svg circle.repeat-indicator.filled', count: 1
   end
 

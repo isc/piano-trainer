@@ -44,15 +44,30 @@
           </ornaments>
         </notations>
       </note>
-      <!-- Regular note for comparison -->
+      <!-- E5 with regular turn ornament (not delayed) -->
+      <!-- Default: whole steps (+2/-2 semitones), so F#5 above, D5 below -->
+      <!-- Expected sequence: F#5, E5, D5, E5 (4 notes - starts with upper) -->
+      <note>
+        <pitch>
+          <step>E</step>
+          <octave>5</octave>
+        </pitch>
+        <duration>4</duration>
+        <type>quarter</type>
+        <notations>
+          <ornaments>
+            <turn/>
+          </ornaments>
+        </notations>
+      </note>
+      <!-- Regular note to end measure -->
       <note>
         <pitch>
           <step>G</step>
           <octave>5</octave>
         </pitch>
-        <duration>12</duration>
+        <duration>8</duration>
         <type>half</type>
-        <dot/>
       </note>
     </measure>
   </part>
