@@ -50,3 +50,8 @@ svg g.vf-notehead.active-note path {
 #score svg .vf-notehead:hover path {
   fill-opacity: 0.7;
 }
+
+/* Measure numbers - lighter gray to distinguish from fingerings */
+#score svg g.measure-number text {
+  fill: #999999;
+}
