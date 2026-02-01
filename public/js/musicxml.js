@@ -736,11 +736,12 @@ function resetProgress() {
   resetPlaybackState()
 }
 
-// Build a map from SVG group ID to noteData by iterating through SourceMeasures.
+// Build a map from SVG group ID to noteData array by iterating through SourceMeasures.
 // This is more reliable than using noteData.note from allNotes because it directly
 // uses OSMD's GNote lookup on fresh SourceNote objects.
+// Returns Map<svgId, noteData[]> to handle chords (multiple notes per SVG group).
 function buildSvgIdToNoteDataMap() {
-  const svgIdToNoteData = new Map()
+  const svgIdToNoteDatas = new Map()
 
   for (const measure of osmdInstance.Sheet.SourceMeasures) {
     const measureNumber = measure.MeasureNumberXML
@@ -770,7 +771,10 @@ function buildSvgIdToNoteDataMap() {
 
             const noteData = findNoteDataByKey(fingeringKey)
             if (noteData) {
-              svgIdToNoteData.set(svgGroup.id, noteData)
+              if (!svgIdToNoteDatas.has(svgGroup.id)) {
+                svgIdToNoteDatas.set(svgGroup.id, [])
+              }
+              svgIdToNoteDatas.get(svgGroup.id).push(noteData)
             }
           }
         }
@@ -778,7 +782,7 @@ function buildSvgIdToNoteDataMap() {
     }
   }
 
-  return svgIdToNoteData
+  return svgIdToNoteDatas
 }
 
 function setupFingeringClickHandlers(cbs) {
@@ -786,21 +790,23 @@ function setupFingeringClickHandlers(cbs) {
 
   removeFingeringClickHandlers()
 
-  const svgIdToNoteData = buildSvgIdToNoteDataMap()
+  const svgIdToNoteDatas = buildSvgIdToNoteDataMap()
 
-  for (const [svgId, noteData] of svgIdToNoteData) {
+  for (const [svgId, noteDatas] of svgIdToNoteDatas) {
     const svgGroup = document.getElementById(svgId)
     if (!svgGroup) continue
 
-    const notehead = svgGroup.querySelectorAll('.vf-notehead')[noteData.noteheadIndex]
-    if (!notehead) continue
+    for (const noteData of noteDatas) {
+      const notehead = svgGroup.querySelectorAll('.vf-notehead')[noteData.noteheadIndex]
+      if (!notehead) continue
 
-    const handler = (e) => {
-      e.stopPropagation()
-      cbs.onNoteClick?.(noteData)
+      const handler = (e) => {
+        e.stopPropagation()
+        cbs.onNoteClick?.(noteData)
+      }
+      notehead.addEventListener('click', handler)
+      fingeringClickHandlers.push({ element: notehead, handler })
     }
-    notehead.addEventListener('click', handler)
-    fingeringClickHandlers.push({ element: notehead, handler })
   }
 }
 
