@@ -732,18 +732,65 @@ function setupFingeringClickHandlers(cbs) {
 
   removeFingeringClickHandlers()
 
-  for (const { notes } of allNotes) {
-    for (const noteData of notes) {
-      const notehead = svgNotehead(noteData)
-      if (!notehead) continue
+  // Build a map from SVG group ID to noteData by iterating through SourceMeasures
+  // This is more reliable than using the noteData.note reference from allNotes
+  // because it directly uses OSMD's GNote lookup on fresh SourceNote objects
+  const svgIdToNoteData = new Map()
 
-      const handler = (e) => {
-        e.stopPropagation()
-        cbs.onNoteClick?.(noteData)
+  const sourceMeasures = osmdInstance.Sheet.SourceMeasures
+  sourceMeasures.forEach((measure, measureIndex) => {
+    const measureNumber = measure.MeasureNumberXML
+    const noteCounters = new Map()
+
+    measure.verticalSourceStaffEntryContainers?.forEach((container) => {
+      if (!container.staffEntries) return
+      for (let staffIndex = 0; staffIndex < container.staffEntries.length; staffIndex++) {
+        const staffEntry = container.staffEntries[staffIndex]
+        if (!staffEntry?.voiceEntries) continue
+        for (const voiceEntry of staffEntry.voiceEntries) {
+          if (!voiceEntry.notes) continue
+          const voiceId = voiceEntry.ParentVoice?.VoiceId ?? 1
+          const voiceIndex = voiceId - 1
+          for (let noteIndex = 0; noteIndex < voiceEntry.notes.length; noteIndex++) {
+            const note = voiceEntry.notes[noteIndex]
+            if (!note.pitch || note.isRest?.()) continue
+
+            const counterKey = `${staffIndex}:${voiceIndex}`
+            if (!noteCounters.has(counterKey)) noteCounters.set(counterKey, 0)
+            const seqIdx = noteCounters.get(counterKey)
+            noteCounters.set(counterKey, seqIdx + 1)
+
+            const fingeringKey = `${measureNumber}:${staffIndex}:${voiceIndex}:${seqIdx}`
+            const gn = osmdInstance.rules.GNote(note)
+            const svgGroup = gn?.getSVGGElement?.()
+            if (!svgGroup?.id) continue
+
+            // Find the corresponding noteData from allNotes
+            const noteData = findNoteDataByKey(fingeringKey)
+            if (noteData) {
+              svgIdToNoteData.set(svgGroup.id, noteData)
+            }
+          }
+        }
       }
-      notehead.addEventListener('click', handler)
-      fingeringClickHandlers.push({ element: notehead, handler })
+    })
+  })
+
+  // Attach handlers for each unique SVG group
+  for (const [svgId, noteData] of svgIdToNoteData) {
+    const svgGroup = document.getElementById(svgId)
+    if (!svgGroup) continue
+
+    const noteheads = svgGroup.querySelectorAll('.vf-notehead')
+    const notehead = noteheads[noteData.noteheadIndex]
+    if (!notehead) continue
+
+    const handler = (e) => {
+      e.stopPropagation()
+      cbs.onNoteClick?.(noteData)
     }
+    notehead.addEventListener('click', handler)
+    fingeringClickHandlers.push({ element: notehead, handler })
   }
 }
 
