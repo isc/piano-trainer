@@ -736,62 +736,63 @@ function resetProgress() {
   resetPlaybackState()
 }
 
-function setupFingeringClickHandlers(cbs) {
-  if (!osmdInstance || allNotes.length === 0) return
-
-  removeFingeringClickHandlers()
-
-  // Build a map from SVG group ID to noteData by iterating through SourceMeasures
-  // This is more reliable than using the noteData.note reference from allNotes
-  // because it directly uses OSMD's GNote lookup on fresh SourceNote objects
+// Build a map from SVG group ID to noteData by iterating through SourceMeasures.
+// This is more reliable than using noteData.note from allNotes because it directly
+// uses OSMD's GNote lookup on fresh SourceNote objects.
+function buildSvgIdToNoteDataMap() {
   const svgIdToNoteData = new Map()
 
-  const sourceMeasures = osmdInstance.Sheet.SourceMeasures
-  sourceMeasures.forEach((measure, measureIndex) => {
+  for (const measure of osmdInstance.Sheet.SourceMeasures) {
     const measureNumber = measure.MeasureNumberXML
     const noteCounters = new Map()
 
-    measure.verticalSourceStaffEntryContainers?.forEach((container) => {
-      if (!container.staffEntries) return
-      for (let staffIndex = 0; staffIndex < container.staffEntries.length; staffIndex++) {
-        const staffEntry = container.staffEntries[staffIndex]
-        if (!staffEntry?.voiceEntries) continue
+    for (const container of measure.verticalSourceStaffEntryContainers || []) {
+      if (!container.staffEntries) continue
+
+      container.staffEntries.forEach((staffEntry, staffIndex) => {
+        if (!staffEntry?.voiceEntries) return
+
         for (const voiceEntry of staffEntry.voiceEntries) {
           if (!voiceEntry.notes) continue
-          const voiceId = voiceEntry.ParentVoice?.VoiceId ?? 1
-          const voiceIndex = voiceId - 1
-          for (let noteIndex = 0; noteIndex < voiceEntry.notes.length; noteIndex++) {
-            const note = voiceEntry.notes[noteIndex]
+
+          const voiceIndex = (voiceEntry.ParentVoice?.VoiceId ?? 1) - 1
+
+          for (const note of voiceEntry.notes) {
             if (!note.pitch || note.isRest?.()) continue
 
             const counterKey = `${staffIndex}:${voiceIndex}`
-            if (!noteCounters.has(counterKey)) noteCounters.set(counterKey, 0)
-            const seqIdx = noteCounters.get(counterKey)
+            const seqIdx = noteCounters.get(counterKey) ?? 0
             noteCounters.set(counterKey, seqIdx + 1)
 
             const fingeringKey = `${measureNumber}:${staffIndex}:${voiceIndex}:${seqIdx}`
-            const gn = osmdInstance.rules.GNote(note)
-            const svgGroup = gn?.getSVGGElement?.()
+            const svgGroup = osmdInstance.rules.GNote(note)?.getSVGGElement?.()
             if (!svgGroup?.id) continue
 
-            // Find the corresponding noteData from allNotes
             const noteData = findNoteDataByKey(fingeringKey)
             if (noteData) {
               svgIdToNoteData.set(svgGroup.id, noteData)
             }
           }
         }
-      }
-    })
-  })
+      })
+    }
+  }
 
-  // Attach handlers for each unique SVG group
+  return svgIdToNoteData
+}
+
+function setupFingeringClickHandlers(cbs) {
+  if (!osmdInstance || allNotes.length === 0) return
+
+  removeFingeringClickHandlers()
+
+  const svgIdToNoteData = buildSvgIdToNoteDataMap()
+
   for (const [svgId, noteData] of svgIdToNoteData) {
     const svgGroup = document.getElementById(svgId)
     if (!svgGroup) continue
 
-    const noteheads = svgGroup.querySelectorAll('.vf-notehead')
-    const notehead = noteheads[noteData.noteheadIndex]
+    const notehead = svgGroup.querySelectorAll('.vf-notehead')[noteData.noteheadIndex]
     if (!notehead) continue
 
     const handler = (e) => {

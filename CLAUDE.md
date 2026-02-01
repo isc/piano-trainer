@@ -13,20 +13,19 @@ PR titles and descriptions must be in English.
 
 ## Playwright Browser Testing
 
-To iterate quickly with browser evaluation without repeated permission prompts, write the JSON to `tmp/eval.json` and pipe it:
+To iterate quickly without repeated permission prompts, write JSON to `tmp/eval.json` using the Write tool, then pipe with a constant command:
 
 ```bash
-# Write eval JSON
-echo '{"function": "() => { return document.title; }"}' > tmp/eval.json
-
-# Execute via pipe
 cat tmp/eval.json | mcp-cli call playwright/browser_evaluate -
+cat tmp/eval.json | mcp-cli call playwright/browser_navigate -
 ```
 
-For navigation:
-```bash
-echo '{"url": "http://localhost:4567/score.html?url=scores%2FWaltz.mxl"}' > tmp/eval.json
-cat tmp/eval.json | mcp-cli call playwright/browser_navigate -
+The bash command stays constant - only the file content changes via Write (no permission needed).
+
+Example JSON:
+```json
+{"function": "() => document.title"}
+{"url": "http://localhost:4567/score.html"}
 ```
 
 ## Code Style
