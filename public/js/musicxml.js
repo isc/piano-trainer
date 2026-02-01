@@ -787,7 +787,7 @@ function findFingeringEntry(fingeringKey) {
   const [measureNumber, staffIndex] = fingeringKey.split(':').map(Number)
 
   const sourceMeasures = osmdInstance.Sheet.SourceMeasures
-  const sourceMeasureIndex = sourceMeasures.findIndex((m) => m.MeasureNumber === measureNumber)
+  const sourceMeasureIndex = sourceMeasures.findIndex((m) => m.MeasureNumberXML === measureNumber)
   if (sourceMeasureIndex < 0) return null
 
   const graphicalMeasure = osmdInstance.graphic.MeasureList[sourceMeasureIndex]?.[staffIndex]

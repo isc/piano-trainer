@@ -250,8 +250,9 @@ function extractNotesFromSourceMeasures(sourceMeasures) {
 
   sourceMeasures.forEach((measure, measureIndex) => {
     const measureNotes = []
-    // Use actual MusicXML measure number (pickup measures have number 0)
-    const measureNumber = measure.MeasureNumber
+    // Use MeasureNumberXML to match the XML's measure number attribute
+    // (MeasureNumber is OSMD's internal numbering which starts from 0 for pickups)
+    const measureNumber = measure.MeasureNumberXML
     // Track sequential note index for each (staff, voice) combination
     const noteCounters = new Map()
 
