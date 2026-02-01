@@ -3,9 +3,23 @@ require_relative 'test_helper'
 class FingeringAnnotationTest < CapybaraTestBase
   SCORE_URL = '/test-fixtures/simple-score.xml'
   PICKUP_SCORE_URL = '/test-fixtures/pickup-measure-score.xml'
+  CHORD_SCORE_URL = '/test-fixtures/chord.xml'
 
   def setup
     page.driver.set_cookie('test-env', 'true')
+  end
+
+  def test_clicking_chord_notes_opens_fingering_modal
+    visit "/score.html?url=#{CHORD_SCORE_URL}"
+    wait_for_render
+    noteheads = all('svg g.vf-notehead', minimum: 3)
+
+    # Verify clicking each notehead in the chord opens the fingering modal
+    noteheads.each do |notehead|
+      notehead.click
+      assert_selector 'dialog#fingeringModal[open]'
+      click_on 'Close'
+    end
   end
 
   def test_add_fingering_and_persist_after_reload

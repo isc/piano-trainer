@@ -3,6 +3,7 @@ import { extractNotesFromScore as extractNotes } from './noteExtraction.js'
 
 let osmdInstance = null
 let allNotes = []
+let noteDataByKey = new Map() // Map<fingeringKey, noteData> for O(1) lookups
 let playbackSequence = [] // Ordered list of source measure indices for playback (handles repeats)
 let currentMeasureIndex = 0
 let trainingMode = false
@@ -202,6 +203,14 @@ function extractNotesFromScore() {
   const result = extractNotes(osmdInstance)
   allNotes = result.allNotes
   playbackSequence = result.playbackSequence
+
+  // Build fingeringKey -> noteData map for O(1) lookups
+  noteDataByKey.clear()
+  for (const { notes } of allNotes) {
+    for (const noteData of notes) {
+      noteDataByKey.set(noteData.fingeringKey, noteData)
+    }
+  }
 }
 
 function styleMeasureNumbers() {
@@ -727,14 +736,68 @@ function resetProgress() {
   resetPlaybackState()
 }
 
+// Build a map from SVG group ID to noteData array by iterating through SourceMeasures.
+// This is more reliable than using noteData.note from allNotes because it directly
+// uses OSMD's GNote lookup on fresh SourceNote objects.
+// Returns Map<svgId, noteData[]> to handle chords (multiple notes per SVG group).
+function buildSvgIdToNoteDataMap() {
+  const svgIdToNoteDatas = new Map()
+
+  for (const measure of osmdInstance.Sheet.SourceMeasures) {
+    const measureNumber = measure.MeasureNumberXML
+    const noteCounters = new Map()
+
+    for (const container of measure.verticalSourceStaffEntryContainers || []) {
+      if (!container.staffEntries) continue
+
+      container.staffEntries.forEach((staffEntry, staffIndex) => {
+        if (!staffEntry?.voiceEntries) return
+
+        for (const voiceEntry of staffEntry.voiceEntries) {
+          if (!voiceEntry.notes) continue
+
+          const voiceIndex = (voiceEntry.ParentVoice?.VoiceId ?? 1) - 1
+
+          for (const note of voiceEntry.notes) {
+            if (!note.pitch || note.isRest?.()) continue
+
+            const counterKey = `${staffIndex}:${voiceIndex}`
+            const seqIdx = noteCounters.get(counterKey) ?? 0
+            noteCounters.set(counterKey, seqIdx + 1)
+
+            const fingeringKey = `${measureNumber}:${staffIndex}:${voiceIndex}:${seqIdx}`
+            const svgGroup = osmdInstance.rules.GNote(note)?.getSVGGElement?.()
+            if (!svgGroup?.id) continue
+
+            const noteData = findNoteDataByKey(fingeringKey)
+            if (noteData) {
+              if (!svgIdToNoteDatas.has(svgGroup.id)) {
+                svgIdToNoteDatas.set(svgGroup.id, [])
+              }
+              svgIdToNoteDatas.get(svgGroup.id).push(noteData)
+            }
+          }
+        }
+      })
+    }
+  }
+
+  return svgIdToNoteDatas
+}
+
 function setupFingeringClickHandlers(cbs) {
   if (!osmdInstance || allNotes.length === 0) return
 
   removeFingeringClickHandlers()
 
-  for (const { notes } of allNotes) {
-    for (const noteData of notes) {
-      const notehead = svgNotehead(noteData)
+  const svgIdToNoteDatas = buildSvgIdToNoteDataMap()
+
+  for (const [svgId, noteDatas] of svgIdToNoteDatas) {
+    const svgGroup = document.getElementById(svgId)
+    if (!svgGroup) continue
+
+    for (const noteData of noteDatas) {
+      const notehead = svgGroup.querySelectorAll('.vf-notehead')[noteData.noteheadIndex]
       if (!notehead) continue
 
       const handler = (e) => {
@@ -772,11 +835,7 @@ function restoreNoteStates(noteStates) {
 
 // Find noteData in allNotes by fingeringKey
 function findNoteDataByKey(fingeringKey) {
-  for (const { notes } of allNotes) {
-    const found = notes.find((n) => n.fingeringKey === fingeringKey)
-    if (found) return found
-  }
-  return null
+  return noteDataByKey.get(fingeringKey) ?? null
 }
 
 // Find the FingeringEntry for a note by its fingeringKey
@@ -825,11 +884,27 @@ function findFingeringEntry(fingeringKey) {
 // Update an existing fingering's SVG directly without re-rendering
 // Returns true if successful, false if no existing fingering found
 function updateFingeringSVG(fingeringKey, newFinger) {
+  const targetNoteData = findNoteDataByKey(fingeringKey)
+  if (!targetNoteData) return false
+
+  const fingerText = newFinger.toString()
+
+  // Grace notes don't have FingeringEntries - their fingerings are rendered directly in the stavenote group
+  if (targetNoteData.isGrace) {
+    const svgGroup = svgNote(targetNoteData.note)
+    if (!svgGroup) return false
+    // The fingering text is a direct child of the stavenote group
+    const textEl = svgGroup.querySelector('text')
+    if (!textEl) return false
+    textEl.textContent = fingerText
+    return true
+  }
+
+  // Regular notes use FingeringEntries
   const fingeringEntry = findFingeringEntry(fingeringKey)
   const textEl = fingeringEntry?.SVGNode?.querySelector('text')
   if (!textEl) return false
 
-  const fingerText = newFinger.toString()
   textEl.textContent = fingerText
 
   // Also update the label text for consistency
