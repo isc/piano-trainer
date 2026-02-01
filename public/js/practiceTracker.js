@@ -178,11 +178,11 @@ export function initPracticeTracker(storageInstance = null) {
       }
     }
 
-    // Update title/composer if they were missing before (use instance variables)
-    if (!aggregate.scoreTitle && currentScoreTitle) {
+    // Always sync title/composer from current session metadata
+    if (currentScoreTitle) {
       aggregate.scoreTitle = currentScoreTitle
     }
-    if (!aggregate.composer && currentComposer) {
+    if (currentComposer) {
       aggregate.composer = currentComposer
     }
 
