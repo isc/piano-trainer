@@ -85,10 +85,13 @@ class OrnamentsTest < CapybaraTestBase
 
   def test_mordent_notes_expanded_sequentially
     # Tests both regular and inverted mordents in the same measure:
-    # - Regular mordent on C5: C5, Bb4, C5 (3 notes - goes to lower note)
-    # - Inverted mordent on E5: E5, F#5, E5 (3 notes - goes to upper note)
+    # - Regular mordent on C5: C5, B4, C5 (3 notes - diatonic lower note)
+    # - Inverted mordent on E5: E5, F5, E5 (3 notes - diatonic upper note)
     # - Final note: G5
     # Visual notes: 3 (C5, E5, G5), but validation expects 7 notes total
+    #
+    # Mordents use diatonic intervals (follow the scale), not fixed semitone offsets.
+    # In C major: C→B is 1 semitone, E→F is 1 semitone.
     #
     # In training mode, playing the correct sequences should result in a
     # clean repetition (filled circle).
@@ -97,22 +100,22 @@ class OrnamentsTest < CapybaraTestBase
     click_on 'Mode Entraînement'
     assert_text 'Mode Entraînement Actif'
 
-    # Regular mordent on C5: main, lower (-2 semitones = Bb4), main
+    # Regular mordent on C5: main, lower (diatonic = B4), main
     simulate_midi_input("ON C5")
     simulate_midi_input("OFF C5")
 
-    simulate_midi_input("ON A#4")
-    simulate_midi_input("OFF A#4")
+    simulate_midi_input("ON B4")
+    simulate_midi_input("OFF B4")
 
     simulate_midi_input("ON C5")
     simulate_midi_input("OFF C5")
 
-    # Inverted mordent on E5: main, upper (+2 semitones = F#5), main
+    # Inverted mordent on E5: main, upper (diatonic = F5), main
     simulate_midi_input("ON E5")
     simulate_midi_input("OFF E5")
 
-    simulate_midi_input("ON F#5")
-    simulate_midi_input("OFF F#5")
+    simulate_midi_input("ON F5")
+    simulate_midi_input("OFF F5")
 
     simulate_midi_input("ON E5")
     simulate_midi_input("OFF E5")

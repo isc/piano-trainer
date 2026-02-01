@@ -21,10 +21,50 @@ const AccidentalEnum = {
   DOUBLEFLAT: 5,
 }
 
+// Diatonic note semitone offsets from C (C=0, D=2, E=4, F=5, G=7, A=9, B=11)
+// OSMD's fundamentalNote is the semitone offset of the note name (ignoring accidentals)
+const DIATONIC_NOTES = [0, 2, 4, 5, 7, 9, 11] // C, D, E, F, G, A, B
+
+// Find the index in DIATONIC_NOTES for a given fundamentalNote value
+function getDiatonicIndex(fundamentalNote) {
+  return DIATONIC_NOTES.indexOf(fundamentalNote)
+}
+
+// Calculate diatonic interval to adjacent note based on pitch.fundamentalNote
+// This follows the scale rather than using fixed semitone offsets
+function getDiatonicOffset(pitch, direction) {
+  const fundamentalNote = pitch?.fundamentalNote ?? pitch?.FundamentalNote
+  if (!pitch || fundamentalNote === undefined) return direction > 0 ? 2 : -2
+
+  const currentHalfTone = pitch.halfTone
+  const octave = Math.floor(currentHalfTone / 12)
+
+  // Find current note's position in diatonic scale
+  const currentIndex = getDiatonicIndex(fundamentalNote)
+  if (currentIndex === -1) return direction > 0 ? 2 : -2 // fallback if not found
+
+  // Calculate next/previous diatonic note index
+  const adjacentIndex = direction > 0
+    ? (currentIndex + 1) % 7
+    : (currentIndex + 6) % 7 // +6 is same as -1 mod 7
+
+  // Calculate halfTone for the adjacent diatonic note
+  let adjacentHalfTone = octave * 12 + DIATONIC_NOTES[adjacentIndex]
+
+  // Handle octave wrap (B→C goes up, C→B goes down)
+  if (direction > 0 && adjacentHalfTone <= currentHalfTone) {
+    adjacentHalfTone += 12
+  } else if (direction < 0 && adjacentHalfTone >= currentHalfTone) {
+    adjacentHalfTone -= 12
+  }
+
+  return adjacentHalfTone - currentHalfTone
+}
+
 // Calculate upper/lower MIDI offsets based on ornament accidentals
 // Default: whole step (2 semitones) above and below
 // FLAT above lowers the upper note, NATURAL/SHARP below raises the lower note
-function getOrnamentOffsets(ornamentContainer) {
+function getTurnOffsets(ornamentContainer) {
   const { AccidentalAbove, AccidentalBelow } = ornamentContainer
   const upperOffset = AccidentalAbove === AccidentalEnum.FLAT ? 1 : 2
   const lowerOffset = AccidentalBelow === AccidentalEnum.NATURAL || AccidentalBelow === AccidentalEnum.SHARP ? -1 : -2
@@ -33,11 +73,24 @@ function getOrnamentOffsets(ornamentContainer) {
 
 // Build the MIDI note sequence for an ornament
 // Returns { sequence, flag } where flag is the property name to mark expanded notes
-function getOrnamentSequence(mainMidi, ornamentContainer) {
+function getOrnamentSequence(mainMidi, ornamentContainer, pitch) {
   const ornamentType = ornamentContainer.GetOrnament
-  const { upperOffset, lowerOffset } = getOrnamentOffsets(ornamentContainer)
-  const upperMidi = mainMidi + upperOffset
-  const lowerMidi = mainMidi + lowerOffset
+
+  // Turns use fixed intervals (whole steps by default, modified by accidentals)
+  // Mordents use diatonic intervals (follow the scale)
+  const isMordent = ornamentType === OrnamentEnum.Mordent || ornamentType === OrnamentEnum.InvertedMordent
+
+  let upperMidi, lowerMidi
+  if (isMordent) {
+    // Mordents: use diatonic intervals based on the scale
+    upperMidi = mainMidi + getDiatonicOffset(pitch, 1)
+    lowerMidi = mainMidi + getDiatonicOffset(pitch, -1)
+  } else {
+    // Turns: use fixed intervals (whole steps) with optional accidental adjustments
+    const { upperOffset, lowerOffset } = getTurnOffsets(ornamentContainer)
+    upperMidi = mainMidi + upperOffset
+    lowerMidi = mainMidi + lowerOffset
+  }
 
   // Turn ornaments: 4-5 notes alternating around the main note
   switch (ornamentType) {
@@ -66,7 +119,8 @@ function expandOrnamentNotes(measureNotes) {
 
   for (const noteData of measureNotes) {
     const ornamentContainer = noteData.voiceEntry?.OrnamentContainer
-    const ornamentInfo = ornamentContainer ? getOrnamentSequence(noteData.midiNumber, ornamentContainer) : null
+    const pitch = noteData.note?.pitch
+    const ornamentInfo = ornamentContainer ? getOrnamentSequence(noteData.midiNumber, ornamentContainer, pitch) : null
 
     if (!ornamentInfo) {
       expandedNotes.push(noteData)
