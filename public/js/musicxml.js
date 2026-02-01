@@ -825,11 +825,27 @@ function findFingeringEntry(fingeringKey) {
 // Update an existing fingering's SVG directly without re-rendering
 // Returns true if successful, false if no existing fingering found
 function updateFingeringSVG(fingeringKey, newFinger) {
+  const targetNoteData = findNoteDataByKey(fingeringKey)
+  if (!targetNoteData) return false
+
+  const fingerText = newFinger.toString()
+
+  // Grace notes don't have FingeringEntries - their fingerings are rendered directly in the stavenote group
+  if (targetNoteData.isGrace) {
+    const svgGroup = svgNote(targetNoteData.note)
+    if (!svgGroup) return false
+    // The fingering text is a direct child of the stavenote group
+    const textEl = svgGroup.querySelector('text')
+    if (!textEl) return false
+    textEl.textContent = fingerText
+    return true
+  }
+
+  // Regular notes use FingeringEntries
   const fingeringEntry = findFingeringEntry(fingeringKey)
   const textEl = fingeringEntry?.SVGNode?.querySelector('text')
   if (!textEl) return false
 
-  const fingerText = newFinger.toString()
   textEl.textContent = fingerText
 
   // Also update the label text for consistency
