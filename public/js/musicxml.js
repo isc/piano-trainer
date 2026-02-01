@@ -3,6 +3,7 @@ import { extractNotesFromScore as extractNotes } from './noteExtraction.js'
 
 let osmdInstance = null
 let allNotes = []
+let noteDataByKey = new Map() // Map<fingeringKey, noteData> for O(1) lookups
 let playbackSequence = [] // Ordered list of source measure indices for playback (handles repeats)
 let currentMeasureIndex = 0
 let trainingMode = false
@@ -202,6 +203,14 @@ function extractNotesFromScore() {
   const result = extractNotes(osmdInstance)
   allNotes = result.allNotes
   playbackSequence = result.playbackSequence
+
+  // Build fingeringKey -> noteData map for O(1) lookups
+  noteDataByKey.clear()
+  for (const { notes } of allNotes) {
+    for (const noteData of notes) {
+      noteDataByKey.set(noteData.fingeringKey, noteData)
+    }
+  }
 }
 
 function styleMeasureNumbers() {
@@ -819,11 +828,7 @@ function restoreNoteStates(noteStates) {
 
 // Find noteData in allNotes by fingeringKey
 function findNoteDataByKey(fingeringKey) {
-  for (const { notes } of allNotes) {
-    const found = notes.find((n) => n.fingeringKey === fingeringKey)
-    if (found) return found
-  }
-  return null
+  return noteDataByKey.get(fingeringKey) ?? null
 }
 
 // Find the FingeringEntry for a note by its fingeringKey
