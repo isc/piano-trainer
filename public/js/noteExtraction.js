@@ -31,6 +31,9 @@ const TURN_TYPES = [
 const INVERTED_TURN_TYPES = [OrnamentEnum.InvertedTurn, OrnamentEnum.DelayedInvertedTurn]
 const DELAYED_TURN_TYPES = [OrnamentEnum.DelayedTurn, OrnamentEnum.DelayedInvertedTurn]
 
+// Mordent ornament types
+const MORDENT_TYPES = [OrnamentEnum.Mordent, OrnamentEnum.InvertedMordent]
+
 // Calculate upper/lower note MIDI numbers for a turn ornament
 // Returns { upperMidi, lowerMidi, isInverted, isDelayed } or null if not a turn
 function getTurnNotes(mainMidiNote, ornamentContainer) {
@@ -61,6 +64,36 @@ function getTurnNotes(mainMidiNote, ornamentContainer) {
     lowerMidi: mainMidiNote + lowerOffset,
     isInverted: INVERTED_TURN_TYPES.includes(ornamentType),
     isDelayed: DELAYED_TURN_TYPES.includes(ornamentType),
+  }
+}
+
+// Calculate upper/lower note MIDI numbers for a mordent ornament
+// Returns { upperMidi, lowerMidi, isInverted } or null if not a mordent
+function getMordentNotes(mainMidiNote, ornamentContainer) {
+  if (!ornamentContainer) return null
+
+  const ornamentType = ornamentContainer.GetOrnament
+  if (!MORDENT_TYPES.includes(ornamentType)) return null
+
+  // Default: whole step (2 semitones) above and below
+  let upperOffset = 2
+  let lowerOffset = -2
+
+  // Adjust based on accidentals shown on the mordent symbol
+  const { AccidentalAbove, AccidentalBelow } = ornamentContainer
+
+  if (AccidentalAbove === AccidentalEnum.FLAT) {
+    upperOffset = 1
+  }
+
+  if (AccidentalBelow === AccidentalEnum.NATURAL || AccidentalBelow === AccidentalEnum.SHARP) {
+    lowerOffset = -1
+  }
+
+  return {
+    upperMidi: mainMidiNote + upperOffset,
+    lowerMidi: mainMidiNote + lowerOffset,
+    isInverted: ornamentType === OrnamentEnum.InvertedMordent,
   }
 }
 
@@ -119,6 +152,59 @@ function expandTurnNotes(measureNotes) {
     } catch (e) {
       // If turn expansion fails, keep the original note
       console.warn('Turn expansion failed for note:', noteData, e)
+      expandedNotes.push(noteData)
+    }
+  }
+
+  return expandedNotes
+}
+
+// Expand mordent ornaments into their constituent notes
+// Mordent: main → lower → main (3 notes)
+// Inverted mordent: main → upper → main (3 notes)
+function expandMordentNotes(measureNotes) {
+  const MORDENT_NOTE_OFFSET = 0.00001
+  const expandedNotes = []
+
+  for (const noteData of measureNotes) {
+    try {
+      // Check if this note has a mordent ornament
+      const ornamentContainer = noteData.voiceEntry?.OrnamentContainer
+      const mordentInfo = getMordentNotes(noteData.midiNumber, ornamentContainer)
+
+      if (mordentInfo) {
+        const { upperMidi, lowerMidi, isInverted } = mordentInfo
+        const mainMidi = noteData.midiNumber
+
+        // Build the mordent sequence:
+        // Regular mordent: main → lower → main (3 notes)
+        // Inverted mordent: main → upper → main (3 notes)
+        const sequence = isInverted
+          ? [mainMidi, upperMidi, mainMidi]
+          : [mainMidi, lowerMidi, mainMidi]
+
+        for (let i = 0; i < sequence.length; i++) {
+          const midiNumber = sequence[i]
+          const noteNameStd = NOTE_NAMES[midiNumber % 12]
+          const octaveStd = Math.floor(midiNumber / 12) - 1
+
+          expandedNotes.push({
+            ...noteData,
+            midiNumber,
+            noteName: `${noteNameStd}${octaveStd}`,
+            timestamp: noteData.timestamp + i * MORDENT_NOTE_OFFSET,
+            isMordentNote: true,
+            // Only the last note of the mordent should highlight the original notehead
+            noteheadIndex: i === sequence.length - 1 ? noteData.noteheadIndex : -1,
+          })
+        }
+      } else {
+        // Not a mordent, keep the note as-is
+        expandedNotes.push(noteData)
+      }
+    } catch (e) {
+      // If mordent expansion fails, keep the original note
+      console.warn('Mordent expansion failed for note:', noteData, e)
       expandedNotes.push(noteData)
     }
   }
@@ -315,11 +401,14 @@ function extractNotesFromSourceMeasures(sourceMeasures) {
     // Expand turn ornaments into their constituent notes
     const expandedNotes = expandTurnNotes(measureNotes)
 
-    // Ensure notes are ordered by (possibly adjusted) timestamp for sequential validation
-    expandedNotes.sort((a, b) => a.timestamp - b.timestamp)
+    // Expand mordent ornaments into their constituent notes
+    const finalNotes = expandMordentNotes(expandedNotes)
 
-    if (expandedNotes.length > 0) {
-      notesByMeasure.set(measureIndex, expandedNotes)
+    // Ensure notes are ordered by (possibly adjusted) timestamp for sequential validation
+    finalNotes.sort((a, b) => a.timestamp - b.timestamp)
+
+    if (finalNotes.length > 0) {
+      notesByMeasure.set(measureIndex, finalNotes)
     }
   })
 
