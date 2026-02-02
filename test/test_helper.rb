@@ -80,6 +80,19 @@ class CapybaraTestBase < Minitest::Test
     end
   end
 
+  # Helper to load a score from test fixtures
+  def load_score(filename, expected_notes)
+    attach_file('musicxml-upload', File.expand_path("fixtures/#{filename}", __dir__))
+    assert_selector '#score[data-render-complete]'
+    assert_selector 'svg g.vf-stavenote', count: expected_notes
+    sleep 0.05  # Wait for DOM and callbacks to fully initialize
+  end
+
+  # Helper to click on a measure in the score
+  def click_measure(measure_number)
+    page.all('svg rect.measure-click-area')[measure_number - 1].trigger('click')
+  end
+
   private
 
   def parse_midi_notation(notation)
