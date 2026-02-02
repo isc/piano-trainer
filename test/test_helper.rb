@@ -88,6 +88,11 @@ class CapybaraTestBase < Minitest::Test
     sleep 0.05  # Wait for DOM and callbacks to fully initialize
   end
 
+  # Helper to click on a measure in the score
+  def click_measure(measure_number)
+    page.all('svg rect.measure-click-area')[measure_number - 1].trigger('click')
+  end
+
   private
 
   def parse_midi_notation(notation)

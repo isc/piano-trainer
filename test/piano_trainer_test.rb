@@ -518,10 +518,6 @@ class PianoTrainerTest < CapybaraTestBase
     assert_text 'Rejeu terminé' if wait_for_end
   end
 
-  def click_measure(measure_number)
-    page.all('svg rect.measure-click-area')[measure_number - 1].trigger('click')
-  end
-
   # Wait for scroll position to stabilize (stop changing)
   # If expect_change is true, first wait for the scroll to change from initial value
   def wait_for_stable_scroll(expect_change_from: nil, max_iterations: 100, interval: 0.01)

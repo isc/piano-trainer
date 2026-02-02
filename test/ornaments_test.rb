@@ -129,9 +129,4 @@ class OrnamentsTest < CapybaraTestBase
     assert_selector 'svg circle.repeat-indicator.filled', count: 1
   end
 
-  private
-
-  def click_measure(measure_number)
-    page.all('svg rect.measure-click-area')[measure_number - 1].trigger('click')
-  end
 end
