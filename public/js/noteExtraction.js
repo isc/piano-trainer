@@ -61,33 +61,31 @@ function getDiatonicOffset(pitch, direction) {
   return adjacentHalfTone - currentHalfTone
 }
 
-// Calculate upper/lower MIDI notes based on ornament accidentals or diatonic intervals
-// If accidentals are specified, use them to modify the interval
-// Otherwise, use diatonic intervals (follow the key signature)
+// Check if an accidental is explicitly specified (not undefined or NONE)
+function hasExplicitAccidental(accidental) {
+  return accidental !== undefined && accidental !== AccidentalEnum.NONE
+}
+
+// Calculate upper/lower MIDI notes for ornaments
+// When accidentals are explicitly marked, they modify the note chromatically:
+// - FLAT lowers the note (upper: +1, lower: -2)
+// - SHARP/NATURAL raises the note (upper: +2, lower: -1)
+// Without explicit accidentals, use diatonic intervals (follow the scale)
 function getOrnamentAuxiliaryNotes(mainMidi, ornamentContainer, pitch) {
   const { AccidentalAbove, AccidentalBelow } = ornamentContainer
 
-  // Default: use diatonic intervals
-  let upperMidi = mainMidi + getDiatonicOffset(pitch, 1)
-  let lowerMidi = mainMidi + getDiatonicOffset(pitch, -1)
+  let upperMidi, lowerMidi
 
-  // If accidentals are explicitly specified, adjust the intervals
-  if (AccidentalAbove !== undefined && AccidentalAbove !== AccidentalEnum.NONE) {
-    // FLAT lowers by 1 semitone from diatonic, SHARP/NATURAL raises by 1
-    if (AccidentalAbove === AccidentalEnum.FLAT) {
-      upperMidi = mainMidi + 1
-    } else if (AccidentalAbove === AccidentalEnum.SHARP || AccidentalAbove === AccidentalEnum.NATURAL) {
-      upperMidi = mainMidi + 2
-    }
+  if (hasExplicitAccidental(AccidentalAbove)) {
+    upperMidi = AccidentalAbove === AccidentalEnum.FLAT ? mainMidi + 1 : mainMidi + 2
+  } else {
+    upperMidi = mainMidi + getDiatonicOffset(pitch, 1)
   }
 
-  if (AccidentalBelow !== undefined && AccidentalBelow !== AccidentalEnum.NONE) {
-    // NATURAL/SHARP raises by 1 semitone from diatonic, FLAT lowers by 1
-    if (AccidentalBelow === AccidentalEnum.NATURAL || AccidentalBelow === AccidentalEnum.SHARP) {
-      lowerMidi = mainMidi - 1
-    } else if (AccidentalBelow === AccidentalEnum.FLAT) {
-      lowerMidi = mainMidi - 2
-    }
+  if (hasExplicitAccidental(AccidentalBelow)) {
+    lowerMidi = AccidentalBelow === AccidentalEnum.FLAT ? mainMidi - 2 : mainMidi - 1
+  } else {
+    lowerMidi = mainMidi + getDiatonicOffset(pitch, -1)
   }
 
   return { upperMidi, lowerMidi }
