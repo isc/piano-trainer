@@ -61,14 +61,36 @@ function getDiatonicOffset(pitch, direction) {
   return adjacentHalfTone - currentHalfTone
 }
 
-// Calculate upper/lower MIDI offsets based on ornament accidentals
-// Default: whole step (2 semitones) above and below
-// FLAT above lowers the upper note, NATURAL/SHARP below raises the lower note
-function getTurnOffsets(ornamentContainer) {
+// Calculate upper/lower MIDI notes based on ornament accidentals or diatonic intervals
+// If accidentals are specified, use them to modify the interval
+// Otherwise, use diatonic intervals (follow the key signature)
+function getOrnamentAuxiliaryNotes(mainMidi, ornamentContainer, pitch) {
   const { AccidentalAbove, AccidentalBelow } = ornamentContainer
-  const upperOffset = AccidentalAbove === AccidentalEnum.FLAT ? 1 : 2
-  const lowerOffset = AccidentalBelow === AccidentalEnum.NATURAL || AccidentalBelow === AccidentalEnum.SHARP ? -1 : -2
-  return { upperOffset, lowerOffset }
+
+  // Default: use diatonic intervals
+  let upperMidi = mainMidi + getDiatonicOffset(pitch, 1)
+  let lowerMidi = mainMidi + getDiatonicOffset(pitch, -1)
+
+  // If accidentals are explicitly specified, adjust the intervals
+  if (AccidentalAbove !== undefined && AccidentalAbove !== AccidentalEnum.NONE) {
+    // FLAT lowers by 1 semitone from diatonic, SHARP/NATURAL raises by 1
+    if (AccidentalAbove === AccidentalEnum.FLAT) {
+      upperMidi = mainMidi + 1
+    } else if (AccidentalAbove === AccidentalEnum.SHARP || AccidentalAbove === AccidentalEnum.NATURAL) {
+      upperMidi = mainMidi + 2
+    }
+  }
+
+  if (AccidentalBelow !== undefined && AccidentalBelow !== AccidentalEnum.NONE) {
+    // NATURAL/SHARP raises by 1 semitone from diatonic, FLAT lowers by 1
+    if (AccidentalBelow === AccidentalEnum.NATURAL || AccidentalBelow === AccidentalEnum.SHARP) {
+      lowerMidi = mainMidi - 1
+    } else if (AccidentalBelow === AccidentalEnum.FLAT) {
+      lowerMidi = mainMidi - 2
+    }
+  }
+
+  return { upperMidi, lowerMidi }
 }
 
 // Build the MIDI note sequence for an ornament
@@ -76,21 +98,7 @@ function getTurnOffsets(ornamentContainer) {
 function getOrnamentSequence(mainMidi, ornamentContainer, pitch) {
   const ornamentType = ornamentContainer.GetOrnament
 
-  // Turns use fixed intervals (whole steps by default, modified by accidentals)
-  // Mordents use diatonic intervals (follow the scale)
-  const isMordent = ornamentType === OrnamentEnum.Mordent || ornamentType === OrnamentEnum.InvertedMordent
-
-  let upperMidi, lowerMidi
-  if (isMordent) {
-    // Mordents: use diatonic intervals based on the scale
-    upperMidi = mainMidi + getDiatonicOffset(pitch, 1)
-    lowerMidi = mainMidi + getDiatonicOffset(pitch, -1)
-  } else {
-    // Turns: use fixed intervals (whole steps) with optional accidental adjustments
-    const { upperOffset, lowerOffset } = getTurnOffsets(ornamentContainer)
-    upperMidi = mainMidi + upperOffset
-    lowerMidi = mainMidi + lowerOffset
-  }
+  const { upperMidi, lowerMidi } = getOrnamentAuxiliaryNotes(mainMidi, ornamentContainer, pitch)
 
   // Turn ornaments: 4-5 notes alternating around the main note
   switch (ornamentType) {

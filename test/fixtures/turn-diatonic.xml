@@ -2,7 +2,7 @@
 <!DOCTYPE score-partwise PUBLIC "-//Recordare//DTD MusicXML 3.0 Partwise//EN" "http://www.musicxml.org/dtds/partwise.dtd">
 <score-partwise version="3.0">
   <work>
-    <work-title>Turn Ornament Test</work-title>
+    <work-title>Turn Diatonic Test</work-title>
   </work>
   <part-list>
     <score-part id="P1">
@@ -14,7 +14,7 @@
       <attributes>
         <divisions>4</divisions>
         <key>
-          <!-- E-flat major: 3 flats (B, E, A) -->
+          <!-- E-flat major: 3 flats (Bb, Eb, Ab) -->
           <fifths>-3</fifths>
           <mode>major</mode>
         </key>
@@ -27,40 +27,25 @@
           <line>2</line>
         </clef>
       </attributes>
-      <!-- C5 with delayed turn ornament: D-flat above, B-natural below -->
-      <!-- Expected sequence: C5, Db5, C5, B4, C5 (5 notes) -->
-      <note>
-        <pitch>
-          <step>C</step>
-          <octave>5</octave>
-        </pitch>
-        <duration>4</duration>
-        <type>quarter</type>
-        <notations>
-          <ornaments>
-            <delayed-turn/>
-            <accidental-mark placement="above">flat</accidental-mark>
-            <accidental-mark placement="below">natural</accidental-mark>
-          </ornaments>
-        </notations>
-      </note>
-      <!-- E5 with regular turn ornament (not delayed) -->
-      <!-- No accidentals: uses diatonic intervals, so F5 above, D5 below -->
-      <!-- Expected sequence: F5, E5, D5, E5 (4 notes - starts with upper) -->
+      <!-- Eb5 with delayed turn, NO accidentals -->
+      <!-- In Eb major, diatonic intervals give: F above (2 semitones), D below (1 semitone) -->
+      <!-- NOT Db (2 semitones) which would be a fixed whole step -->
+      <!-- Expected sequence: Eb5, F5, Eb5, D5, Eb5 (5 notes) -->
       <note>
         <pitch>
           <step>E</step>
+          <alter>-1</alter>
           <octave>5</octave>
         </pitch>
-        <duration>4</duration>
-        <type>quarter</type>
+        <duration>8</duration>
+        <type>half</type>
         <notations>
           <ornaments>
-            <turn/>
+            <delayed-turn/>
           </ornaments>
         </notations>
       </note>
-      <!-- Regular note to end measure -->
+      <!-- Final note to complete measure -->
       <note>
         <pitch>
           <step>G</step>
