@@ -512,13 +512,6 @@ class PianoTrainerTest < CapybaraTestBase
 
   private
 
-  def load_score(filename, expected_notes)
-    attach_file('musicxml-upload', File.expand_path("fixtures/#{filename}", __dir__))
-    assert_selector '#score[data-render-complete]'
-    assert_selector 'svg g.vf-stavenote', count: expected_notes
-    sleep 0.05  # Wait for DOM and callbacks to fully initialize
-  end
-
   def replay_cassette(name, wait_for_end: true)
     select name
     click_on 'Rejouer cassette'
