@@ -33,7 +33,7 @@ function getDiatonicIndex(fundamentalNote) {
 // Calculate diatonic interval to adjacent note based on pitch.fundamentalNote
 // This follows the scale rather than using fixed semitone offsets
 function getDiatonicOffset(pitch, direction) {
-  const fundamentalNote = pitch?.fundamentalNote ?? pitch?.FundamentalNote
+  const fundamentalNote = pitch?.fundamentalNote
   if (!pitch || fundamentalNote === undefined) return direction > 0 ? 2 : -2
 
   const currentHalfTone = pitch.halfTone
