@@ -44,12 +44,14 @@
           </ornaments>
         </notations>
       </note>
-      <!-- E5 with regular turn ornament (not delayed) -->
-      <!-- Default: whole steps (+2/-2 semitones), so F#5 above, D5 below -->
-      <!-- Expected sequence: F#5, E5, D5, E5 (4 notes - starts with upper) -->
+      <!-- Eb5 with regular turn ornament (not delayed), NO accidentals -->
+      <!-- Tests the Nocturne bug: diatonic intervals respect key signature -->
+      <!-- In Eb major: F5 above (+2 semitones), D5 below (-1 semitone, NOT Db!) -->
+      <!-- Expected sequence: F5, Eb5, D5, Eb5 (4 notes - starts with upper) -->
       <note>
         <pitch>
           <step>E</step>
+          <alter>-1</alter>
           <octave>5</octave>
         </pitch>
         <duration>4</duration>

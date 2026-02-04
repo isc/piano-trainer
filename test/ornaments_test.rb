@@ -32,24 +32,22 @@ class OrnamentsTest < CapybaraTestBase
   end
 
   def test_turn_ornament_notes_expanded_sequentially
-    # Tests both delayed and regular turns in the same measure:
-    # - Delayed turn on C5 (Db above, B natural below): C5, Db5, C5, B4, C5 (5 notes)
-    # - Regular turn on E5 (default whole steps): F#5, E5, D5, E5 (4 notes)
-    # - Final note: G5
-    # Visual notes: 3 (C5, E5, G5), but validation expects 10 notes total
-    #
-    # In training mode, playing the correct sequences should result in a
-    # clean repetition (filled circle).
+    # Tests two turns in Eb major:
+    # 1. C5 with accidentals (Db above, B natural below): C5, Db5, C5, B4, C5
+    #    → Verifies accidentals override diatonic intervals
+    # 2. Eb5 without accidentals: F5, Eb5, D5, Eb5
+    #    → Verifies diatonic intervals respect key signature (Nocturne bug fix)
+    #    → D5 is 1 semitone below Eb, NOT Db which would be 2 semitones
     load_score('turn-ornament.xml', 3)
 
     click_on 'Mode Entraînement'
     assert_text 'Mode Entraînement Actif'
 
-    # Delayed turn on C5: main, upper, main, lower, main
+    # Delayed turn on C5 with accidentals: main, upper (Db), main, lower (B), main
     simulate_midi_input("ON C5")
     simulate_midi_input("OFF C5")
 
-    simulate_midi_input("ON C#5")
+    simulate_midi_input("ON C#5")  # Db5
     simulate_midi_input("OFF C#5")
 
     simulate_midi_input("ON C5")
@@ -61,25 +59,24 @@ class OrnamentsTest < CapybaraTestBase
     simulate_midi_input("ON C5")
     simulate_midi_input("OFF C5")
 
-    # Regular turn on E5: upper (+2 semitones), main, lower (-2 semitones), main
-    simulate_midi_input("ON F#5")
-    simulate_midi_input("OFF F#5")
+    # Regular turn on Eb5 without accidentals: upper (F), main, lower (D), main
+    simulate_midi_input("ON F5")
+    simulate_midi_input("OFF F5")
 
-    simulate_midi_input("ON E5")
-    simulate_midi_input("OFF E5")
+    simulate_midi_input("ON D#5")  # Eb5
+    simulate_midi_input("OFF D#5")
 
-    simulate_midi_input("ON D5")
+    simulate_midi_input("ON D5")   # Diatonic lower, NOT Db!
     simulate_midi_input("OFF D5")
 
-    simulate_midi_input("ON E5")
-    simulate_midi_input("OFF E5")
+    simulate_midi_input("ON D#5")  # Eb5
+    simulate_midi_input("OFF D#5")
 
     # Final note G5
     simulate_midi_input("ON G5")
     simulate_midi_input("OFF G5")
 
     # Should have 1 filled repeat indicator (clean repetition)
-    # This proves both turn types were expanded and validated correctly
     assert_selector 'svg circle.repeat-indicator.filled', count: 1
   end
 
