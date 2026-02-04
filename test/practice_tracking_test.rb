@@ -38,11 +38,7 @@ class PracticeTrackingTest < CapybaraTestBase
     sleep 0.2 # Wait for callbacks to initialize
 
     # Play the complete score (C4, E4, F4, G4)
-    %w[C4 E4 F4 G4].each do |note|
-      simulate_midi_input("ON #{note}")
-      simulate_midi_input("OFF #{note}")
-      sleep 0.05
-    end
+    play_notes(%w[C4 E4 F4 G4])
 
     # Wait for score complete modal (dialog[open])
     assert_selector 'dialog[open]'

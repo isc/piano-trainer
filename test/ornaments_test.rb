@@ -13,19 +13,16 @@ class OrnamentsTest < CapybaraTestBase
     load_score('grace-note.xml', 3)
 
     # Play grace note E4 first
-    simulate_midi_input("ON E4")
+    play_note('E4')
     assert_selector 'svg g.vf-notehead.played-note', count: 1
-    simulate_midi_input("OFF E4")
 
     # Play grace note F4 second
-    simulate_midi_input("ON F4")
+    play_note('F4')
     assert_selector 'svg g.vf-notehead.played-note', count: 2
-    simulate_midi_input("OFF F4")
 
     # Play main note G4 last
-    simulate_midi_input("ON G4")
+    play_note('G4')
     assert_selector 'svg g.vf-notehead.played-note', count: 3
-    simulate_midi_input("OFF G4")
 
     # Score should be completed
     assert_text 'Partition terminée'
@@ -44,37 +41,20 @@ class OrnamentsTest < CapybaraTestBase
     assert_text 'Mode Entraînement Actif'
 
     # Delayed turn on C5 with accidentals: main, upper (Db), main, lower (B), main
-    simulate_midi_input("ON C5")
-    simulate_midi_input("OFF C5")
-
-    simulate_midi_input("ON C#5")  # Db5
-    simulate_midi_input("OFF C#5")
-
-    simulate_midi_input("ON C5")
-    simulate_midi_input("OFF C5")
-
-    simulate_midi_input("ON B4")
-    simulate_midi_input("OFF B4")
-
-    simulate_midi_input("ON C5")
-    simulate_midi_input("OFF C5")
+    play_note("C5")
+    play_note("C#5")  # Db5
+    play_note("C5")
+    play_note("B4")
+    play_note("C5")
 
     # Regular turn on Eb5 without accidentals: upper (F), main, lower (D), main
-    simulate_midi_input("ON F5")
-    simulate_midi_input("OFF F5")
-
-    simulate_midi_input("ON D#5")  # Eb5
-    simulate_midi_input("OFF D#5")
-
-    simulate_midi_input("ON D5")   # Diatonic lower, NOT Db!
-    simulate_midi_input("OFF D5")
-
-    simulate_midi_input("ON D#5")  # Eb5
-    simulate_midi_input("OFF D#5")
+    play_note("F5")
+    play_note("D#5")  # Eb5
+    play_note("D5")   # Diatonic lower, NOT Db!
+    play_note("D#5")  # Eb5
 
     # Final note G5
-    simulate_midi_input("ON G5")
-    simulate_midi_input("OFF G5")
+    play_note("G5")
 
     # Should have 1 filled repeat indicator (clean repetition)
     assert_selector 'svg circle.repeat-indicator.filled', count: 1
@@ -98,28 +78,17 @@ class OrnamentsTest < CapybaraTestBase
     assert_text 'Mode Entraînement Actif'
 
     # Regular mordent on C5: main, lower (diatonic = B4), main
-    simulate_midi_input("ON C5")
-    simulate_midi_input("OFF C5")
-
-    simulate_midi_input("ON B4")
-    simulate_midi_input("OFF B4")
-
-    simulate_midi_input("ON C5")
-    simulate_midi_input("OFF C5")
+    play_note("C5")
+    play_note("B4")
+    play_note("C5")
 
     # Inverted mordent on E5: main, upper (diatonic = F5), main
-    simulate_midi_input("ON E5")
-    simulate_midi_input("OFF E5")
-
-    simulate_midi_input("ON F5")
-    simulate_midi_input("OFF F5")
-
-    simulate_midi_input("ON E5")
-    simulate_midi_input("OFF E5")
+    play_note("E5")
+    play_note("F5")
+    play_note("E5")
 
     # Final note G5
-    simulate_midi_input("ON G5")
-    simulate_midi_input("OFF G5")
+    play_note("G5")
 
     # Should have 1 filled repeat indicator (clean repetition)
     # This proves both mordent types were expanded and validated correctly

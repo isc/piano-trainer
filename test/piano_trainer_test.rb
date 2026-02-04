@@ -92,12 +92,10 @@ class PianoTrainerTest < CapybaraTestBase
     assert_selector 'svg rect.measure-click-area', minimum: 4
 
     # Play first two measures: C4 (measure 1) and D4 (measure 2)
-    simulate_midi_input("ON C4")
-    simulate_midi_input("OFF C4")
+    play_note("C4")
     assert_selector 'svg g.vf-notehead.played-note', count: 1
 
-    simulate_midi_input("ON D4")
-    simulate_midi_input("OFF D4")
+    play_note("D4")
     assert_selector 'svg g.vf-notehead.played-note', count: 2
 
     # Click on measure 1 to reposition - should reset measure 1 and all following
@@ -105,8 +103,7 @@ class PianoTrainerTest < CapybaraTestBase
     assert_no_selector 'svg g.vf-notehead.played-note'
 
     # Play C4 again - should validate measure 1
-    simulate_midi_input("ON C4")
-    simulate_midi_input("OFF C4")
+    play_note("C4")
     assert_selector 'svg g.vf-notehead.played-note', count: 1
   end
 
@@ -120,10 +117,8 @@ class PianoTrainerTest < CapybaraTestBase
       assert_text 'Enregistrement en cours'
 
       # Simulate MIDI events via custom events
-      simulate_midi_input("ON C4")
-      simulate_midi_input("OFF C4")
-      simulate_midi_input("ON E4")
-      simulate_midi_input("OFF E4")
+      play_note("C4")
+      play_note("E4")
 
       expected_midi_events = [
         [144, 60, 80],  # Note ON C4
@@ -191,8 +186,7 @@ class PianoTrainerTest < CapybaraTestBase
     assert_no_selector 'svg g.vf-notehead.played-note'
 
     # Now play E5 alone (Note ON then OFF)
-    simulate_midi_input("ON E5")
-    simulate_midi_input("OFF E5")
+    play_note("E5")
 
     # Still no notes should be validated because they weren't held together
     assert_no_selector 'svg g.vf-notehead.played-note'
@@ -243,7 +237,7 @@ class PianoTrainerTest < CapybaraTestBase
     uncheck 'Main gauche'
 
     # Play only the right hand note (E5)
-    simulate_midi_input("ON E5")
+    play_note('E5')
 
     # The note should be validated (green) because left hand is disabled
     assert_selector 'svg g.vf-notehead.played-note', count: 1
@@ -256,7 +250,7 @@ class PianoTrainerTest < CapybaraTestBase
     uncheck 'Main droite'
 
     # Play only the left hand note (C4)
-    simulate_midi_input("ON C4")
+    play_note('C4')
 
     # The note should be validated because right hand is disabled
     assert_selector 'svg g.vf-notehead.played-note', count: 1
@@ -275,35 +269,29 @@ class PianoTrainerTest < CapybaraTestBase
     load_score('repeat-endings.xml', 4)
 
     # First pass: C4 (measure 1)
-    simulate_midi_input("ON C4")
+    play_note('C4')
     assert_selector 'svg g.vf-notehead.played-note', count: 1
-    simulate_midi_input("OFF C4")
 
     # First pass: D4 (measure 2)
-    simulate_midi_input("ON D4")
+    play_note('D4')
     assert_selector 'svg g.vf-notehead.played-note', count: 2
-    simulate_midi_input("OFF D4")
 
     # First pass: E4 (measure 3, volta 1) - triggers repeat
     # After E4, only C4 and D4 are reset (will be replayed), E4 stays green
-    simulate_midi_input("ON E4")
+    play_note('E4')
     assert_selector 'svg g.vf-notehead.played-note', count: 1  # Only E4 remains
-    simulate_midi_input("OFF E4")
 
     # Second pass: C4 again (measure 1, repeated)
-    simulate_midi_input("ON C4")
+    play_note('C4')
     assert_selector 'svg g.vf-notehead.played-note', count: 2  # E4 + C4
-    simulate_midi_input("OFF C4")
 
     # Second pass: D4 again (measure 2, repeated)
-    simulate_midi_input("ON D4")
+    play_note('D4')
     assert_selector 'svg g.vf-notehead.played-note', count: 3  # E4 + C4 + D4
-    simulate_midi_input("OFF D4")
 
     # Second pass: F4 (measure 4, volta 2) - skips volta 1
-    simulate_midi_input("ON F4")
+    play_note('F4')
     assert_selector 'svg g.vf-notehead.played-note', count: 4  # All notes green
-    simulate_midi_input("OFF F4")
 
     # Score should be completed after playing the correct sequence
     assert_text 'Partition terminée'
@@ -328,8 +316,7 @@ class PianoTrainerTest < CapybaraTestBase
 
       # Simulate the last note of measure 1 (D4)
       # This should trigger the scroll to next system
-      simulate_midi_input('ON D4')
-      simulate_midi_input('OFF D4')
+      play_note('D4')
 
       # Wait for scroll to change from initial value, then stabilize
       scroll_after_last_note = wait_for_stable_scroll(expect_change_from: scroll_before_last_note)
@@ -358,21 +345,18 @@ class PianoTrainerTest < CapybaraTestBase
       assert_text 'Mode Entraînement Actif'
 
       # Play first repetition
-      simulate_midi_input('ON C4')
-      simulate_midi_input('OFF C4')
+      play_note('C4')
       sleep 0.25
       initial_scroll = wait_for_stable_scroll
 
       # Play second repetition - scroll should not change
-      simulate_midi_input('ON C4')
-      simulate_midi_input('OFF C4')
+      play_note('C4')
       sleep 0.25  # Wait for measure reset before checking scroll
       scroll_after_rep2 = wait_for_stable_scroll
       assert_equal initial_scroll, scroll_after_rep2, "Scroll should not change after second repetition"
 
       # Play third repetition - this triggers advancement
-      simulate_midi_input('ON C4')
-      simulate_midi_input('OFF C4')
+      play_note('C4')
 
       # Wait for advancement by checking repeat indicators reset to 0 filled
       assert_selector 'svg circle.repeat-indicator.filled', count: 0
@@ -409,9 +393,7 @@ class PianoTrainerTest < CapybaraTestBase
 
       # Play the note 3 times
       3.times do
-        simulate_midi_input('ON D4')
-        sleep 0.05
-        simulate_midi_input('OFF D4')
+        play_note('D4')
         sleep 0.2
       end
 
@@ -437,30 +419,23 @@ class PianoTrainerTest < CapybaraTestBase
     # Sequence: C4 -> D4 -> E4 -> C4 -> D4 -> F4
 
     # Measure 1 (first pass) - play wrong note then correct
-    simulate_midi_input("ON D4")  # Wrong note (expected C4)
-    simulate_midi_input("OFF D4")
-    simulate_midi_input("ON C4")  # Correct
-    simulate_midi_input("OFF C4")
+    play_note("D4")  # Wrong note (expected C4)
+    play_note("C4")  # Correct
 
     # Measure 2 (first pass) - clean
-    simulate_midi_input("ON D4")
-    simulate_midi_input("OFF D4")
+    play_note("D4")
 
     # Measure 3 (volta 1) - triggers repeat
-    simulate_midi_input("ON E4")
-    simulate_midi_input("OFF E4")
+    play_note("E4")
 
     # Measure 1 (second pass) - clean
-    simulate_midi_input("ON C4")
-    simulate_midi_input("OFF C4")
+    play_note("C4")
 
     # Measure 2 (second pass) - clean
-    simulate_midi_input("ON D4")
-    simulate_midi_input("OFF D4")
+    play_note("D4")
 
     # Measure 4 (volta 2) - completes score
-    simulate_midi_input("ON F4")
-    simulate_midi_input("OFF F4")
+    play_note("F4")
 
     # Wait for async IndexedDB operations to complete
     sleep 0.5
@@ -483,8 +458,7 @@ class PianoTrainerTest < CapybaraTestBase
 
     # Play measure 1 three times cleanly
     3.times do
-      simulate_midi_input("ON C4")
-      simulate_midi_input("OFF C4")
+      play_note("C4")
       sleep 0.25
     end
 
