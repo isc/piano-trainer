@@ -166,19 +166,23 @@
       </article>
     </dialog>
 
-    <dialog id="fingeringModal" :open="showFingeringModal">
+    <dialog id="fingeringModal" :open="showFingeringModal" @keydown.escape.prevent="closeFingeringModal()">
       <article>
         <header>
           <button aria-label="Close" rel="prev" @click="closeFingeringModal()"></button>
           <p><strong>Doigté</strong></p>
         </header>
 
+        <p x-text="fingeringSequence || '…'" data-testid="fingering-display"></p>
         <div class="grid">
           <template x-for="finger in [1, 2, 3, 4, 5]" :key="finger">
-            <button @click="selectFingering(finger)" x-text="finger"></button>
+            <button @click="appendFinger(finger)" x-text="finger"></button>
           </template>
           <button @click="removeFingering()" class="secondary outline">×</button>
         </div>
+        <footer>
+          <button @click="validateFingering()">✓ Valider</button>
+        </footer>
       </article>
     </dialog>
   </body>

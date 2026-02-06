@@ -27,6 +27,8 @@ class FingeringAnnotationTest < CapybaraTestBase
     wait_for_render
     find('svg g.vf-notehead', match: :first).click
     click_button '3'
+    assert_selector 'dialog#fingeringModal[open]'
+    click_button '✓ Valider'
     wait_for_render
     assert_fingering '3'
 
@@ -36,6 +38,18 @@ class FingeringAnnotationTest < CapybaraTestBase
     assert_fingering '3'
   end
 
+  def test_multi_fingering
+    visit "/score.html?url=#{SCORE_URL}"
+    wait_for_render
+    find('svg g.vf-notehead', match: :first).click
+    click_button '3'
+    click_button '1'
+    assert_selector '[data-testid="fingering-display"]', text: '31'
+    click_button '✓ Valider'
+    wait_for_render
+    assert_fingering '31'
+  end
+
   def test_fingering_on_pickup_measure_persists_correctly
     visit "/score.html?url=#{PICKUP_SCORE_URL}"
     wait_for_render
@@ -43,6 +57,7 @@ class FingeringAnnotationTest < CapybaraTestBase
     # Click on the first note (in the pickup measure)
     find('svg g.vf-notehead', match: :first).click
     click_button '2'
+    click_button '✓ Valider'
     wait_for_render
     assert_fingering '2'
 
