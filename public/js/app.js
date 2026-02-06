@@ -50,6 +50,7 @@ export function midiApp() {
     showFingeringModal: false,
     selectedNoteKey: null,
     fingeringSequence: '',
+    fingeringKeydownHandler: null,
 
     async init() {
       await this.loadCassettesList()
@@ -333,8 +334,6 @@ export function midiApp() {
       })
     },
 
-    fingeringKeydownHandler: null,
-
     openFingeringModal(noteData) {
       this.selectedNoteKey = noteData.fingeringKey
       this.fingeringSequence = ''
@@ -358,7 +357,7 @@ export function midiApp() {
     },
 
     appendFinger(digit) {
-      this.fingeringSequence += digit.toString()
+      this.fingeringSequence += digit
     },
 
     closeFingeringModal() {
