@@ -174,16 +174,15 @@
         </header>
 
         <p x-text="fingeringSequence || '…'" data-testid="fingering-display"></p>
-
         <div class="grid">
           <template x-for="finger in [1, 2, 3, 4, 5]" :key="finger">
             <button @click="appendFinger(finger)" x-text="finger"></button>
           </template>
-        </div>
-        <div class="grid">
-          <button @click="validateFingering()">✓ Valider</button>
           <button @click="removeFingering()" class="secondary outline">×</button>
         </div>
+        <footer>
+          <button @click="validateFingering()">✓ Valider</button>
+        </footer>
       </article>
     </dialog>
   </body>
