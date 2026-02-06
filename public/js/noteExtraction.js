@@ -296,9 +296,8 @@ function extractNotesFromSourceMeasures(sourceMeasures) {
             const voiceIndex = voiceId - 1
             for (let noteIndex = 0; noteIndex < voiceEntry.notes.length; noteIndex++) {
               const note = voiceEntry.notes[noteIndex]
-              // Skip notes without pitch or rests (rests can have display-step/display-octave
-              // which OSMD interprets as a pitch, but they shouldn't be played)
-              if (!note.pitch || note.isRest()) continue
+              // Skip notes without pitch, rests, or cue notes (editorial guide notes not meant to be played)
+              if (!note.pitch || note.isRest() || note.IsCueNote) continue
               const noteInfo = pitchToMidiFromSourceNote(note.pitch)
               // Check if this note is a tie continuation (not the start of the tie)
               const isTieContinuation = note.NoteTie && note.NoteTie.StartNote !== note
