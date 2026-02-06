@@ -49,6 +49,7 @@ export function midiApp() {
     fingeringEnabled: false,
     showFingeringModal: false,
     selectedNoteKey: null,
+    fingeringSequence: '',
 
     async init() {
       await this.loadCassettesList()
@@ -336,15 +337,19 @@ export function midiApp() {
 
     openFingeringModal(noteData) {
       this.selectedNoteKey = noteData.fingeringKey
+      this.fingeringSequence = ''
       this.showFingeringModal = true
 
       this.fingeringKeydownHandler = (e) => {
         if (e.key >= '1' && e.key <= '5') {
           e.preventDefault()
-          this.selectFingering(parseInt(e.key, 10))
-        } else if (e.key === 'Backspace' || e.key === 'Delete') {
+          this.appendFinger(parseInt(e.key, 10))
+        } else if (e.key === 'Backspace') {
           e.preventDefault()
-          this.removeFingering()
+          this.fingeringSequence = this.fingeringSequence.slice(0, -1)
+        } else if (e.key === 'Enter') {
+          e.preventDefault()
+          this.validateFingering()
         } else if (e.key === 'Escape') {
           this.closeFingeringModal()
         }
@@ -352,9 +357,18 @@ export function midiApp() {
       document.addEventListener('keydown', this.fingeringKeydownHandler)
     },
 
+    appendFinger(digit) {
+      this.fingeringSequence += digit.toString()
+    },
+
     closeFingeringModal() {
       this.showFingeringModal = false
       document.removeEventListener('keydown', this.fingeringKeydownHandler)
+    },
+
+    async validateFingering() {
+      if (!this.fingeringSequence) return
+      await this.selectFingering(parseInt(this.fingeringSequence, 10))
     },
 
     async selectFingering(finger) {
