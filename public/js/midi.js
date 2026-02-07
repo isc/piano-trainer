@@ -56,8 +56,7 @@ async function connectMIDI(options = {}) {
 
     if (inputs.length === 0) {
       console.log('Aucun périphérique MIDI trouvé')
-      if (!silent) alert('Aucun périphérique MIDI trouvé. Connectez un clavier MIDI et réessayez.')
-      return
+      return { status: 'no_devices' }
     }
 
     // If only one input or autoSelectFirst, use the first one
