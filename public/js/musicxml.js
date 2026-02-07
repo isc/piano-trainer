@@ -840,6 +840,50 @@ function findNoteDataByKey(fingeringKey) {
   return noteDataByKey.get(fingeringKey) ?? null
 }
 
+// Check whether a staff entry contains a given source note
+function staffEntryContainsNote(staffEntry, sourceNote) {
+  for (const gve of staffEntry.graphicalVoiceEntries || []) {
+    for (const gn of gve.notes || []) {
+      if (gn.sourceNote === sourceNote) return true
+    }
+  }
+  return false
+}
+
+// Find the highest-pitched source note across all voice entries in a staff entry
+function findTopNoteInStaffEntry(staffEntry) {
+  let topNote = null
+  for (const gve of staffEntry.graphicalVoiceEntries || []) {
+    for (const gn of gve.notes || []) {
+      if (!topNote || gn.sourceNote?.Pitch?.getHalfTone() > topNote.Pitch?.getHalfTone()) {
+        topNote = gn.sourceNote
+      }
+    }
+  }
+  return topNote
+}
+
+// Collect fingering TechnicalInstructions from a staff entry (non-grace voices only)
+function collectFingeringsFromStaffEntry(staffEntry) {
+  const fingerings = []
+  for (const gve of staffEntry.graphicalVoiceEntries || []) {
+    if (gve.parentVoiceEntry?.IsGrace) continue
+    for (const ti of gve.parentVoiceEntry?.TechnicalInstructions || []) {
+      if (ti.type === 0) fingerings.push(ti)
+    }
+  }
+  return fingerings
+}
+
+// Determine whether fingerings are placed above or below the staff
+// PlacementEnum: Above=0, Below=1
+function isFingeringsPlacedAbove(graphicalMeasure) {
+  const position = osmdInstance.rules?.FingeringPosition
+  if (position === 0) return true
+  if (position === 1) return false
+  return graphicalMeasure.isUpperStaffOfInstrument?.() ?? true
+}
+
 // Find the FingeringEntry for a note by its fingeringKey
 // fingeringKey format: measureNumber:staffIndex:voiceIndex:noteIndex
 function findFingeringEntry(fingeringKey) {
@@ -858,57 +902,18 @@ function findFingeringEntry(fingeringKey) {
   if (!targetNoteData) return null
 
   for (const staffEntry of graphicalMeasure.staffEntries || []) {
-    // Check if our target note is in this staff entry
-    let found = false
-    for (const gve of staffEntry.graphicalVoiceEntries || []) {
-      for (const gn of gve.notes || []) {
-        if (gn.sourceNote === targetNoteData.note) {
-          found = true
-          break
-        }
-      }
-      if (found) break
-    }
-    if (!found) continue
+    if (!staffEntryContainsNote(staffEntry, targetNoteData.note)) continue
 
-    // Collect fingering instructions in same traversal order as OSMD's calculateFingerings
-    const fingerings = []
-    for (const gve of staffEntry.graphicalVoiceEntries || []) {
-      if (gve.parentVoiceEntry?.IsGrace) continue
-      for (const ti of gve.parentVoiceEntry?.TechnicalInstructions || []) {
-        if (ti.type === 0) { // TechnicalInstructionType.Fingering
-          fingerings.push(ti)
-        }
-      }
-    }
-
-    // Check if target note has a fingering instruction
+    const fingerings = collectFingeringsFromStaffEntry(staffEntry)
     const targetFingering = fingerings.find((f) => f.sourceNote === targetNoteData.note)
     if (!targetFingering) return null
 
     // Replicate OSMD's ordering to match FingeringEntries array order
-    // (PlacementEnum: Above=0, Below=1, AboveOrBelow=5, NotYetDefined=4)
-    const fingeringPosition = osmdInstance.rules?.FingeringPosition
-    const isAbove =
-      fingeringPosition === 0 ? true :
-      fingeringPosition === 1 ? false :
-      graphicalMeasure.isUpperStaffOfInstrument?.() ?? true
-
-    if (!isAbove) {
+    if (!isFingeringsPlacedAbove(graphicalMeasure)) {
       fingerings.reverse()
-    } else {
+    } else if (fingerings[0]?.sourceNote === findTopNoteInStaffEntry(staffEntry)) {
       // When placed above, OSMD reverses if first fingering belongs to the top note
-      let topNote = null
-      for (const gve of staffEntry.graphicalVoiceEntries || []) {
-        for (const gn of gve.notes || []) {
-          if (!topNote || (gn.sourceNote?.Pitch?.getHalfTone() > topNote.Pitch?.getHalfTone())) {
-            topNote = gn.sourceNote
-          }
-        }
-      }
-      if (fingerings[0]?.sourceNote === topNote) {
-        fingerings.reverse()
-      }
+      fingerings.reverse()
     }
 
     const finalIndex = fingerings.indexOf(targetFingering)
