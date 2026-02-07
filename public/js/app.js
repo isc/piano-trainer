@@ -375,19 +375,22 @@ export function midiApp() {
       this.closeFingeringModal()
 
       // Try to update SVG directly if fingering already exists (instant update)
-      // Falls back to full re-render if no existing fingering
       if (!musicxml.updateFingeringSVG(this.selectedNoteKey, finger)) {
-        await this.reloadWithFingerings()
+        // No existing SVG: inject into OSMD's data model and do a light re-render
+        // (skips XML fetch/parse/load — just layout recalc + SVG redraw)
+        musicxml.addFingeringToDataModel(this.selectedNoteKey, finger)
+        this.rerenderScore()
       }
     },
 
     async removeFingering() {
       await storage.removeFingering(this.scoreUrl, this.selectedNoteKey)
       this.closeFingeringModal()
-      await this.reloadWithFingerings()
+      musicxml.removeFingeringFromDataModel(this.selectedNoteKey)
+      this.rerenderScore()
     },
 
-    async reloadWithFingerings() {
+    rerenderScore() {
       const scrollY = window.scrollY
 
       const noteStates = new Map()
@@ -399,7 +402,8 @@ export function midiApp() {
         }
       }
 
-      await this.renderScoreWithFingerings()
+      musicxml.renderScore()
+      this.setupFingeringHandlers()
       musicxml.restoreNoteStates(noteStates)
       window.scrollTo(0, scrollY)
     },
