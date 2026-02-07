@@ -19730,7 +19730,7 @@
         <notations>
           <slur placement="above" type="continue" number="1" />
           <articulations>
-            <accent />
+            <accent placement="above" />
           </articulations>
         </notations>
       </note>
@@ -20103,7 +20103,7 @@
         <notations>
           <slur placement="above" type="continue" number="1" />
           <articulations>
-            <accent />
+            <accent placement="above" />
           </articulations>
         </notations>
       </note>
