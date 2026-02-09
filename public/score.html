@@ -185,5 +185,61 @@
         </footer>
       </article>
     </dialog>
+
+    <dialog id="midiHelpModal" :open="showMidiHelpModal">
+      <article>
+        <header>
+          <button aria-label="Close" rel="prev" @click="showMidiHelpModal = false"></button>
+          <p><strong>Connexion clavier MIDI</strong></p>
+        </header>
+
+        <p>Aucun périphérique MIDI détecté. Voici comment connecter votre clavier :</p>
+
+        <template x-if="detectedOS() === 'mac'">
+          <div>
+            <h4>macOS</h4>
+            <p>Selon votre piano, deux cas de figure :</p>
+            <details open>
+              <summary><strong>Connexion directe (ex : Roland FP-30)</strong></summary>
+              <p>Allumez simplement votre piano. La connexion Bluetooth s'effectue automatiquement. Revenez ensuite sur cette page et cliquez sur « Connecter clavier MIDI ».</p>
+            </details>
+            <details>
+              <summary><strong>Via Audio MIDI Setup (ex : Kawai)</strong></summary>
+              <ol>
+                <li>Ouvrez l'application <strong>Audio MIDI Setup</strong> (Spotlight : « Audio MIDI »)</li>
+                <li>Allez dans <strong>Fenêtre → Afficher le studio MIDI</strong></li>
+                <li>Cliquez sur l'icône <strong>Bluetooth</strong></li>
+                <li>Repérez votre piano dans la liste et cliquez sur <strong>Connecter</strong></li>
+              </ol>
+              <p>Revenez ensuite sur cette page et cliquez sur « Connecter clavier MIDI ».</p>
+            </details>
+          </div>
+        </template>
+
+        <template x-if="detectedOS() === 'windows'">
+          <div>
+            <h4>Windows</h4>
+            <p>La connexion Bluetooth MIDI sur Windows nécessite des logiciels tiers :</p>
+            <ol>
+              <li>Installez <strong>BLE MIDI Bridge</strong> (pour recevoir le signal Bluetooth MIDI)</li>
+              <li>Installez <strong>loopMIDI</strong> (pour créer un port MIDI virtuel)</li>
+              <li>Configurez BLE MIDI Bridge pour rediriger vers le port loopMIDI</li>
+            </ol>
+            <p>Une fois le pont configuré, revenez sur cette page et cliquez sur « Connecter clavier MIDI ».</p>
+          </div>
+        </template>
+
+        <template x-if="detectedOS() === 'other'">
+          <div>
+            <h4>Linux</h4>
+            <p>Connectez votre clavier MIDI via USB ou configurez la connexion Bluetooth MIDI via BlueZ. Revenez ensuite sur cette page et cliquez sur « Connecter clavier MIDI ».</p>
+          </div>
+        </template>
+
+        <footer>
+          <button @click="showMidiHelpModal = false; connectMIDI()">Réessayer la connexion</button>
+        </footer>
+      </article>
+    </dialog>
   </body>
 </html>

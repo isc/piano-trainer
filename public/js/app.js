@@ -44,6 +44,7 @@ export function midiApp() {
     measuresToReinforce: [],
     reinforcementMode: false,
     showReinforcementCompleteModal: false,
+    showMidiHelpModal: false,
 
     // Fingering annotation
     fingeringEnabled: false,
@@ -151,8 +152,18 @@ export function midiApp() {
     },
 
     async connectMIDI() {
-      await midi.connectMIDI()
+      const result = await midi.connectMIDI()
       this.syncMidiState()
+      if (result?.status === 'no_devices') {
+        this.showMidiHelpModal = true
+      }
+    },
+
+    detectedOS() {
+      const ua = navigator.userAgent
+      if (/Mac/.test(ua)) return 'mac'
+      if (/Win/.test(ua)) return 'windows'
+      return 'other'
     },
 
     startRecording() {
