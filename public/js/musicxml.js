@@ -103,6 +103,8 @@ export function initMusicXML() {
     removeFingeringClickHandlers,
     restoreNoteStates,
     updateFingeringSVG,
+    addFingeringToDataModel,
+    removeFingeringFromDataModel,
     setReinforcementMode: (measures) => {
       if (!measures || measures.length === 0) return
 
@@ -838,6 +840,50 @@ function findNoteDataByKey(fingeringKey) {
   return noteDataByKey.get(fingeringKey) ?? null
 }
 
+// Check whether a staff entry contains a given source note
+function staffEntryContainsNote(staffEntry, sourceNote) {
+  for (const gve of staffEntry.graphicalVoiceEntries || []) {
+    for (const gn of gve.notes || []) {
+      if (gn.sourceNote === sourceNote) return true
+    }
+  }
+  return false
+}
+
+// Find the highest-pitched source note across all voice entries in a staff entry
+function findTopNoteInStaffEntry(staffEntry) {
+  let topNote = null
+  for (const gve of staffEntry.graphicalVoiceEntries || []) {
+    for (const gn of gve.notes || []) {
+      if (!topNote || gn.sourceNote?.Pitch?.getHalfTone() > topNote.Pitch?.getHalfTone()) {
+        topNote = gn.sourceNote
+      }
+    }
+  }
+  return topNote
+}
+
+// Collect fingering TechnicalInstructions from a staff entry (non-grace voices only)
+function collectFingeringsFromStaffEntry(staffEntry) {
+  const fingerings = []
+  for (const gve of staffEntry.graphicalVoiceEntries || []) {
+    if (gve.parentVoiceEntry?.IsGrace) continue
+    for (const ti of gve.parentVoiceEntry?.TechnicalInstructions || []) {
+      if (ti.type === 0) fingerings.push(ti)
+    }
+  }
+  return fingerings
+}
+
+// Determine whether fingerings are placed above or below the staff
+// PlacementEnum: Above=0, Below=1
+function isFingeringsPlacedAbove(graphicalMeasure) {
+  const position = osmdInstance.rules?.FingeringPosition
+  if (position === 0) return true
+  if (position === 1) return false
+  return graphicalMeasure.isUpperStaffOfInstrument?.() ?? true
+}
+
 // Find the FingeringEntry for a note by its fingeringKey
 // fingeringKey format: measureNumber:staffIndex:voiceIndex:noteIndex
 function findFingeringEntry(fingeringKey) {
@@ -856,26 +902,22 @@ function findFingeringEntry(fingeringKey) {
   if (!targetNoteData) return null
 
   for (const staffEntry of graphicalMeasure.staffEntries || []) {
-    // Collect all graphical notes in this staff entry
-    const graphicalNotes = []
-    for (const gve of staffEntry.graphicalVoiceEntries || []) {
-      for (const gn of gve.notes || []) {
-        if (gn.sourceNote?.Pitch) {
-          graphicalNotes.push(gn)
-        }
-      }
+    if (!staffEntryContainsNote(staffEntry, targetNoteData.note)) continue
+
+    const fingerings = collectFingeringsFromStaffEntry(staffEntry)
+    const targetFingering = fingerings.find((f) => f.sourceNote === targetNoteData.note)
+    if (!targetFingering) return null
+
+    // Replicate OSMD's ordering to match FingeringEntries array order
+    if (!isFingeringsPlacedAbove(graphicalMeasure)) {
+      fingerings.reverse()
+    } else if (fingerings[0]?.sourceNote === findTopNoteInStaffEntry(staffEntry)) {
+      // When placed above, OSMD reverses if first fingering belongs to the top note
+      fingerings.reverse()
     }
 
-    // Find our target note among them
-    const targetGn = graphicalNotes.find((gn) => gn.sourceNote === targetNoteData.note)
-    if (!targetGn) continue
-
-    // For chords with multiple fingerings, OSMD orders FingeringEntries by pitch (lowest to highest)
-    // Sort notes by pitch to find the correct index
-    graphicalNotes.sort((a, b) => a.sourceNote.Pitch.getHalfTone() - b.sourceNote.Pitch.getHalfTone())
-    const noteIndex = graphicalNotes.indexOf(targetGn)
-
-    return staffEntry.FingeringEntries?.[noteIndex] || null
+    const finalIndex = fingerings.indexOf(targetFingering)
+    return staffEntry.FingeringEntries?.[finalIndex] || null
   }
 
   return null
@@ -912,6 +954,38 @@ function updateFingeringSVG(fingeringKey, newFinger) {
     fingeringEntry.label.text = fingerText
   }
 
+  // Also update the TechnicalInstruction value so light re-renders stay consistent
+  const tis = targetNoteData.voiceEntry?.TechnicalInstructions || []
+  const ti = tis.find((t) => t.type === 0 && t.sourceNote === targetNoteData.note)
+  if (ti) ti.value = fingerText
+
+  return true
+}
+
+// Add a fingering to OSMD's internal data model (without re-rendering)
+// This allows a subsequent renderScore() to pick it up via calculateFingerings
+function addFingeringToDataModel(fingeringKey, finger) {
+  const noteData = findNoteDataByKey(fingeringKey)
+  if (!noteData?.voiceEntry?.TechnicalInstructions) return false
+
+  noteData.voiceEntry.TechnicalInstructions.push({
+    type: 0, // TechnicalInstructionType.Fingering
+    value: finger.toString(),
+    sourceNote: noteData.note,
+  })
+  return true
+}
+
+// Remove a fingering from OSMD's internal data model
+function removeFingeringFromDataModel(fingeringKey) {
+  const noteData = findNoteDataByKey(fingeringKey)
+  if (!noteData?.voiceEntry?.TechnicalInstructions) return false
+
+  const tis = noteData.voiceEntry.TechnicalInstructions
+  const index = tis.findIndex((ti) => ti.type === 0 && ti.sourceNote === noteData.note)
+  if (index < 0) return false
+
+  tis.splice(index, 1)
   return true
 }
 
