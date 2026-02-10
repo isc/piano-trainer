@@ -119,6 +119,10 @@ export function midiApp() {
           musicxml.setTrainingMode(false)
           await practiceTracker.endSession()
           this.showReinforcementCompleteModal = true
+
+          // Start new free session so subsequent play is tracked
+          const metadata = musicxml.getScoreMetadata()
+          practiceTracker.startSession(this.scoreUrl, metadata.title, metadata.composer, 'free', metadata.totalMeasures)
         },
       })
 
