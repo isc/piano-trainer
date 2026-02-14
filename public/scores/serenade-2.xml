@@ -18231,7 +18231,7 @@
             <fingering placement="above">5</fingering>
           </technical>
           <articulations>
-            <strong-accent />
+            <strong-accent placement="above" />
           </articulations>
         </notations>
       </note>
@@ -19115,7 +19115,7 @@
         <notations>
           <slur placement="above" type="start" number="1" />
           <articulations>
-            <accent />
+            <accent placement="above" />
           </articulations>
         </notations>
       </note>
@@ -23201,7 +23201,7 @@
         <notations>
           <slur placement="above" type="stop" number="1" />
           <articulations>
-            <accent />
+            <accent placement="above" />
           </articulations>
         </notations>
       </note>
