@@ -24205,9 +24205,6 @@
         <dot />
         <stem>up</stem>
         <staff>1</staff>
-        <notations>
-          <fermata>normal</fermata>
-        </notations>
       </note>
       <note>
         <chord />
@@ -24223,9 +24220,6 @@
         <accidental>sharp</accidental>
         <stem>up</stem>
         <staff>1</staff>
-        <notations>
-          <fermata>normal</fermata>
-        </notations>
       </note>
       <note>
         <chord />
@@ -24258,7 +24252,7 @@
         <stem>up</stem>
         <staff>2</staff>
         <notations>
-          <fermata>normal</fermata>
+          <fermata type="inverted">normal</fermata>
         </notations>
       </note>
       <note>
@@ -24273,9 +24267,6 @@
         <dot />
         <stem>up</stem>
         <staff>2</staff>
-        <notations>
-          <fermata>normal</fermata>
-        </notations>
       </note>
       <note>
         <chord />
@@ -24289,9 +24280,6 @@
         <dot />
         <stem>up</stem>
         <staff>2</staff>
-        <notations>
-          <fermata>normal</fermata>
-        </notations>
       </note>
       <barline location="right">
         <bar-style>light-heavy</bar-style>
