@@ -24252,7 +24252,7 @@
         <stem>up</stem>
         <staff>2</staff>
         <notations>
-          <fermata>inverted</fermata>
+          <fermata type="inverted">normal</fermata>
         </notations>
       </note>
       <note>
