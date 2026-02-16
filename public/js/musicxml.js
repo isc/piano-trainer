@@ -181,7 +181,6 @@ function renderScore() {
   osmdInstance.render()
   extractNotesFromScore()
   setupMeasureClickHandlers()
-  styleMeasureNumbers()
 }
 
 async function renderMusicXML(xmlContent) {
@@ -211,18 +210,6 @@ function extractNotesFromScore() {
   for (const { notes } of allNotes) {
     for (const noteData of notes) {
       noteDataByKey.set(noteData.fingeringKey, noteData)
-    }
-  }
-}
-
-function styleMeasureNumbers() {
-  if (!osmdInstance?.graphic?.musicPages) return
-
-  for (const page of osmdInstance.graphic.musicPages) {
-    for (const system of page.MusicSystems || []) {
-      for (const label of system.MeasureNumberLabels || []) {
-        label.SVGNode?.classList.add('measure-number')
-      }
     }
   }
 }
