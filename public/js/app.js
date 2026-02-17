@@ -1,5 +1,6 @@
 import { initMidi } from './midi.js'
 import { initMusicXML } from './musicxml.js'
+import { initFingeringEditor } from './fingeringEditor.js'
 import { initCassettes } from './cassettes.js'
 import { initPracticeTracker } from './practiceTracker.js'
 import { formatDuration, formatDate } from './utils.js'
@@ -10,6 +11,13 @@ import { injectFingerings } from './fingeringInjector.js'
 export function midiApp() {
   const midi = initMidi()
   const musicxml = initMusicXML()
+  const fingeringEditor = initFingeringEditor({
+    getOsmdInstance: musicxml.getOsmdInstance,
+    getAllNotes: musicxml.getAllNotes,
+    getNoteDataByKey: musicxml.getNoteDataByKey,
+    svgNote: musicxml.svgNote,
+    svgNotehead: musicxml.svgNotehead,
+  })
   const cassettes = initCassettes()
   const storage = initStorage()
   const practiceTracker = initPracticeTracker(storage)
@@ -344,7 +352,7 @@ export function midiApp() {
     // Fingering annotation methods
     setupFingeringHandlers() {
       if (!this.fingeringEnabled) return
-      musicxml.setupFingeringClickHandlers({
+      fingeringEditor.setupFingeringClickHandlers({
         onNoteClick: (noteData) => this.openFingeringModal(noteData),
       })
     },
@@ -390,10 +398,10 @@ export function midiApp() {
       this.closeFingeringModal()
 
       // Try to update SVG directly if fingering already exists (instant update)
-      if (!musicxml.updateFingeringSVG(this.selectedNoteKey, finger)) {
+      if (!fingeringEditor.updateFingeringSVG(this.selectedNoteKey, finger)) {
         // No existing SVG: inject into OSMD's data model and do a light re-render
         // (skips XML fetch/parse/load — just layout recalc + SVG redraw)
-        musicxml.addFingeringToDataModel(this.selectedNoteKey, finger)
+        fingeringEditor.addFingeringToDataModel(this.selectedNoteKey, finger)
         this.rerenderScore()
       }
     },
@@ -401,7 +409,7 @@ export function midiApp() {
     async removeFingering() {
       await storage.removeFingering(this.scoreUrl, this.selectedNoteKey)
       this.closeFingeringModal()
-      musicxml.removeFingeringFromDataModel(this.selectedNoteKey)
+      fingeringEditor.removeFingeringFromDataModel(this.selectedNoteKey)
       this.rerenderScore()
     },
 
@@ -419,7 +427,7 @@ export function midiApp() {
 
       musicxml.renderScore()
       this.setupFingeringHandlers()
-      musicxml.restoreNoteStates(noteStates)
+      fingeringEditor.restoreNoteStates(noteStates)
       window.scrollTo(0, scrollY)
     },
   }
