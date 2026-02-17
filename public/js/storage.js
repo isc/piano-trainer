@@ -67,15 +67,30 @@ export function initStorage() {
     return db
   }
 
+  async function dbGet(storeName, key) {
+    await ensureDb()
+    const store = db.transaction(storeName, 'readonly').objectStore(storeName)
+    return promisifyRequest(store.get(key))
+  }
+
+  async function dbGetAll(storeName) {
+    await ensureDb()
+    const store = db.transaction(storeName, 'readonly').objectStore(storeName)
+    return promisifyRequest(store.getAll())
+  }
+
+  async function dbPut(storeName, data) {
+    await ensureDb()
+    const store = db.transaction(storeName, 'readwrite').objectStore(storeName)
+    return promisifyRequest(store.put(data))
+  }
+
   return {
     init: ensureDb,
 
     // Fingerings methods
     async getFingerings(scoreUrl) {
-      await ensureDb()
-      const store = db.transaction(FINGERINGS_STORE, 'readonly').objectStore(FINGERINGS_STORE)
-      const result = await promisifyRequest(store.get(scoreUrl))
-      return result || { scoreUrl, fingerings: {} }
+      return (await dbGet(FINGERINGS_STORE, scoreUrl)) || { scoreUrl, fingerings: {} }
     },
 
     async setFingering(scoreUrl, noteKey, finger) {
@@ -94,28 +109,21 @@ export function initStorage() {
       const data = await this.getFingerings(scoreUrl)
       updateFn(data.fingerings)
       data.updatedAt = Date.now()
-      const store = db.transaction(FINGERINGS_STORE, 'readwrite').objectStore(FINGERINGS_STORE)
-      await promisifyRequest(store.put(data))
+      await dbPut(FINGERINGS_STORE, data)
     },
 
     async getAllFingerings() {
-      await ensureDb()
-      const store = db.transaction(FINGERINGS_STORE, 'readonly').objectStore(FINGERINGS_STORE)
-      return promisifyRequest(store.getAll())
+      return dbGetAll(FINGERINGS_STORE)
     },
 
     // Sessions methods
     async saveSession(session) {
-      await ensureDb()
-      const store = db.transaction(SESSIONS_STORE, 'readwrite').objectStore(SESSIONS_STORE)
-      await promisifyRequest(store.put(session))
+      await dbPut(SESSIONS_STORE, session)
       return session
     },
 
     async getSession(id) {
-      await ensureDb()
-      const store = db.transaction(SESSIONS_STORE, 'readonly').objectStore(SESSIONS_STORE)
-      return (await promisifyRequest(store.get(id))) || null
+      return (await dbGet(SESSIONS_STORE, id)) || null
     },
 
     async getSessions(scoreId = null, dateRange = null) {
@@ -157,22 +165,16 @@ export function initStorage() {
 
     // Aggregates methods
     async saveAggregate(aggregate) {
-      await ensureDb()
-      const store = db.transaction(AGGREGATES_STORE, 'readwrite').objectStore(AGGREGATES_STORE)
-      await promisifyRequest(store.put(aggregate))
+      await dbPut(AGGREGATES_STORE, aggregate)
       return aggregate
     },
 
     async getAggregate(scoreId) {
-      await ensureDb()
-      const store = db.transaction(AGGREGATES_STORE, 'readonly').objectStore(AGGREGATES_STORE)
-      return (await promisifyRequest(store.get(scoreId))) || null
+      return (await dbGet(AGGREGATES_STORE, scoreId)) || null
     },
 
     async getAllAggregates() {
-      await ensureDb()
-      const store = db.transaction(AGGREGATES_STORE, 'readonly').objectStore(AGGREGATES_STORE)
-      return (await promisifyRequest(store.getAll())) || []
+      return (await dbGetAll(AGGREGATES_STORE)) || []
     },
 
     // Backup methods
