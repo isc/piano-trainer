@@ -718,5 +718,3 @@ function resetProgress() {
   resetNotesFromIndex()
   resetPlaybackState()
 }
-
-
