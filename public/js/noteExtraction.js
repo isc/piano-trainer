@@ -114,19 +114,13 @@ function getOrnamentSequence(mainMidi, ornamentContainer, pitch) {
     case OrnamentEnum.InvertedMordent:
       return { sequence: [mainMidi, upperMidi, mainMidi], flag: 'isMordentNote' }
     case OrnamentEnum.Trill:
-      return {
-        sequence: [mainMidi, upperMidi, mainMidi],
-        flag: 'isTrillNote',
-        isTrill: true,
-        trillMidi: mainMidi,
-        trillUpperMidi: upperMidi,
-      }
+      return { sequence: [mainMidi, upperMidi, mainMidi], flag: 'isTrillNote' }
     default:
       return null
   }
 }
 
-// Expand ornament notes (turns and mordents) into their constituent notes
+// Expand ornament notes (turns, mordents, and trills) into their constituent notes
 function expandOrnamentNotes(measureNotes) {
   const ORNAMENT_NOTE_OFFSET = 0.00001
   const expandedNotes = []
@@ -158,13 +152,14 @@ function expandOrnamentNotes(measureNotes) {
       })
     }
 
-    if (ornamentInfo.isTrill) {
+    // Trills get a sentinel note that allows free alternation until the next real note
+    if (flag === 'isTrillNote') {
       expandedNotes.push({
         ...noteData,
         timestamp: noteData.timestamp + sequence.length * ORNAMENT_NOTE_OFFSET,
         isTrillEnd: true,
-        trillMidi: ornamentInfo.trillMidi,
-        trillUpperMidi: ornamentInfo.trillUpperMidi,
+        trillMidi: sequence[0],
+        trillUpperMidi: sequence[1],
         noteheadIndex: -1,
       })
     }
@@ -358,7 +353,7 @@ function extractNotesFromSourceMeasures(sourceMeasures) {
     // Adjust grace note timestamps so they are played sequentially before main notes
     adjustGraceNoteTimestamps(measureNotes)
 
-    // Expand ornaments (turns and mordents) into their constituent notes
+    // Expand ornaments (turns, mordents, and trills) into their constituent notes
     const expandedNotes = expandOrnamentNotes(measureNotes)
 
     // Ensure notes are ordered by (possibly adjusted) timestamp for sequential validation
