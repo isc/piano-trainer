@@ -95,4 +95,65 @@ class OrnamentsTest < CapybaraTestBase
     assert_selector 'svg circle.repeat-indicator.filled', count: 1
   end
 
+  def test_trill_minimum_sequence_then_next_note
+    # Trill on C5 in C major: minimum sequence is C5, D5, C5 (+ sentinel)
+    # Playing the next real note (E5) ends the trill and advances.
+    # Score has: C5 (trill) -> E5, so 2 visual notes
+    load_score('trill-ornament.xml', 2)
+
+    click_on 'Mode Entraînement'
+    assert_text 'Mode Entraînement Actif'
+
+    # Minimum trill: C5, D5, C5
+    play_note("C5")
+    play_note("D5")
+    play_note("C5")
+
+    # Play next real note E5 → ends the trill, advances past sentinel
+    play_note("E5")
+
+    assert_selector 'svg circle.repeat-indicator.filled', count: 1
+  end
+
+  def test_trill_extended_sequence_then_next_note
+    # Same trill, but the player trills longer before moving on.
+    load_score('trill-ornament.xml', 2)
+
+    click_on 'Mode Entraînement'
+    assert_text 'Mode Entraînement Actif'
+
+    # Extended trill: C5, D5, C5, D5, C5, D5, C5
+    play_note("C5")
+    play_note("D5")
+    play_note("C5")
+    play_note("D5")
+    play_note("C5")
+    play_note("D5")
+    play_note("C5")
+
+    # End the trill with the next real note
+    play_note("E5")
+
+    assert_selector 'svg circle.repeat-indicator.filled', count: 1
+  end
+
+  def test_trill_wrong_note_triggers_error
+    # Playing a wrong note (not trill note, not next real note) during trill → error
+    load_score('trill-ornament.xml', 2)
+
+    click_on 'Mode Entraînement'
+    assert_text 'Mode Entraînement Actif'
+
+    # Minimum trill
+    play_note("C5")
+    play_note("D5")
+    play_note("C5")
+
+    # Play wrong note G4 (not a trill note, not E5)
+    play_note("G4")
+
+    # Should NOT have a filled indicator (dirty repetition)
+    assert_no_selector 'svg circle.repeat-indicator.filled'
+  end
+
 end

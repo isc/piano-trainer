@@ -113,6 +113,14 @@ function getOrnamentSequence(mainMidi, ornamentContainer, pitch) {
       return { sequence: [mainMidi, lowerMidi, mainMidi], flag: 'isMordentNote' }
     case OrnamentEnum.InvertedMordent:
       return { sequence: [mainMidi, upperMidi, mainMidi], flag: 'isMordentNote' }
+    case OrnamentEnum.Trill:
+      return {
+        sequence: [mainMidi, upperMidi, mainMidi],
+        flag: 'isTrillNote',
+        isTrill: true,
+        trillMidi: mainMidi,
+        trillUpperMidi: upperMidi,
+      }
     default:
       return null
   }
@@ -147,6 +155,17 @@ function expandOrnamentNotes(measureNotes) {
         [flag]: true,
         // Only the last note should highlight the original notehead
         noteheadIndex: i === sequence.length - 1 ? noteData.noteheadIndex : -1,
+      })
+    }
+
+    if (ornamentInfo.isTrill) {
+      expandedNotes.push({
+        ...noteData,
+        timestamp: noteData.timestamp + sequence.length * ORNAMENT_NOTE_OFFSET,
+        isTrillEnd: true,
+        trillMidi: ornamentInfo.trillMidi,
+        trillUpperMidi: ornamentInfo.trillUpperMidi,
+        noteheadIndex: -1,
       })
     }
   }
