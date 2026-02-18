@@ -95,4 +95,59 @@ class OrnamentsTest < CapybaraTestBase
     assert_selector 'svg circle.repeat-indicator.filled', count: 1
   end
 
+  def test_trill_wrong_note_marks_dirty_then_clean_rep_fills_circle
+    # Trill on C5 in C major: minimum sequence is C5, D5, C5 (+ sentinel)
+    # Playing the next real note (E5) ends the trill and advances.
+    # Score has: C5 (trill) -> E5, so 2 visual notes
+    load_score('trill-ornament.xml', 2)
+
+    click_on 'Mode Entraînement'
+    assert_text 'Mode Entraînement Actif'
+
+    # First repetition: trill with a wrong note
+    play_note("C5")
+    play_note("D5")
+    play_note("C5")
+    play_note("G4")  # Wrong note (not trill note, not E5)
+    play_note("E5")  # Finish the measure
+
+    # First repetition complete but dirty (wrong note played) → no filled circle
+    assert_no_selector 'svg circle.repeat-indicator.filled'
+
+    # Wait for measure reset (played-note classes removed for next repetition)
+    assert_no_selector 'svg g.vf-notehead.played-note'
+
+    # Second repetition: clean trill
+    play_note("C5")
+    play_note("D5")
+    play_note("C5")
+    play_note("E5")
+
+    # Dirty rep unfilled, clean rep filled → only 1 filled circle
+    assert_selector 'svg circle.repeat-indicator.filled', count: 1
+  end
+
+  def test_trill_extended_sequence_then_next_note
+    # Same trill, but the player trills longer before moving on.
+    load_score('trill-ornament.xml', 2)
+
+    click_on 'Mode Entraînement'
+    assert_text 'Mode Entraînement Actif'
+
+    # Extended trill: C5, D5, C5, D5, C5, D5, C5
+    play_note("C5")
+    play_note("D5")
+    play_note("C5")
+    play_note("D5")
+    play_note("C5")
+    play_note("D5")
+    play_note("C5")
+
+    # End the trill with the next real note
+    play_note("E5")
+
+    assert_selector 'svg circle.repeat-indicator.filled', count: 1
+  end
+
+
 end

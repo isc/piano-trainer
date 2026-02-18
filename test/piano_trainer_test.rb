@@ -346,12 +346,12 @@ class PianoTrainerTest < CapybaraTestBase
 
       # Play first repetition
       play_note('C4')
-      sleep 0.25
+      assert_no_selector 'svg g.vf-notehead.played-note'  # Wait for measure reset
       initial_scroll = wait_for_stable_scroll
 
       # Play second repetition - scroll should not change
       play_note('C4')
-      sleep 0.25  # Wait for measure reset before checking scroll
+      assert_no_selector 'svg g.vf-notehead.played-note'  # Wait for measure reset
       scroll_after_rep2 = wait_for_stable_scroll
       assert_equal initial_scroll, scroll_after_rep2, "Scroll should not change after second repetition"
 
@@ -394,7 +394,7 @@ class PianoTrainerTest < CapybaraTestBase
       # Play the note 3 times
       3.times do
         play_note('D4')
-        sleep 0.2
+        assert_no_selector 'svg g.vf-notehead.played-note'  # Wait for measure reset
       end
 
       # Wait for advancement by checking repeat indicators reset to 0 filled
@@ -459,7 +459,7 @@ class PianoTrainerTest < CapybaraTestBase
     # Play measure 1 three times cleanly
     3.times do
       play_note("C4")
-      sleep 0.25
+      assert_no_selector 'svg g.vf-notehead.played-note'  # Wait for measure reset
     end
 
     # Reinforcement should be complete (only 1 measure to reinforce)

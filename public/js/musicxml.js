@@ -409,8 +409,49 @@ function activateNote(midiNote) {
 
   // Filter notes by active hands
   const activeNotes = measureData.notes.filter((n) => isNoteActiveForHands(n))
-  const expectedNote = activeNotes.find((n) => !n.played && !n.active)
+  let expectedNote = activeNotes.find((n) => !n.played && !n.active)
   if (!expectedNote) return false
+
+  // Handle trill sentinel: allow free alternation between trillMidi and trillUpperMidi.
+  // The sentinel is consumed when the player presses the next real note after the trill.
+  if (expectedNote.isTrillEnd) {
+    const { trillMidi, trillUpperMidi } = expectedNote
+    const isTrillNote = midiNote === trillMidi || midiNote === trillUpperMidi
+
+    // Find the next non-sentinel note to decide whether the trill should end
+    const nextAfterTrill = activeNotes.find(
+      (n) => n !== expectedNote && !n.played && !n.active,
+    )
+
+    if (!nextAfterTrill) {
+      // Trill is the last thing in the measure -- any trill note completes it
+      if (isTrillNote) {
+        expectedNote.played = true
+        handleNoteValidated(measureData, expectedNote, 1)
+        return true
+      }
+      // Wrong note: fall through to normal matching (will report error)
+    } else {
+      // Check if the pressed note matches what comes after the trill
+      const endsTrillWithNextNote = activeNotes.some(
+        (n) =>
+          !n.played &&
+          !n.active &&
+          !n.isTrillEnd &&
+          n.timestamp === nextAfterTrill.timestamp &&
+          n.midiNumber === midiNote,
+      )
+
+      if (endsTrillWithNextNote) {
+        // End trill: skip sentinel, fall through to normal validation
+        expectedNote.played = true
+        expectedNote = activeNotes.find((n) => !n.played && !n.active)
+      } else if (isTrillNote) {
+        return true // Trill continuation, no advancement
+      }
+      // Wrong note: fall through to normal matching (will report error)
+    }
+  }
 
   const expectedTimestamp = expectedNote.timestamp
 
