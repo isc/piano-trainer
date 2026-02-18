@@ -7,6 +7,7 @@ import { formatDuration, formatDate } from './utils.js'
 import { initStorage } from './storage.js'
 import { loadMxlAsXml } from './mxlLoader.js'
 import { injectFingerings } from './fingeringInjector.js'
+import { initPlayback } from './playback.js'
 
 export function midiApp() {
   const midi = initMidi()
@@ -21,6 +22,7 @@ export function midiApp() {
   const cassettes = initCassettes()
   const storage = initStorage()
   const practiceTracker = initPracticeTracker(storage)
+  const playback = initPlayback()
 
   return {
     bluetoothConnected: false,
@@ -29,6 +31,7 @@ export function midiApp() {
     isRecording: false,
     isReplaying: false,
     replayEnded: false,
+    isPlaying: false,
     cassettes: [],
     selectedCassette: '',
     cassetteApiAvailable: false,
@@ -62,6 +65,8 @@ export function midiApp() {
     fingeringKeydownHandler: null,
 
     async init() {
+      playback.setOnPlaybackEnd(() => { this.isPlaying = false })
+
       await this.loadCassettesList()
 
       await storage.init()
@@ -266,6 +271,11 @@ export function midiApp() {
           console.warn('Fullscreen non disponible:', err)
         })
       }
+    },
+
+    async togglePlayback() {
+      await playback.togglePlayback(musicxml.getAllNotes(), musicxml.getOsmdInstance())
+      this.isPlaying = playback.isPlaying
     },
 
     async toggleTrainingMode() {

@@ -6,6 +6,14 @@
     <title>Piano Trainer</title>
     <link rel="stylesheet" href="vendor/pico.2.1.1min.css" />
     <link rel="stylesheet" href="styles.css" />
+    <script type="importmap">
+    {
+      "imports": {
+        "tone": "https://esm.sh/tone@14.8.49",
+        "@tonejs/piano": "https://esm.sh/@tonejs/piano@0.2.1?external=tone"
+      }
+    }
+    </script>
     <!-- Load modules before Alpine -->
     <script type="module">
       import { midiApp } from './js/app.js'
@@ -29,6 +37,12 @@
           class="secondary"
         ></button>
         <button @click="requestFullscreen" x-show="!!osmdInstance" x-text="'⛶ Plein écran'" class="secondary"></button>
+        <button
+          @click="togglePlayback"
+          x-show="!!osmdInstance"
+          x-text="isPlaying ? '⏹ Stop' : '▶ Écouter'"
+          class="secondary"
+        ></button>
         <button @click="openScoreHistory" x-show="!!scoreUrl" class="secondary">📜 Historique</button>
         <label>
           <input type="checkbox" x-model="rightHandActive" @change="updateActiveHands" />
