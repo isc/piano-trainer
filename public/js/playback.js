@@ -26,11 +26,7 @@ async function ensurePianoLoaded() {
 }
 
 function getBPM(osmdInstance) {
-  try {
-    return osmdInstance.Sheet.SourceMeasures[0].TempoInBPM || 120
-  } catch {
-    return 120
-  }
+  return osmdInstance.Sheet?.SourceMeasures?.[0]?.TempoInBPM || 120
 }
 
 function tsToSeconds(ts, bpm) {
@@ -41,11 +37,11 @@ function tsToSeconds(ts, bpm) {
 // Each measure's actual duration comes from OSMD, so time signatures other than 4/4 work correctly.
 function buildCumStartTimes(allNotes, sourceMeasures) {
   const cumTimes = []
-  let cum = 0
+  let cumulativeTime = 0
   for (const measureData of allNotes) {
-    cumTimes.push(cum)
-    const dur = sourceMeasures[measureData.sourceMeasureIndex]?.Duration?.RealValue ?? 1.0
-    cum += dur
+    cumTimes.push(cumulativeTime)
+    const duration = sourceMeasures[measureData.sourceMeasureIndex]?.Duration?.RealValue ?? 1.0
+    cumulativeTime += duration
   }
   return cumTimes
 }
@@ -71,7 +67,7 @@ function expandOrnamentTimings(notes) {
   const result = []
   let graceGroup = []
 
-  const flushGraceGroup = () => {
+  function flushGraceGroup() {
     if (graceGroup.length === 0) return
     const n = graceGroup.length
     // mainTs is the timestamp of the note the grace notes precede
@@ -88,8 +84,9 @@ function expandOrnamentTimings(notes) {
     if (noteData.isTrillEnd) continue
     if (noteData.isTrillNote || noteData.isTurnNote || noteData.isMordentNote) {
       flushGraceGroup()
-      if (!ornamentGroups.has(noteData.note)) ornamentGroups.set(noteData.note, [])
-      ornamentGroups.get(noteData.note).push(noteData)
+      const group = ornamentGroups.get(noteData.note) ?? []
+      if (group.length === 0) ornamentGroups.set(noteData.note, group)
+      group.push(noteData)
     } else if (noteData.isGrace) {
       graceGroup.push(noteData)
     } else {
@@ -135,24 +132,25 @@ async function togglePlayback(allNotes, osmdInstance) {
   for (let i = 0; i < allNotes.length; i++) {
     const measureData = allNotes[i]
     const measureStartTs = cumStartTimes[i]
+    const measureOffset = measureStartTs - measureData.measureIndex
     const notes = expandOrnamentTimings(measureData.notes)
-    for (const { midiNumber, timestamp, isTieContinuation, note, _ornamentDuration, _graceMainTs, _graceOffset } of notes) {
+
+    for (const n of notes) {
       let startMs, durationMs
 
-      if (_graceMainTs !== undefined) {
-        const mainMs = tsToSeconds(measureStartTs + _graceMainTs - measureData.measureIndex, bpm) * 1000
-        startMs = Math.max(0, mainMs - _graceOffset * GRACE_NOTE_DURATION_S * 1000)
+      if (n._graceMainTs !== undefined) {
+        const mainMs = tsToSeconds(measureOffset + n._graceMainTs, bpm) * 1000
+        startMs = Math.max(0, mainMs - n._graceOffset * GRACE_NOTE_DURATION_S * 1000)
         durationMs = GRACE_NOTE_DURATION_S * 1000
       } else {
-        const absoluteTs = measureStartTs + timestamp - measureData.measureIndex
-        startMs = tsToSeconds(absoluteTs, bpm) * 1000
-        durationMs = tsToSeconds(_ornamentDuration ?? note.Length.RealValue, bpm) * 1000
+        startMs = tsToSeconds(measureOffset + n.timestamp, bpm) * 1000
+        durationMs = tsToSeconds(n._ornamentDuration ?? n.note.Length.RealValue, bpm) * 1000
       }
 
-      if (!isTieContinuation) {
-        scheduledTimeouts.push(setTimeout(() => piano.keyDown({ midi: midiNumber, velocity: 0.7 }), startMs))
+      if (!n.isTieContinuation) {
+        scheduledTimeouts.push(setTimeout(() => piano.keyDown({ midi: n.midiNumber, velocity: 0.7 }), startMs))
       }
-      scheduledTimeouts.push(setTimeout(() => piano.keyUp({ midi: midiNumber }), startMs + durationMs))
+      scheduledTimeouts.push(setTimeout(() => piano.keyUp({ midi: n.midiNumber }), startMs + durationMs))
 
       maxEndMs = Math.max(maxEndMs, startMs + durationMs)
     }

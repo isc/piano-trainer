@@ -280,17 +280,11 @@ export function midiApp() {
 
     async toggleTrainingMode() {
       this.trainingMode = !this.trainingMode
+      this.trainingComplete = false
 
       const mode = this.trainingMode ? 'training' : 'free'
       await practiceTracker.toggleMode(mode)
-
-      if (this.trainingMode) {
-        musicxml.setTrainingMode(true)
-        this.trainingComplete = false
-      } else {
-        musicxml.setTrainingMode(false)
-        this.trainingComplete = false
-      }
+      musicxml.setTrainingMode(this.trainingMode)
     },
 
     showTrainingComplete() {
