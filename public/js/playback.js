@@ -10,8 +10,8 @@ const GRACE_NOTE_DURATION_S = 0.08
 // Must match GRACE_NOTE_OFFSET in noteExtraction.js adjustGraceNoteTimestamps
 const GRACE_NOTE_OFFSET_WN = 0.0001
 
-export function initPlayback(externalMidiState) {
-  midiState = externalMidiState || null
+export function initPlayback(externalMidiState = null) {
+  midiState = externalMidiState
   return {
     togglePlayback,
     stop,
@@ -37,8 +37,7 @@ function noteOff(midiNumber) {
 }
 
 async function ensurePianoLoaded() {
-  if (midiState?.midiOutput) return
-  if (piano) return
+  if (midiState?.midiOutput || piano) return
   piano = new Piano({ velocities: 1 })
   piano.toDestination()
   await piano.load()

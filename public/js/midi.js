@@ -92,20 +92,26 @@ async function connectMIDI(options = {}) {
 
     // Listen for device changes and auto-reconnect
     state.midiAccess.onstatechange = (event) => {
-      console.log('MIDI device state change:', event.port.name, event.port.state)
-      if (event.port.state === 'disconnected' && event.port === state.midiInput) {
-        state.midiConnected = false
-        state.midiInput = null
-        console.log('MIDI input disconnected')
-      } else if (event.port.state === 'disconnected' && event.port === state.midiOutput) {
-        state.midiOutput = null
-        console.log('MIDI output disconnected')
-      } else if (event.port.state === 'connected' && event.port.type === 'input' && !state.midiConnected) {
-        console.log('New MIDI input detected, auto-connecting:', event.port.name)
-        selectMIDIInput(event.port)
-      } else if (event.port.state === 'connected' && event.port.type === 'output' && !state.midiOutput) {
-        console.log('New MIDI output detected, auto-connecting:', event.port.name)
-        selectMIDIOutput(event.port)
+      const { port } = event
+      console.log('MIDI device state change:', port.name, port.state)
+
+      if (port.state === 'disconnected') {
+        if (port === state.midiInput) {
+          state.midiConnected = false
+          state.midiInput = null
+          console.log('MIDI input disconnected')
+        } else if (port === state.midiOutput) {
+          state.midiOutput = null
+          console.log('MIDI output disconnected')
+        }
+      } else if (port.state === 'connected') {
+        if (port.type === 'input' && !state.midiConnected) {
+          console.log('New MIDI input detected, auto-connecting:', port.name)
+          selectMIDIInput(port)
+        } else if (port.type === 'output' && !state.midiOutput) {
+          console.log('New MIDI output detected, auto-connecting:', port.name)
+          selectMIDIOutput(port)
+        }
       }
     }
   } catch (e) {
