@@ -264,15 +264,6 @@ export function midiApp() {
       }
     },
 
-    requestFullscreen() {
-      const elem = document.documentElement
-      if (elem.requestFullscreen) {
-        elem.requestFullscreen().catch((err) => {
-          console.warn('Fullscreen non disponible:', err)
-        })
-      }
-    },
-
     async togglePlayback() {
       await playback.togglePlayback(musicxml.getAllNotes(), musicxml.getOsmdInstance())
       this.isPlaying = playback.isPlaying
