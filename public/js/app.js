@@ -22,7 +22,7 @@ export function midiApp() {
   const cassettes = initCassettes()
   const storage = initStorage()
   const practiceTracker = initPracticeTracker(storage)
-  const playback = initPlayback()
+  const playback = initPlayback(midi.state)
 
   return {
     bluetoothConnected: false,
