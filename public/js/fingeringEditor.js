@@ -195,14 +195,32 @@ export function initFingeringEditor({ getOsmdInstance, getAllNotes, getNoteDataB
 
     const fingerText = newFinger.toString()
 
-    // Grace notes don't have FingeringEntries - their fingerings are rendered directly in the stavenote group
+    // Grace notes don't have FingeringEntries - their fingerings are rendered
+    // by VexFlow as <text> inside the <g class="vf-modifiers"> of the stavenote group.
+    // OSMD's calculateFingerings skips grace voices, so re-rendering won't create
+    // the text — we must handle both update and creation here.
     if (targetNoteData.isGrace) {
       const svgGroup = svgNote(targetNoteData.note)
       if (!svgGroup) return false
-      // The fingering text is a direct child of the stavenote group
-      const textEl = svgGroup.querySelector('text')
-      if (!textEl) return false
+      const existingText = svgGroup.querySelector('text')
+      if (existingText) {
+        existingText.textContent = fingerText
+        return true
+      }
+      // Create the fingering text in the vf-modifiers group, positioned left of the note
+      const modifiers = svgGroup.querySelector('.vf-modifiers')
+      const noteEl = svgGroup.querySelector('.vf-note')
+      if (!modifiers || !noteEl) return false
+      const bbox = noteEl.getBBox()
+      const textEl = document.createElementNS('http://www.w3.org/2000/svg', 'text')
+      textEl.setAttribute('x', bbox.x - 9)
+      textEl.setAttribute('y', bbox.y + bbox.height / 2 + 5)
+      textEl.setAttribute('font-size', '9pt')
+      textEl.setAttribute('font-family', 'sans-serif')
+      textEl.setAttribute('font-weight', 'bold')
+      textEl.setAttribute('fill', '#000000')
       textEl.textContent = fingerText
+      modifiers.appendChild(textEl)
       return true
     }
 
