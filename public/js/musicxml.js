@@ -336,27 +336,25 @@ function createMeasureRectangle(svg, bounds, measureIndex) {
 
 let measureDelegatedHandlerAttached = false
 
-function setupMeasureDelegatedHandler() {
-  if (measureDelegatedHandlerAttached) return
-  measureDelegatedHandlerAttached = true
-
-  const scoreContainer = document.getElementById('score')
-  if (!scoreContainer) return
-
-  scoreContainer.addEventListener('click', (e) => {
-    const rect = e.target.closest('.measure-click-area')
-    if (!rect) return
-
-    const measureIndex = parseInt(rect.dataset.measureIndex, 10)
-    if (!isNaN(measureIndex)) jumpToMeasure(measureIndex)
-  })
-}
-
 function setupMeasureClickHandlers() {
   if (!osmdInstance || allNotes.length === 0) return
 
   removeMeasureClickHandlers()
-  setupMeasureDelegatedHandler()
+
+  if (!measureDelegatedHandlerAttached) {
+    measureDelegatedHandlerAttached = true
+
+    const scoreContainer = document.getElementById('score')
+    if (scoreContainer) {
+      scoreContainer.addEventListener('click', (e) => {
+        const rect = e.target.closest('.measure-click-area')
+        if (!rect) return
+
+        const measureIndex = parseInt(rect.dataset.measureIndex, 10)
+        if (!isNaN(measureIndex)) jumpToMeasure(measureIndex)
+      })
+    }
+  }
 
   const rectsBySvg = new Map()
 
