@@ -55,18 +55,15 @@ class FingeringAnnotationTest < CapybaraTestBase
     visit "/score.html?url=#{CHOPIN_WALTZ_URL}"
     wait_for_render
 
-    text_count_before = svg_text_count
+    # Click the grace note notehead in measure 13 (SVG group #12)
 
-    # Click the first grace note notehead in measure 13
-    click_grace_note_in_measure(13)
+    first('[id="12"] .vf-modifiers .vf-notehead').click
     assert_selector 'dialog#fingeringModal[open]'
     click_button '3'
     click_button '✓ Valider'
     assert_no_selector 'dialog#fingeringModal[open]'
 
-    # The fingering text should appear immediately without page refresh
-    assert svg_text_count > text_count_before,
-           "Fingering text did not appear (SVG text count: #{text_count_before} before, #{svg_text_count} after)"
+    assert_equal '3', first('[id="12"] .vf-modifiers text').text
   end
 
   def test_fingering_on_pickup_measure_persists_correctly
@@ -102,21 +99,5 @@ class FingeringAnnotationTest < CapybaraTestBase
 
   def assert_fingering(text)
     assert_selector 'svg g.vf-text', text: text
-  end
-
-  def svg_text_count
-    page.evaluate_script('document.querySelectorAll("svg text").length')
-  end
-
-  def click_grace_note_in_measure(measure_number)
-    page.evaluate_script(<<~JS)
-      (() => {
-        const osmd = window.osmdInstance;
-        const measure = osmd.Sheet.SourceMeasures.find(m => m.MeasureNumberXML === #{measure_number});
-        const graceNote = measure.verticalSourceStaffEntryContainers[0].staffEntries[0].voiceEntries[0].notes[0];
-        const svgGroup = osmd.rules.GNote(graceNote).getSVGGElement();
-        svgGroup.querySelector('.vf-notehead').dispatchEvent(new MouseEvent('click', { bubbles: true }));
-      })()
-    JS
   end
 end
