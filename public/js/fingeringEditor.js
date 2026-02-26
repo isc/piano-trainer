@@ -187,6 +187,26 @@ export function initFingeringEditor({ getOsmdInstance, getAllNotes, getNoteDataB
     return null
   }
 
+  // Create a new SVG <text> element for a grace note fingering, positioned left of the note.
+  // Returns true if created, false if the required SVG structure is missing.
+  function createGraceNoteFingeringText(svgGroup, fingerText) {
+    const modifiers = svgGroup.querySelector('.vf-modifiers')
+    const noteEl = svgGroup.querySelector('.vf-note')
+    if (!modifiers || !noteEl) return false
+
+    const bbox = noteEl.getBBox()
+    const textEl = document.createElementNS('http://www.w3.org/2000/svg', 'text')
+    textEl.setAttribute('x', bbox.x - 9)
+    textEl.setAttribute('y', bbox.y + bbox.height / 2 + 5)
+    textEl.setAttribute('font-size', '9pt')
+    textEl.setAttribute('font-family', 'sans-serif')
+    textEl.setAttribute('font-weight', 'bold')
+    textEl.setAttribute('fill', '#000000')
+    textEl.textContent = fingerText
+    modifiers.appendChild(textEl)
+    return true
+  }
+
   // Update an existing fingering's SVG directly without re-rendering
   // Returns true if successful, false if no existing fingering found
   function updateFingeringSVG(fingeringKey, newFinger) {
@@ -202,26 +222,14 @@ export function initFingeringEditor({ getOsmdInstance, getAllNotes, getNoteDataB
     if (targetNoteData.isGrace) {
       const svgGroup = svgNote(targetNoteData.note)
       if (!svgGroup) return false
+
       const existingText = svgGroup.querySelector('text')
       if (existingText) {
         existingText.textContent = fingerText
         return true
       }
-      // Create the fingering text in the vf-modifiers group, positioned left of the note
-      const modifiers = svgGroup.querySelector('.vf-modifiers')
-      const noteEl = svgGroup.querySelector('.vf-note')
-      if (!modifiers || !noteEl) return false
-      const bbox = noteEl.getBBox()
-      const textEl = document.createElementNS('http://www.w3.org/2000/svg', 'text')
-      textEl.setAttribute('x', bbox.x - 9)
-      textEl.setAttribute('y', bbox.y + bbox.height / 2 + 5)
-      textEl.setAttribute('font-size', '9pt')
-      textEl.setAttribute('font-family', 'sans-serif')
-      textEl.setAttribute('font-weight', 'bold')
-      textEl.setAttribute('fill', '#000000')
-      textEl.textContent = fingerText
-      modifiers.appendChild(textEl)
-      return true
+
+      return createGraceNoteFingeringText(svgGroup, fingerText)
     }
 
     const fingeringEntry = findFingeringEntry(fingeringKey, targetNoteData)

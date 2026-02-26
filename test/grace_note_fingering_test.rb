@@ -18,7 +18,7 @@ class GraceNoteFingeringTest < CapybaraTestBase
     click_grace_note_in_measure(13)
     assert_selector 'dialog#fingeringModal[open]'
     click_button '3'
-    click_button "\u2713 Valider"
+    click_button '✓ Valider'
     assert_no_selector 'dialog#fingeringModal[open]'
 
     # The fingering text should appear immediately without page refresh
