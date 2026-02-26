@@ -4,6 +4,7 @@ class FingeringAnnotationTest < CapybaraTestBase
   SCORE_URL = '/test-fixtures/simple-score.xml'
   PICKUP_SCORE_URL = '/test-fixtures/pickup-measure-score.xml'
   CHORD_SCORE_URL = '/test-fixtures/chord.xml'
+  CHOPIN_WALTZ_URL = 'scores/Waltz_in_A_MinorChopin.mxl'
 
   def setup
     page.driver.set_cookie('test-env', 'true')
@@ -48,6 +49,21 @@ class FingeringAnnotationTest < CapybaraTestBase
     click_button '✓ Valider'
     wait_for_render
     assert_fingering '31'
+  end
+
+  def test_add_fingering_to_grace_note_appears_immediately
+    visit "/score.html?url=#{CHOPIN_WALTZ_URL}"
+    wait_for_render
+
+    # Click the grace note notehead in measure 13 (SVG group #12)
+
+    first('[id="12"] .vf-modifiers .vf-notehead').click
+    assert_selector 'dialog#fingeringModal[open]'
+    click_button '3'
+    click_button '✓ Valider'
+    assert_no_selector 'dialog#fingeringModal[open]'
+
+    assert_equal '3', first('[id="12"] .vf-modifiers text').text
   end
 
   def test_fingering_on_pickup_measure_persists_correctly
