@@ -1,6 +1,7 @@
 import { Piano } from '@tonejs/piano'
 
 let piano = null
+let midiState = null
 let scheduledTimeouts = []
 let isPlaying = false
 let onPlaybackEnd = null
@@ -9,7 +10,8 @@ const GRACE_NOTE_DURATION_S = 0.08
 // Must match GRACE_NOTE_OFFSET in noteExtraction.js adjustGraceNoteTimestamps
 const GRACE_NOTE_OFFSET_WN = 0.0001
 
-export function initPlayback() {
+export function initPlayback(externalMidiState = null) {
+  midiState = externalMidiState
   return {
     togglePlayback,
     stop,
@@ -18,8 +20,24 @@ export function initPlayback() {
   }
 }
 
+function noteOn(midiNumber, velocity) {
+  if (midiState?.midiOutput) {
+    midiState.midiOutput.send([0x90, midiNumber, Math.round(velocity * 127)])
+  } else if (piano) {
+    piano.keyDown({ midi: midiNumber, velocity })
+  }
+}
+
+function noteOff(midiNumber) {
+  if (midiState?.midiOutput) {
+    midiState.midiOutput.send([0x80, midiNumber, 0])
+  } else if (piano) {
+    piano.keyUp({ midi: midiNumber })
+  }
+}
+
 async function ensurePianoLoaded() {
-  if (piano) return
+  if (midiState?.midiOutput || piano) return
   piano = new Piano({ velocities: 1 })
   piano.toDestination()
   await piano.load()
@@ -116,7 +134,11 @@ function stop() {
   for (const id of scheduledTimeouts) clearTimeout(id)
   scheduledTimeouts = []
   isPlaying = false
-  piano?.pedalUp()
+  if (midiState?.midiOutput) {
+    midiState.midiOutput.send([0xB0, 123, 0]) // All Notes Off
+  } else {
+    piano?.pedalUp()
+  }
 }
 
 async function togglePlayback(allNotes, osmdInstance) {
@@ -148,9 +170,9 @@ async function togglePlayback(allNotes, osmdInstance) {
       }
 
       if (!n.isTieContinuation) {
-        scheduledTimeouts.push(setTimeout(() => piano.keyDown({ midi: n.midiNumber, velocity: 0.7 }), startMs))
+        scheduledTimeouts.push(setTimeout(() => noteOn(n.midiNumber, 0.7), startMs))
       }
-      scheduledTimeouts.push(setTimeout(() => piano.keyUp({ midi: n.midiNumber }), startMs + durationMs))
+      scheduledTimeouts.push(setTimeout(() => noteOff(n.midiNumber), startMs + durationMs))
 
       maxEndMs = Math.max(maxEndMs, startMs + durationMs)
     }
