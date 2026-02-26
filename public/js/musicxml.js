@@ -334,10 +334,29 @@ function createMeasureRectangle(svg, bounds, measureIndex) {
   return rect
 }
 
+let measureDelegatedHandlerAttached = false
+
+function setupMeasureDelegatedHandler() {
+  if (measureDelegatedHandlerAttached) return
+  measureDelegatedHandlerAttached = true
+
+  const scoreContainer = document.getElementById('score')
+  if (!scoreContainer) return
+
+  scoreContainer.addEventListener('click', (e) => {
+    const rect = e.target.closest('.measure-click-area')
+    if (!rect) return
+
+    const measureIndex = parseInt(rect.dataset.measureIndex, 10)
+    if (!isNaN(measureIndex)) jumpToMeasure(measureIndex)
+  })
+}
+
 function setupMeasureClickHandlers() {
   if (!osmdInstance || allNotes.length === 0) return
 
   removeMeasureClickHandlers()
+  setupMeasureDelegatedHandler()
 
   const rectsBySvg = new Map()
 
@@ -353,7 +372,6 @@ function setupMeasureClickHandlers() {
 
     const bounds = calculateCombinedBounds(boxes)
     const rect = createMeasureRectangle(svg, bounds, measureIndex)
-    rect.addEventListener('click', () => jumpToMeasure(measureIndex))
 
     if (!rectsBySvg.has(svg)) rectsBySvg.set(svg, [])
     rectsBySvg.get(svg).push(rect)

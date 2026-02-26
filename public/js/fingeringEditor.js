@@ -1,5 +1,6 @@
 export function initFingeringEditor({ getOsmdInstance, getAllNotes, getNoteDataByKey, svgNote, svgNotehead }) {
-  let clickHandlers = []
+  let onNoteClick = null
+  let delegatedHandlerAttached = false
 
   // Build a map from SVG group ID to noteData array by iterating through SourceMeasures.
   // Uses OSMD's GNote lookup on fresh SourceNote objects (more reliable than noteData.note from allNotes).
@@ -53,37 +54,39 @@ export function initFingeringEditor({ getOsmdInstance, getAllNotes, getNoteDataB
   }
 
   function setupFingeringClickHandlers(cbs) {
-    const osmdInstance = getOsmdInstance()
-    const allNotes = getAllNotes()
-    if (!osmdInstance || allNotes.length === 0) return
+    onNoteClick = cbs.onNoteClick
 
-    removeFingeringClickHandlers()
+    if (delegatedHandlerAttached) return
+    delegatedHandlerAttached = true
 
-    const svgIdToNoteDatas = buildSvgIdToNoteDataMap()
+    const scoreContainer = document.getElementById('score')
+    if (!scoreContainer) return
 
-    for (const [svgId, noteDatas] of svgIdToNoteDatas) {
-      const svgGroup = document.getElementById(svgId)
-      if (!svgGroup) continue
+    scoreContainer.addEventListener('click', (e) => {
+      if (!onNoteClick) return
 
-      for (const noteData of noteDatas) {
-        const notehead = svgGroup.querySelectorAll('.vf-notehead')[noteData.noteheadIndex]
-        if (!notehead) continue
+      const notehead = e.target.closest('.vf-notehead')
+      if (!notehead) return
 
-        const handler = (e) => {
-          e.stopPropagation()
-          cbs.onNoteClick?.(noteData)
-        }
-        notehead.addEventListener('click', handler)
-        clickHandlers.push({ element: notehead, handler })
+      const svgGroup = notehead.closest('g[id]')
+      if (!svgGroup) return
+
+      const osmdInstance = getOsmdInstance()
+      if (!osmdInstance) return
+
+      const svgIdToNoteDatas = buildSvgIdToNoteDataMap()
+      const noteDatas = svgIdToNoteDatas.get(svgGroup.id)
+      if (!noteDatas) return
+
+      const noteheads = svgGroup.querySelectorAll('.vf-notehead')
+      const noteheadIndex = Array.from(noteheads).indexOf(notehead)
+
+      const noteData = noteDatas.find((nd) => nd.noteheadIndex === noteheadIndex)
+      if (noteData) {
+        e.stopPropagation()
+        onNoteClick(noteData)
       }
-    }
-  }
-
-  function removeFingeringClickHandlers() {
-    for (const { element, handler } of clickHandlers) {
-      element.removeEventListener('click', handler)
-    }
-    clickHandlers = []
+    })
   }
 
   // Restore note states from a saved state map (fingeringKey -> { played, active })
