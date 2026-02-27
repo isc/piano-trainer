@@ -74,6 +74,7 @@
     { "title": "Waltz Op. 69 No. 2 in B Minor", "composer": "Chopin", "file": "waltz-opus-69-no-2-in-b-minor.mxl" },
     { "title": "Serenade (Ständchen)", "composer": "Schubert", "file": "serenade-2.xml" },
     { "title": "Minuet in G Major BWV Anh. 116", "composer": "J.S. Bach", "file": "bach-minuet-in-g-major-bwv-anh-116.mxl" },
-    { "title": "Kinderszenen No. 12 - Kind im Einschlummern", "composer": "Schumann", "file": "kind-im-einschlummern-kinderszenen-no-12-child-falling-asleep.mxl" }
+    { "title": "Kinderszenen No. 12 - Kind im Einschlummern", "composer": "Schumann", "file": "kind-im-einschlummern-kinderszenen-no-12-child-falling-asleep.mxl" },
+    { "title": "Minuet in D Minor BWV Anh. 132", "composer": "J.S. Bach", "file": "bach-minuet-in-d-minor-bwv-anh-132.mxl" }
   ]
 }
