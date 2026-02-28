@@ -42,16 +42,16 @@ class OrnamentsTest < CapybaraTestBase
 
     # Delayed turn on C5 with accidentals: main, upper (Db), main, lower (B), main
     play_note("C5")
-    play_note("C#5")  # Db5
+    play_note("Db5")
     play_note("C5")
     play_note("B4")
     play_note("C5")
 
     # Regular turn on Eb5 without accidentals: upper (F), main, lower (D), main
     play_note("F5")
-    play_note("D#5")  # Eb5
+    play_note("Eb5")
     play_note("D5")   # Diatonic lower, NOT Db!
-    play_note("D#5")  # Eb5
+    play_note("Eb5")
 
     # Final note G5
     play_note("G5")
@@ -106,11 +106,11 @@ class OrnamentsTest < CapybaraTestBase
     assert_text 'Mode Entraînement Actif'
 
     # First repetition: trill with a wrong note
-    play_note("G#4")  # Ab4
-    play_note("A#4")  # Bb4 (diatonic upper in Eb major, NOT B natural)
-    play_note("G#4")  # Ab4
+    play_note("Ab4")
+    play_note("Bb4")  # Diatonic upper in Eb major, NOT B natural
+    play_note("Ab4")
     play_note("G4")   # Wrong note (not trill note, not Eb5)
-    play_note("D#5")  # Eb5 - Finish the measure
+    play_note("Eb5")  # Finish the measure
 
     # First repetition complete but dirty (wrong note played) → no filled circle
     assert_no_selector 'svg circle.repeat-indicator.filled'
@@ -119,10 +119,10 @@ class OrnamentsTest < CapybaraTestBase
     assert_no_selector 'svg g.vf-notehead.played-note'
 
     # Second repetition: clean trill
-    play_note("G#4")  # Ab4
-    play_note("A#4")  # Bb4
-    play_note("G#4")  # Ab4
-    play_note("D#5")  # Eb5
+    play_note("Ab4")
+    play_note("Bb4")
+    play_note("Ab4")
+    play_note("Eb5")
 
     # Dirty rep unfilled, clean rep filled → only 1 filled circle
     assert_selector 'svg circle.repeat-indicator.filled', count: 1
@@ -136,16 +136,16 @@ class OrnamentsTest < CapybaraTestBase
     assert_text 'Mode Entraînement Actif'
 
     # Extended trill: Ab4, Bb4, Ab4, Bb4, Ab4, Bb4, Ab4
-    play_note("G#4")  # Ab4
-    play_note("A#4")  # Bb4
-    play_note("G#4")  # Ab4
-    play_note("A#4")  # Bb4
-    play_note("G#4")  # Ab4
-    play_note("A#4")  # Bb4
-    play_note("G#4")  # Ab4
+    play_note("Ab4")
+    play_note("Bb4")
+    play_note("Ab4")
+    play_note("Bb4")
+    play_note("Ab4")
+    play_note("Bb4")
+    play_note("Ab4")
 
     # End the trill with the next real note
-    play_note("D#5")  # Eb5
+    play_note("Eb5")
 
     assert_selector 'svg circle.repeat-indicator.filled', count: 1
   end
