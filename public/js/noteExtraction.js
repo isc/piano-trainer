@@ -304,6 +304,7 @@ function adjustGraceNoteTimestamps(measureNotes) {
 // This is the raw extraction without considering playback order
 function extractNotesFromSourceMeasures(sourceMeasures) {
   const notesByMeasure = new Map()
+  let currentFifths = 0
 
   sourceMeasures.forEach((measure, measureIndex) => {
     const measureNotes = []
@@ -368,12 +369,12 @@ function extractNotesFromSourceMeasures(sourceMeasures) {
     // Adjust grace note timestamps so they are played sequentially before main notes
     adjustGraceNoteTimestamps(measureNotes)
 
-    // Extract key signature (fifths) for ornament diatonic calculations
+    // Update key signature when a new one is declared (persists until changed)
     const keyInstruction = measure.getKeyInstruction(0)
-    const fifths = keyInstruction?.Key ?? 0
+    if (keyInstruction) currentFifths = keyInstruction.Key
 
     // Expand ornaments (turns, mordents, and trills) into their constituent notes
-    const expandedNotes = expandOrnamentNotes(measureNotes, fifths)
+    const expandedNotes = expandOrnamentNotes(measureNotes, currentFifths)
 
     // Ensure notes are ordered by (possibly adjusted) timestamp for sequential validation
     expandedNotes.sort((a, b) => a.timestamp - b.timestamp)
