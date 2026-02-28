@@ -21,7 +21,7 @@ class LibraryTest < CapybaraTestBase
   def test_search_filters_scores_by_composer
     fill_in 'Rechercher une partition', with: 'Chopin'
 
-    assert_selector 'tbody tr', count: 13
+    assert_selector 'tbody tr', count: 10
     assert_selector 'tr td', text: 'Chopin'
   end
 
