@@ -41,7 +41,13 @@
           <line>4</line>
         </clef>
       </attributes>
-      <sound tempo="120" />
+      <direction placement="above">
+        <direction-type>
+          <words font-weight="bold">Moderato</words>
+        </direction-type>
+        <staff>1</staff>
+        <sound tempo="60" />
+      </direction>
       <note>
         <rest />
         <duration>24</duration>
@@ -210,7 +216,6 @@
       <backup>
         <duration>144</duration>
       </backup>
-      <sound tempo="120" />
       <direction placement="above">
         <direction-type>
           <dynamics>
