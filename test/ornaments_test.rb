@@ -149,6 +149,4 @@ class OrnamentsTest < CapybaraTestBase
 
     assert_selector 'svg circle.repeat-indicator.filled', count: 1
   end
-
-
 end

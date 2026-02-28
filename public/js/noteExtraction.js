@@ -59,12 +59,11 @@ function getDiatonicOffset(pitch, direction, fifths = 0) {
   let adjacentHalfTone = octave * 12 + DIATONIC_NOTES[adjacentIndex]
 
   // Apply key signature accidental to the adjacent note
-  if (fifths < 0) {
-    const flattedNotes = FLAT_ORDER.slice(0, Math.abs(fifths))
-    if (flattedNotes.includes(adjacentIndex)) adjacentHalfTone -= 1
-  } else if (fifths > 0) {
-    const sharpedNotes = SHARP_ORDER.slice(0, fifths)
-    if (sharpedNotes.includes(adjacentIndex)) adjacentHalfTone += 1
+  const affectedNotes = fifths < 0
+    ? FLAT_ORDER.slice(0, -fifths)
+    : SHARP_ORDER.slice(0, fifths)
+  if (affectedNotes.includes(adjacentIndex)) {
+    adjacentHalfTone += fifths < 0 ? -1 : 1
   }
 
   // Handle octave wrap (B→C goes up, C→B goes down)
