@@ -30,9 +30,16 @@ function getDiatonicIndex(fundamentalNote) {
   return DIATONIC_NOTES.indexOf(fundamentalNote)
 }
 
+// Diatonic indices affected by flats/sharps in the circle of fifths
+// Flat order:  B(6), E(2), A(5), D(1), G(4), C(0), F(3)
+// Sharp order: F(3), C(0), G(4), D(1), A(5), E(2), B(6)
+const FLAT_ORDER = [6, 2, 5, 1, 4, 0, 3]
+const SHARP_ORDER = [3, 0, 4, 1, 5, 2, 6]
+
 // Calculate diatonic interval to adjacent note based on pitch.fundamentalNote
 // This follows the scale rather than using fixed semitone offsets
-function getDiatonicOffset(pitch, direction) {
+// fifths: key signature (-3 = Eb major, 0 = C major, 2 = D major, etc.)
+function getDiatonicOffset(pitch, direction, fifths = 0) {
   const fundamentalNote = pitch?.fundamentalNote
   if (!pitch || fundamentalNote === undefined) return direction > 0 ? 2 : -2
 
@@ -50,6 +57,15 @@ function getDiatonicOffset(pitch, direction) {
 
   // Calculate halfTone for the adjacent diatonic note
   let adjacentHalfTone = octave * 12 + DIATONIC_NOTES[adjacentIndex]
+
+  // Apply key signature accidental to the adjacent note
+  if (fifths < 0) {
+    const flattedNotes = FLAT_ORDER.slice(0, Math.abs(fifths))
+    if (flattedNotes.includes(adjacentIndex)) adjacentHalfTone -= 1
+  } else if (fifths > 0) {
+    const sharpedNotes = SHARP_ORDER.slice(0, fifths)
+    if (sharpedNotes.includes(adjacentIndex)) adjacentHalfTone += 1
+  }
 
   // Handle octave wrap (B→C goes up, C→B goes down)
   if (direction > 0 && adjacentHalfTone <= currentHalfTone) {
@@ -71,7 +87,7 @@ function hasExplicitAccidental(accidental) {
 // - FLAT lowers the note (upper: +1, lower: -2)
 // - SHARP/NATURAL raises the note (upper: +2, lower: -1)
 // Without explicit accidentals, use diatonic intervals (follow the scale)
-function getOrnamentAuxiliaryNotes(mainMidi, ornamentContainer, pitch) {
+function getOrnamentAuxiliaryNotes(mainMidi, ornamentContainer, pitch, fifths = 0) {
   const { AccidentalAbove, AccidentalBelow } = ornamentContainer
 
   let upperMidi, lowerMidi
@@ -79,13 +95,13 @@ function getOrnamentAuxiliaryNotes(mainMidi, ornamentContainer, pitch) {
   if (hasExplicitAccidental(AccidentalAbove)) {
     upperMidi = AccidentalAbove === AccidentalEnum.FLAT ? mainMidi + 1 : mainMidi + 2
   } else {
-    upperMidi = mainMidi + getDiatonicOffset(pitch, 1)
+    upperMidi = mainMidi + getDiatonicOffset(pitch, 1, fifths)
   }
 
   if (hasExplicitAccidental(AccidentalBelow)) {
     lowerMidi = AccidentalBelow === AccidentalEnum.FLAT ? mainMidi - 2 : mainMidi - 1
   } else {
-    lowerMidi = mainMidi + getDiatonicOffset(pitch, -1)
+    lowerMidi = mainMidi + getDiatonicOffset(pitch, -1, fifths)
   }
 
   return { upperMidi, lowerMidi }
@@ -93,10 +109,10 @@ function getOrnamentAuxiliaryNotes(mainMidi, ornamentContainer, pitch) {
 
 // Build the MIDI note sequence for an ornament
 // Returns { sequence, flag } where flag is the property name to mark expanded notes
-function getOrnamentSequence(mainMidi, ornamentContainer, pitch) {
+function getOrnamentSequence(mainMidi, ornamentContainer, pitch, fifths = 0) {
   const ornamentType = ornamentContainer.GetOrnament
 
-  const { upperMidi, lowerMidi } = getOrnamentAuxiliaryNotes(mainMidi, ornamentContainer, pitch)
+  const { upperMidi, lowerMidi } = getOrnamentAuxiliaryNotes(mainMidi, ornamentContainer, pitch, fifths)
 
   // Turn ornaments: 4-5 notes alternating around the main note
   switch (ornamentType) {
@@ -121,14 +137,14 @@ function getOrnamentSequence(mainMidi, ornamentContainer, pitch) {
 }
 
 // Expand ornament notes (turns, mordents, and trills) into their constituent notes
-function expandOrnamentNotes(measureNotes) {
+function expandOrnamentNotes(measureNotes, fifths = 0) {
   const ORNAMENT_NOTE_OFFSET = 0.00001
   const expandedNotes = []
 
   for (const noteData of measureNotes) {
     const ornamentContainer = noteData.voiceEntry?.OrnamentContainer
     const pitch = noteData.note?.pitch
-    const ornamentInfo = ornamentContainer ? getOrnamentSequence(noteData.midiNumber, ornamentContainer, pitch) : null
+    const ornamentInfo = ornamentContainer ? getOrnamentSequence(noteData.midiNumber, ornamentContainer, pitch, fifths) : null
 
     if (!ornamentInfo) {
       expandedNotes.push(noteData)
@@ -353,8 +369,12 @@ function extractNotesFromSourceMeasures(sourceMeasures) {
     // Adjust grace note timestamps so they are played sequentially before main notes
     adjustGraceNoteTimestamps(measureNotes)
 
+    // Extract key signature (fifths) for ornament diatonic calculations
+    const keyInstruction = measure.getKeyInstruction(0)
+    const fifths = keyInstruction?.Key ?? 0
+
     // Expand ornaments (turns, mordents, and trills) into their constituent notes
-    const expandedNotes = expandOrnamentNotes(measureNotes)
+    const expandedNotes = expandOrnamentNotes(measureNotes, fifths)
 
     // Ensure notes are ordered by (possibly adjusted) timestamp for sequential validation
     expandedNotes.sort((a, b) => a.timestamp - b.timestamp)

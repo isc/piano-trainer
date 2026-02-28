@@ -14,7 +14,8 @@
       <attributes>
         <divisions>4</divisions>
         <key>
-          <fifths>0</fifths>
+          <!-- E-flat major: 3 flats (Bb, Eb, Ab) -->
+          <fifths>-3</fifths>
           <mode>major</mode>
         </key>
         <time>
@@ -26,13 +27,14 @@
           <line>2</line>
         </clef>
       </attributes>
-      <!-- C5 with trill: alternates with D5 (diatonic upper in C major) -->
-      <!-- Minimum sequence: C5, D5, C5, then sentinel -->
-      <!-- Player can trill freely before playing the next real note (E5) -->
+      <!-- Ab4 with trill: alternates with Bb4 (diatonic upper in Eb major) -->
+      <!-- Minimum sequence: Ab4, Bb4, Ab4, then sentinel -->
+      <!-- Player can trill freely before playing the next real note (Eb5) -->
       <note>
         <pitch>
-          <step>C</step>
-          <octave>5</octave>
+          <step>A</step>
+          <alter>-1</alter>
+          <octave>4</octave>
         </pitch>
         <duration>8</duration>
         <type>half</type>
@@ -46,6 +48,7 @@
       <note>
         <pitch>
           <step>E</step>
+          <alter>-1</alter>
           <octave>5</octave>
         </pitch>
         <duration>8</duration>
