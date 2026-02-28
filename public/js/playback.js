@@ -44,7 +44,13 @@ async function ensurePianoLoaded() {
 }
 
 function getBPM(osmdInstance) {
-  return osmdInstance.Sheet?.SourceMeasures?.[0]?.TempoInBPM || 120
+  const sm = osmdInstance.Sheet?.SourceMeasures?.[0]
+  const tempo = sm?.TempoExpressions?.[0]?.InstantaneousTempo
+  if (!tempo) return sm?.TempoInBPM || 120
+  const beatUnitToQuarter = { whole: 4, half: 2, quarter: 1, eighth: 0.5, '16th': 0.25 }
+  const ratio = beatUnitToQuarter[tempo.beatUnit] ?? 1
+  if (tempo.dotted) return tempo.tempoInBpm * ratio * 1.5
+  return tempo.tempoInBpm * ratio
 }
 
 function tsToSeconds(ts, bpm) {
