@@ -66,6 +66,26 @@ class FingeringAnnotationTest < CapybaraTestBase
     assert_equal '3', first('[id="12"] .vf-modifiers text').text
   end
 
+  def test_adding_fingering_does_not_break_note_validation
+    visit "/score.html?url=/test-fixtures/two-measures.xml"
+    wait_for_render
+
+    # Play C4 to complete measure 1, advancing to measure 2
+    play_note('C4')
+
+    # Now at measure 2 (D4). Add a fingering to the D4 note (no existing fingering).
+    # This triggers rerenderScore() which resets currentMeasureIndex to 0.
+    first('.vf-notehead').click
+    assert_selector 'dialog#fingeringModal[open]'
+    click_button '3'
+    click_button '✓ Valider'
+    wait_for_render
+
+    # Play D4 — should validate since we're still at measure 2
+    play_note('D4')
+    assert_selector '.vf-notehead.played-note', count: 2
+  end
+
   def test_fingering_on_pickup_measure_persists_correctly
     visit "/score.html?url=#{PICKUP_SCORE_URL}"
     wait_for_render

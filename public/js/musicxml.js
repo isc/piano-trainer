@@ -89,6 +89,9 @@ export function initMusicXML() {
       }
     },
     jumpToMeasure: (measureIndex) => jumpToMeasure(measureIndex),
+    setCurrentMeasureIndex: (index) => {
+      currentMeasureIndex = index
+    },
     resetMeasureProgress: () => {
       for (const measureData of allNotes) {
         for (const noteData of measureData.notes) {
