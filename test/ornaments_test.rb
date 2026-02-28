@@ -42,16 +42,16 @@ class OrnamentsTest < CapybaraTestBase
 
     # Delayed turn on C5 with accidentals: main, upper (Db), main, lower (B), main
     play_note("C5")
-    play_note("C#5")  # Db5
+    play_note("Db5")
     play_note("C5")
     play_note("B4")
     play_note("C5")
 
     # Regular turn on Eb5 without accidentals: upper (F), main, lower (D), main
     play_note("F5")
-    play_note("D#5")  # Eb5
+    play_note("Eb5")
     play_note("D5")   # Diatonic lower, NOT Db!
-    play_note("D#5")  # Eb5
+    play_note("Eb5")
 
     # Final note G5
     play_note("G5")
@@ -96,20 +96,21 @@ class OrnamentsTest < CapybaraTestBase
   end
 
   def test_trill_wrong_note_marks_dirty_then_clean_rep_fills_circle
-    # Trill on C5 in C major: minimum sequence is C5, D5, C5 (+ sentinel)
-    # Playing the next real note (E5) ends the trill and advances.
-    # Score has: C5 (trill) -> E5, so 2 visual notes
+    # Trill on Ab4 in Eb major: minimum sequence is Ab4, Bb4, Ab4 (+ sentinel)
+    # The upper note is Bb4 (not B natural) because B is flatted in Eb major.
+    # Playing the next real note (Eb5) ends the trill and advances.
+    # Score has: Ab4 (trill) -> Eb5, so 2 visual notes
     load_score('trill-ornament.xml', 2)
 
     click_on 'Mode Entraînement'
     assert_text 'Mode Entraînement Actif'
 
     # First repetition: trill with a wrong note
-    play_note("C5")
-    play_note("D5")
-    play_note("C5")
-    play_note("G4")  # Wrong note (not trill note, not E5)
-    play_note("E5")  # Finish the measure
+    play_note("Ab4")
+    play_note("Bb4")  # Diatonic upper in Eb major, NOT B natural
+    play_note("Ab4")
+    play_note("G4")   # Wrong note (not trill note, not Eb5)
+    play_note("Eb5")  # Finish the measure
 
     # First repetition complete but dirty (wrong note played) → no filled circle
     assert_no_selector 'svg circle.repeat-indicator.filled'
@@ -118,36 +119,34 @@ class OrnamentsTest < CapybaraTestBase
     assert_no_selector 'svg g.vf-notehead.played-note'
 
     # Second repetition: clean trill
-    play_note("C5")
-    play_note("D5")
-    play_note("C5")
-    play_note("E5")
+    play_note("Ab4")
+    play_note("Bb4")
+    play_note("Ab4")
+    play_note("Eb5")
 
     # Dirty rep unfilled, clean rep filled → only 1 filled circle
     assert_selector 'svg circle.repeat-indicator.filled', count: 1
   end
 
   def test_trill_extended_sequence_then_next_note
-    # Same trill, but the player trills longer before moving on.
+    # Same trill (Ab4 in Eb major), but the player trills longer before moving on.
     load_score('trill-ornament.xml', 2)
 
     click_on 'Mode Entraînement'
     assert_text 'Mode Entraînement Actif'
 
-    # Extended trill: C5, D5, C5, D5, C5, D5, C5
-    play_note("C5")
-    play_note("D5")
-    play_note("C5")
-    play_note("D5")
-    play_note("C5")
-    play_note("D5")
-    play_note("C5")
+    # Extended trill: Ab4, Bb4, Ab4, Bb4, Ab4, Bb4, Ab4
+    play_note("Ab4")
+    play_note("Bb4")
+    play_note("Ab4")
+    play_note("Bb4")
+    play_note("Ab4")
+    play_note("Bb4")
+    play_note("Ab4")
 
     # End the trill with the next real note
-    play_note("E5")
+    play_note("Eb5")
 
     assert_selector 'svg circle.repeat-indicator.filled', count: 1
   end
-
-
 end

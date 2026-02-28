@@ -101,8 +101,8 @@ class CapybaraTestBase < Minitest::Test
   private
 
   def parse_midi_notation(notation)
-    # Parse notation like "ON C4", "OFF C#4", or "ON G#5"
-    match = notation.match(/^(ON|OFF)\s+([A-G]#?)(\d+)$/)
+    # Parse notation like "ON C4", "OFF C#4", "ON Bb4", or "ON G#5"
+    match = notation.match(/^(ON|OFF)\s+([A-G][#b]?)(\d+)$/)
     raise "Invalid MIDI notation: #{notation}" unless match
 
     status_str, note_name, octave_str = match.captures
@@ -111,8 +111,9 @@ class CapybaraTestBase < Minitest::Test
     velocity = status == 144 ? 80 : 64
 
     # Convert note name to MIDI note number
-    note_map = { 'C' => 0, 'C#' => 1, 'D' => 2, 'D#' => 3, 'E' => 4, 'F' => 5,
-                 'F#' => 6, 'G' => 7, 'G#' => 8, 'A' => 9, 'A#' => 10, 'B' => 11 }
+    note_map = { 'C' => 0, 'C#' => 1, 'Db' => 1, 'D' => 2, 'D#' => 3, 'Eb' => 3,
+                 'E' => 4, 'F' => 5, 'F#' => 6, 'Gb' => 6, 'G' => 7, 'G#' => 8,
+                 'Ab' => 8, 'A' => 9, 'A#' => 10, 'Bb' => 10, 'B' => 11 }
     note_offset = note_map[note_name]
     raise "Invalid note name: #{note_name}" unless note_offset
 
