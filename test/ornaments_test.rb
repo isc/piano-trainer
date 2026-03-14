@@ -128,6 +128,31 @@ class OrnamentsTest < CapybaraTestBase
     assert_selector 'svg circle.repeat-indicator.filled', count: 1
   end
 
+  def test_trill_wavy_line_rendered_and_validated
+    # A trill with wavy-line extension (tr~~~) should:
+    # 1. Render a wavy-line SVG group after the tr symbol
+    # 2. Still validate correctly like a regular trill
+    # Score: Ab4 (trill + wavy-line start) -> Eb5 (wavy-line stop)
+    load_score('trill-wavy-line.xml', 2)
+
+    # Verify the wavy-line extension is rendered in the SVG
+    # VexFlow prefixes all group classes with "vf-"
+    assert_selector 'svg g.vf-trill-extension'
+
+    click_on 'Mode Entraînement'
+    assert_text 'Mode Entraînement Actif'
+
+    # Play the trill: Ab4, Bb4 (diatonic upper in Eb major), Ab4
+    play_note("Ab4")
+    play_note("Bb4")
+    play_note("Ab4")
+
+    # End the trill with the next real note
+    play_note("Eb5")
+
+    assert_selector 'svg circle.repeat-indicator.filled', count: 1
+  end
+
   def test_trill_extended_sequence_then_next_note
     # Same trill (Ab4 in Eb major), but the player trills longer before moving on.
     load_score('trill-ornament.xml', 2)
