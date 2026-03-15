@@ -89,7 +89,7 @@
                   <td>
                     <a :href="'score.html?url=' + encodeURIComponent(getScoreUrl(score))" x-text="score.title"></a>
                   </td>
-                  <td x-text="score.composer"></td>
+                  <td><a :href="'composer.html?composer=' + encodeURIComponent(score.composer)" x-text="score.composer"></a></td>
                 </tr>
               </template>
             </tbody>

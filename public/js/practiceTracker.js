@@ -174,6 +174,8 @@ export function initPracticeTracker(storageInstance = null) {
         lastPlayedAt: session.endedAt,
         totalSessions: 0,
         totalPracticeTimeMs: 0,
+        timesCompleted: 0,
+        practiceDays: [],
         measures: {},
       }
     }
@@ -189,6 +191,15 @@ export function initPracticeTracker(storageInstance = null) {
     const lastMeasureEndTime = getLastMeasureEndTime(session)
     aggregate.lastPlayedAt = lastMeasureEndTime.toISOString()
     aggregate.totalSessions++
+
+    if (!aggregate.timesCompleted) aggregate.timesCompleted = 0
+    if (session.completedAt) aggregate.timesCompleted++
+
+    if (!aggregate.practiceDays) aggregate.practiceDays = []
+    const sessionDay = session.startedAt.substring(0, 10)
+    if (!aggregate.practiceDays.includes(sessionDay)) {
+      aggregate.practiceDays.push(sessionDay)
+    }
 
     const sessionDuration = getSessionDuration(session)
     aggregate.totalPracticeTimeMs += sessionDuration
@@ -240,19 +251,11 @@ export function initPracticeTracker(storageInstance = null) {
     const enoughCleanRatio = measuresWithEnoughClean / totalMeasures
     const masteryCleanRatio = measuresWithMasteryClean / totalMeasures
 
-    const uniqueDays = new Set()
-    if (aggregate.firstPlayedAt) {
-      uniqueDays.add(aggregate.firstPlayedAt.substring(0, 10))
-    }
-    if (aggregate.lastPlayedAt) {
-      uniqueDays.add(aggregate.lastPlayedAt.substring(0, 10))
-    }
-
-    if (masteryCleanRatio === 1 && uniqueDays.size >= 3) {
+    if (masteryCleanRatio === 1 && (aggregate.practiceDays || []).length >= 3) {
       return 'repertoire'
     }
 
-    if (enoughCleanRatio >= 0.5) {
+    if (enoughCleanRatio >= 0.5 && aggregate.timesCompleted > 0) {
       return 'perfectionnement'
     }
 
