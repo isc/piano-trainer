@@ -409,11 +409,9 @@ class PianoTrainerTest < CapybaraTestBase
   end
 
   def test_reinforcement_mode_after_playthrough_with_mistakes
-    # Use URL-based loading which enables practice tracking
-    Capybara.reset_sessions!
-    page.driver.set_cookie('test-env', 'true')
     visit '/score.html?url=/test-fixtures/repeat-endings.xml'
     assert_selector 'svg g.vf-stavenote', count: 4
+    sleep 0.05  # Wait for all initialization to complete
 
     # Play with mistakes on measure 1
     # Sequence: C4 -> D4 -> E4 -> C4 -> D4 -> F4
@@ -437,10 +435,6 @@ class PianoTrainerTest < CapybaraTestBase
     # Measure 4 (volta 2) - completes score
     play_note("F4")
 
-    # Wait for async IndexedDB operations to complete
-    sleep 0.5
-
-    # Verify completion modal appears
     assert_text 'Partition terminée'
 
     # Close the completion modal

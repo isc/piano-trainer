@@ -24,6 +24,7 @@ Capybara.register_driver(:cuprite) do |app|
 end
 Capybara.default_driver = :cuprite
 Capybara.enable_aria_label = true
+Capybara.default_max_wait_time = 5
 
 # Clean up download directory at exit
 at_exit { FileUtils.rm_rf(DOWNLOAD_DIR) }
