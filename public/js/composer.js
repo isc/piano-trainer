@@ -16,15 +16,14 @@ export function composerApp() {
       const params = new URLSearchParams(window.location.search)
       this.composer = params.get('composer') || ''
 
-      const [scoresResponse] = await Promise.all([
+      const [scoresResponse, , aggregates] = await Promise.all([
         fetch('data/scores.json'),
         practiceTracker.init(),
+        storage.getAllAggregates(),
       ])
       const data = await scoresResponse.json()
       this.baseUrl = data.baseUrl
       this.scores = data.scores.filter((s) => s.composer === this.composer)
-
-      const aggregates = await storage.getAllAggregates()
       for (const agg of aggregates) {
         this.aggregatesByScore[agg.scoreId] = agg
       }
