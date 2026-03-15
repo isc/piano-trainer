@@ -88,17 +88,12 @@ export function midiApp() {
       musicxml.setCallbacks({
         onScoreCompleted: async () => {
           practiceTracker.markScoreCompleted()
-          try {
-            await practiceTracker.endSession()
-            const allPlaythroughs = this.scoreUrl
-              ? await practiceTracker.getAllPlaythroughs(this.scoreUrl)
-              : []
-            window.scrollTo({ top: 0, behavior: 'smooth' })
-            this.showScoreComplete(allPlaythroughs)
-          } catch (e) {
-            console.error('onScoreCompleted error:', e)
-            this.showScoreComplete([])
-          }
+          await practiceTracker.endSession()
+          const allPlaythroughs = this.scoreUrl
+            ? await practiceTracker.getAllPlaythroughs(this.scoreUrl)
+            : []
+          window.scrollTo({ top: 0, behavior: 'smooth' })
+          this.showScoreComplete(allPlaythroughs)
 
           // Start new session for next playthrough
           const metadata = musicxml.getScoreMetadata()
