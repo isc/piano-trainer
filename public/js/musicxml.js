@@ -576,8 +576,8 @@ function scrollToNextMeasureIfNeeded(currentIndex, nextIndex) {
   // Scroll if we're moving to a new system
   if (currentSystemIndex !== null && nextSystemIndex !== currentSystemIndex) {
     const nextNoteElement = svgNote(nextMeasureFirstNote)
-    const nextBbox = nextNoteElement.getBBox()
-    const nextY = nextBbox.y
+    if (!nextNoteElement) return
+    const nextY = nextNoteElement.getBBox().y
 
     if (lastStaffY !== null) {
       const scrollAmount = nextY - lastStaffY
@@ -600,8 +600,9 @@ function handleNoteValidated(measureData, noteData, validatedCount) {
     const noteSystemIndex = getSystemIndexForNote(noteData.note)
     currentSystemIndex = noteSystemIndex
     const noteElement = svgNote(noteData.note)
-    const bbox = noteElement.getBBox()
-    lastStaffY = bbox.y
+    if (noteElement) {
+      lastStaffY = noteElement.getBBox().y
+    }
 
     // Initialize practice tracking if not already set
     if (measureStartTime === null) {
