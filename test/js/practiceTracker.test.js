@@ -150,7 +150,7 @@ describe('practiceTracker', () => {
   })
 
   describe('score status', () => {
-    it('progresses from dechiffrage to perfectionnement', async () => {
+    it('progresses from dechiffrage to perfectionnement after a full playthrough', async () => {
       tracker.startSession('/scores/test.xml', 'Test', 'Composer', 'training')
 
       // Measure 0: 3 clean attempts (enough for perfectionnement)
@@ -163,6 +163,74 @@ describe('practiceTracker', () => {
       tracker.startMeasureAttempt(1)
       tracker.endMeasureAttempt(true)
 
+      tracker.markScoreCompleted()
+      await tracker.endSession()
+
+      const stats = await tracker.getScoreStats('/scores/test.xml')
+      expect(stats.status).toBe('perfectionnement')
+    })
+
+    it('stays dechiffrage if thresholds met but score never completed', async () => {
+      tracker.startSession('/scores/test.xml', 'Test', 'Composer', 'training')
+
+      for (let i = 0; i < 3; i++) {
+        tracker.startMeasureAttempt(0)
+        tracker.endMeasureAttempt(true)
+      }
+      tracker.startMeasureAttempt(1)
+      tracker.endMeasureAttempt(true)
+
+      // No markScoreCompleted()
+      await tracker.endSession()
+
+      const stats = await tracker.getScoreStats('/scores/test.xml')
+      expect(stats.status).toBe('dechiffrage')
+    })
+
+    it('progresses to repertoire after mastery on 3+ days', async () => {
+      const days = ['2026-01-01', '2026-01-02', '2026-01-03']
+
+      for (const day of days) {
+        tracker.startSession('/scores/test.xml', 'Test', 'Composer', 'free')
+
+        // Both measures: 2 clean attempts per session → 6 total after 3 sessions
+        for (const m of [0, 1]) {
+          tracker.startMeasureAttempt(m)
+          tracker.endMeasureAttempt(true)
+          tracker.startMeasureAttempt(m)
+          tracker.endMeasureAttempt(true)
+        }
+
+        tracker.markScoreCompleted()
+        const session = await tracker.endSession()
+
+        // Override startedAt to simulate different days
+        session.startedAt = `${day}T10:00:00.000Z`
+        await storage.saveSession(session)
+
+        // Manually patch practiceDays in the aggregate
+        const agg = await storage.getAggregate('/scores/test.xml')
+        if (agg && !agg.practiceDays.includes(day)) {
+          agg.practiceDays.push(day)
+          await storage.saveAggregate(agg)
+        }
+      }
+
+      const stats = await tracker.getScoreStats('/scores/test.xml')
+      expect(stats.status).toBe('repertoire')
+    })
+
+    it('stays perfectionnement with mastery but only 1 day of practice', async () => {
+      tracker.startSession('/scores/test.xml', 'Test', 'Composer', 'free')
+
+      for (const m of [0, 1]) {
+        for (let i = 0; i < 5; i++) {
+          tracker.startMeasureAttempt(m)
+          tracker.endMeasureAttempt(true)
+        }
+      }
+
+      tracker.markScoreCompleted()
       await tracker.endSession()
 
       const stats = await tracker.getScoreStats('/scores/test.xml')

@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="fr" x-data="composerApp()">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Piano Trainer</title>
+    <link rel="stylesheet" href="vendor/pico.2.1.1min.css" />
+    <link rel="stylesheet" href="styles.css" />
+    <script type="module">
+      import { composerApp } from './js/composer.js'
+      window.composerApp = composerApp
+    </script>
+    <script defer src="vendor/alpinejs.3.14.9.min.js"></script>
+  </head>
+  <body>
+    <main class="container">
+      <a href="index.html">&larr; Bibliothèque</a>
+      <h1 x-text="composer"></h1>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Titre</th>
+            <th>Temps pratiqué</th>
+            <th>Statut</th>
+          </tr>
+        </thead>
+        <tbody>
+          <template x-for="score in scores" :key="score.file">
+            <tr>
+              <td>
+                <a :href="'score.html?url=' + encodeURIComponent(getScoreUrl(score))" x-text="score.title"></a>
+              </td>
+              <td x-text="getAggregate(score) ? formatDuration(getAggregate(score).totalPracticeTimeMs) : '—'"></td>
+              <td x-text="getAggregate(score) ? getAggregate(score).status : '—'"></td>
+            </tr>
+          </template>
+        </tbody>
+      </table>
+    </main>
+  </body>
+</html>
