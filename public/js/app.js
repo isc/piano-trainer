@@ -252,7 +252,7 @@ export function midiApp() {
       await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)))
       musicxml.renderScore()
       document.getElementById('score').dataset.renderComplete = Date.now()
-      this.requestWakeLock() // fire-and-forget: don't delay startSession
+      await this.requestWakeLock()
     },
 
     async requestWakeLock() {
