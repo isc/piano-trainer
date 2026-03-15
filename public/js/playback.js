@@ -179,10 +179,10 @@ function buildCursorTimeline(allNotes, cumStartTimes, bpm) {
 
     for (const n of measureData.notes) {
       if (n.isTrillNote || n.isTurnNote || n.isMordentNote || n.isTrillEnd || n.isGrace) continue
-      const key = String(measureOffset + n.timestamp)
-      if (seen.has(key)) continue
-      seen.add(key)
-      steps.push(tsToSeconds(measureOffset + n.timestamp, bpm) * 1000)
+      const absoluteTs = measureOffset + n.timestamp
+      if (seen.has(absoluteTs)) continue
+      seen.add(absoluteTs)
+      steps.push(tsToSeconds(absoluteTs, bpm) * 1000)
     }
   }
 
