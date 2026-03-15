@@ -55,3 +55,10 @@ svg g.vf-notehead.active-note path {
 #score svg g.measure-number text {
   fill: #999999;
 }
+
+/* OSMD playback cursor: scroll-margin gives breathing room below during autoscroll.
+   height and z-index are fixed in JS (OSMD sets inline styles that override CSS). */
+img[id^="cursorImg"] {
+  scroll-margin-bottom: 200px;
+}
+

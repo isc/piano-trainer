@@ -5,6 +5,7 @@ let midiState = null
 let scheduledTimeouts = []
 let isPlaying = false
 let onPlaybackEnd = null
+let activeOsmd = null
 
 const GRACE_NOTE_DURATION_S = 0.08
 // Must match GRACE_NOTE_OFFSET in noteExtraction.js adjustGraceNoteTimestamps
@@ -136,6 +137,23 @@ function expandOrnamentTimings(notes) {
   return result
 }
 
+// Fix two OSMD cursor issues that can't be solved with CSS alone:
+// - PicoCSS `img { height: auto }` collapses the 1px-tall cursor image
+// - OSMD's adjustToBackgroundColor() resets z-index to -1 via inline style
+function syncCursorStyle(cursor) {
+  const el = cursor.cursorElement
+  if (!el) return
+  el.style.height = el.getAttribute('height') + 'px'
+  el.style.zIndex = '10'
+}
+
+function hideCursor() {
+  if (activeOsmd?.cursor) {
+    activeOsmd.cursor.hide()
+    activeOsmd.cursor.reset()
+  }
+}
+
 function stop() {
   for (const id of scheduledTimeouts) clearTimeout(id)
   scheduledTimeouts = []
@@ -145,6 +163,30 @@ function stop() {
   } else {
     piano?.pedalUp()
   }
+  hideCursor()
+}
+
+// Build the list of cursor advance timestamps (in ms from start) from allNotes data.
+// Avoids traversing the OSMD cursor (which corrupts its visual state after EndReached+reset).
+// Each unique absolute timestamp (whole-note fractions from start) maps to one cursor.next() call.
+function buildCursorTimeline(allNotes, cumStartTimes, bpm) {
+  const seen = new Set()
+  const steps = []
+
+  for (let i = 0; i < allNotes.length; i++) {
+    const measureData = allNotes[i]
+    const measureOffset = cumStartTimes[i] - measureData.measureIndex
+
+    for (const n of measureData.notes) {
+      if (n.isTrillNote || n.isTurnNote || n.isMordentNote || n.isTrillEnd || n.isGrace) continue
+      const absoluteTs = measureOffset + n.timestamp
+      if (seen.has(absoluteTs)) continue
+      seen.add(absoluteTs)
+      steps.push(tsToSeconds(absoluteTs, bpm) * 1000)
+    }
+  }
+
+  return steps.sort((a, b) => a - b)
 }
 
 async function togglePlayback(allNotes, osmdInstance) {
@@ -152,6 +194,7 @@ async function togglePlayback(allNotes, osmdInstance) {
 
   await ensurePianoLoaded()
 
+  activeOsmd = osmdInstance
   const bpm = getBPM(osmdInstance)
   const sourceMeasures = osmdInstance.Sheet.SourceMeasures
   const cumStartTimes = buildCumStartTimes(allNotes, sourceMeasures)
@@ -184,6 +227,26 @@ async function togglePlayback(allNotes, osmdInstance) {
     }
   }
 
+  // Cursor: schedule advances in sync with audio.
+  const cursor = osmdInstance.cursor
+  if (cursor) {
+    const cursorSteps = buildCursorTimeline(allNotes, cumStartTimes, bpm)
+    cursor.reset()
+    cursor.show()
+    syncCursorStyle(cursor)
+    for (let i = 0; i < cursorSteps.length; i++) {
+      scheduledTimeouts.push(setTimeout(() => {
+        if (i > 0) cursor.next()
+        syncCursorStyle(cursor)
+        cursor.cursorElement?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+      }, cursorSteps[i]))
+    }
+  }
+
   isPlaying = true
-  scheduledTimeouts.push(setTimeout(() => { isPlaying = false; onPlaybackEnd?.() }, maxEndMs + 500))
+  scheduledTimeouts.push(setTimeout(() => {
+    isPlaying = false
+    hideCursor()
+    onPlaybackEnd?.()
+  }, maxEndMs + 500))
 }
