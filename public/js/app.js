@@ -89,9 +89,8 @@ export function midiApp() {
         onScoreCompleted: async () => {
           practiceTracker.markScoreCompleted()
           await practiceTracker.endSession()
-          const allPlaythroughs = this.scoreUrl
-            ? await practiceTracker.getAllPlaythroughs(this.scoreUrl)
-            : []
+
+          const allPlaythroughs = this.scoreUrl ? await practiceTracker.getAllPlaythroughs(this.scoreUrl) : []
           window.scrollTo({ top: 0, behavior: 'smooth' })
           this.showScoreComplete(allPlaythroughs)
 
