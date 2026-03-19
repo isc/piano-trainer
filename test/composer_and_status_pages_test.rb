@@ -1,62 +1,45 @@
 require_relative 'test_helper'
 
 class ComposerAndStatusPagesTest < CapybaraTestBase
-  def setup
+  def test_composer_and_status_page_navigation
     page.driver.set_cookie('test-env', 'true')
-  end
-
-  def test_composer_page_shows_scores_with_status_links
-    visit '/composer.html?composer=Chopin'
+    visit '/index.html'
     inject_aggregates
-    visit '/composer.html?composer=Chopin'
+
+    # Navigate to Chopin's page from the library
+    click_link 'Chopin', match: :first
 
     assert_text 'Chopin'
-
-    # Verify the 3 scores with injected data appear with status links
     assert_link 'Déchiffrage', href: /status\.html\?status=dechiffrage/
     assert_link 'Perfectionnement', href: /status\.html\?status=perfectionnement/
     assert_link 'Répertoire', href: /status\.html\?status=repertoire/
 
-    # Click on a status link to navigate to the status page
+    # Navigate to the répertoire status page
     click_link 'Répertoire'
 
     assert_text 'Répertoire'
     assert_link 'Waltz in A Minor'
-    # Should not show scores with other statuses
     assert_no_text 'Nocturne Op. 9 No. 1'
     assert_no_text 'Prelude Op. 28 No. 4 in E Minor'
-  end
+    # Composer links back to composer page
+    assert_link 'Chopin', href: /composer\.html\?composer=Chopin/
 
-  def test_status_page_shows_filtered_scores_sorted_by_last_played
-    visit '/status.html?status=dechiffrage'
-    inject_aggregates
-    visit '/status.html?status=dechiffrage'
+    # Go back and navigate to the déchiffrage status page
+    page.go_back
+    click_link 'Déchiffrage', match: :first
 
     assert_text 'Déchiffrage'
-
-    # Should show the 2 dechiffrage scores
     rows = all('tbody tr')
-    dechiffrage_titles = rows.map { |r| r.find('td:first-child').text }
-    assert_includes dechiffrage_titles, 'Prelude Op. 28 No. 4 in E Minor'
-    assert_includes dechiffrage_titles, 'Nocturne No. 20 in C Minor'
-
-    # Most recently played should be first
-    assert_equal 'Nocturne No. 20 in C Minor', dechiffrage_titles.first
-    assert_equal 'Prelude Op. 28 No. 4 in E Minor', dechiffrage_titles.last
-
-    # Should not show scores with other statuses
+    titles = rows.map { |r| r.find('td:first-child').text }
+    assert_equal 'Nocturne No. 20 in C Minor', titles.first
+    assert_equal 'Prelude Op. 28 No. 4 in E Minor', titles.last
     assert_no_text 'Waltz in A Minor'
     assert_no_text 'Nocturne Op. 9 No. 1'
-
-    # Composer names should link to composer pages
-    assert_link 'Chopin', href: /composer\.html\?composer=Chopin/
   end
 
   private
 
   def inject_aggregates
-    # Inject aggregates for Chopin scores with different statuses and lastPlayedAt times
-    # so we can test filtering and sorting
     aggregates = [
       {
         scoreId: 'scores/Prlude_No._4_in_E_Minor_Op._28_-_Frdric_Chopin.mxl',
@@ -108,6 +91,6 @@ class ComposerAndStatusPagesTest < CapybaraTestBase
         }
       };
     JS
-    sleep 0.1 # Let IndexedDB transaction complete
+    sleep 0.1
   end
 end
