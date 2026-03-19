@@ -1,23 +1,35 @@
 import { loadScoresWithAggregates, getScoreUrl, getAggregate, formatDuration } from './scoreListBase.js'
 import { statusLabel } from './utils.js'
 
-export function composerApp() {
+export function statusApp() {
   return {
-    composer: '',
+    status: '',
+    displayLabel: '',
     scores: [],
     baseUrl: '',
     aggregatesByScore: {},
 
     async init() {
       const params = new URLSearchParams(window.location.search)
-      this.composer = params.get('composer') || ''
+      this.status = params.get('status') || ''
+      this.displayLabel = statusLabel(this.status)
 
       const { baseUrl, scores, aggregatesByScore } = await loadScoresWithAggregates()
       this.baseUrl = baseUrl
-      this.scores = scores.filter((s) => s.composer === this.composer)
       this.aggregatesByScore = aggregatesByScore
 
-      document.title = `Piano Trainer - ${this.composer}`
+      this.scores = scores
+        .filter((score) => {
+          const agg = this.getAggregate(score)
+          return agg && agg.status === this.status
+        })
+        .sort((a, b) => {
+          const aLastPlayed = this.getAggregate(a).lastPlayedAt || ''
+          const bLastPlayed = this.getAggregate(b).lastPlayedAt || ''
+          return bLastPlayed.localeCompare(aLastPlayed)
+        })
+
+      document.title = `Piano Trainer - ${this.displayLabel}`
     },
 
     getScoreUrl(score) {
@@ -28,7 +40,6 @@ export function composerApp() {
       return getAggregate(this.aggregatesByScore, this.baseUrl, score)
     },
 
-    statusLabel,
     formatDuration,
   }
 }

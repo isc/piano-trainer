@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="fr" x-data="composerApp()">
+<html lang="fr" x-data="statusApp()">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -7,22 +7,22 @@
     <link rel="stylesheet" href="vendor/pico.2.1.1min.css" />
     <link rel="stylesheet" href="styles.css" />
     <script type="module">
-      import { composerApp } from './js/composer.js'
-      window.composerApp = composerApp
+      import { statusApp } from './js/status.js'
+      window.statusApp = statusApp
     </script>
     <script defer src="vendor/alpinejs.3.14.9.min.js"></script>
   </head>
   <body>
     <main class="container">
-      <a href="index.html">&larr; Bibliothèque</a>
-      <h1 x-text="composer"></h1>
+      <a href="index.html">&larr; Biblioth&egrave;que</a>
+      <h1 x-text="displayLabel"></h1>
 
       <table>
         <thead>
           <tr>
             <th>Titre</th>
-            <th>Temps pratiqué</th>
-            <th>Statut</th>
+            <th>Compositeur</th>
+            <th>Temps pratiqu&eacute;</th>
           </tr>
         </thead>
         <tbody>
@@ -31,15 +31,10 @@
               <td>
                 <a :href="'score.html?url=' + encodeURIComponent(getScoreUrl(score))" x-text="score.title"></a>
               </td>
-              <td x-text="getAggregate(score) ? formatDuration(getAggregate(score).totalPracticeTimeMs) : '—'"></td>
               <td>
-                <template x-if="getAggregate(score)">
-                  <a :href="'status.html?status=' + encodeURIComponent(getAggregate(score).status)" x-text="statusLabel(getAggregate(score).status)"></a>
-                </template>
-                <template x-if="!getAggregate(score)">
-                  <span>—</span>
-                </template>
+                <a :href="'composer.html?composer=' + encodeURIComponent(score.composer)" x-text="score.composer"></a>
               </td>
+              <td x-text="getAggregate(score) ? formatDuration(getAggregate(score).totalPracticeTimeMs) : '—'"></td>
             </tr>
           </template>
         </tbody>

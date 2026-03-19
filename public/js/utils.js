@@ -10,6 +10,16 @@ export function formatDuration(ms) {
   return `${minutes}m ${seconds}s`
 }
 
+const STATUS_LABELS = {
+  dechiffrage: 'Déchiffrage',
+  perfectionnement: 'Perfectionnement',
+  repertoire: 'Répertoire',
+}
+
+export function statusLabel(status) {
+  return STATUS_LABELS[status] || status
+}
+
 export function formatDate(date) {
   const today = new Date()
   today.setHours(0, 0, 0, 0)
