@@ -1,11 +1,7 @@
-import { initPracticeTracker } from './practiceTracker.js'
-import { initStorage } from './storage.js'
-import { formatDuration } from './utils.js'
+import { loadScoresWithAggregates, getScoreUrl, getAggregate, formatDuration } from './scoreListBase.js'
+import { statusLabel } from './utils.js'
 
 export function composerApp() {
-  const storage = initStorage()
-  const practiceTracker = initPracticeTracker(storage)
-
   return {
     composer: '',
     scores: [],
@@ -16,31 +12,23 @@ export function composerApp() {
       const params = new URLSearchParams(window.location.search)
       this.composer = params.get('composer') || ''
 
-      const [scoresResponse, , aggregates] = await Promise.all([
-        fetch('data/scores.json'),
-        practiceTracker.init(),
-        storage.getAllAggregates(),
-      ])
-      const data = await scoresResponse.json()
-      this.baseUrl = data.baseUrl
-      this.scores = data.scores.filter((s) => s.composer === this.composer)
-      for (const agg of aggregates) {
-        this.aggregatesByScore[agg.scoreId] = agg
-      }
+      const { baseUrl, scores, aggregatesByScore } = await loadScoresWithAggregates()
+      this.baseUrl = baseUrl
+      this.scores = scores.filter((s) => s.composer === this.composer)
+      this.aggregatesByScore = aggregatesByScore
 
       document.title = `Piano Trainer - ${this.composer}`
     },
 
     getScoreUrl(score) {
-      return this.baseUrl + score.file
+      return getScoreUrl(this.baseUrl, score)
     },
 
     getAggregate(score) {
-      const agg = this.aggregatesByScore[this.getScoreUrl(score)]
-      if (!agg || (agg.practiceDays || []).length === 0) return null
-      return agg
+      return getAggregate(this.aggregatesByScore, this.baseUrl, score)
     },
 
+    statusLabel,
     formatDuration,
   }
 }

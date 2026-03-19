@@ -13,12 +13,12 @@ class ComposerAndStatusPagesTest < CapybaraTestBase
     assert_text 'Chopin'
 
     # Verify the 3 scores with injected data appear with status links
-    assert_link 'dechiffrage', href: /status\.html\?status=dechiffrage/
-    assert_link 'perfectionnement', href: /status\.html\?status=perfectionnement/
-    assert_link 'repertoire', href: /status\.html\?status=repertoire/
+    assert_link 'Déchiffrage', href: /status\.html\?status=dechiffrage/
+    assert_link 'Perfectionnement', href: /status\.html\?status=perfectionnement/
+    assert_link 'Répertoire', href: /status\.html\?status=repertoire/
 
     # Click on a status link to navigate to the status page
-    click_link 'repertoire'
+    click_link 'Répertoire'
 
     assert_text 'Répertoire'
     assert_link 'Waltz in A Minor'

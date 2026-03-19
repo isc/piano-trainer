@@ -34,7 +34,7 @@
               <td x-text="getAggregate(score) ? formatDuration(getAggregate(score).totalPracticeTimeMs) : '—'"></td>
               <td>
                 <template x-if="getAggregate(score)">
-                  <a :href="'status.html?status=' + encodeURIComponent(getAggregate(score).status)" x-text="getAggregate(score).status"></a>
+                  <a :href="'status.html?status=' + encodeURIComponent(getAggregate(score).status)" x-text="statusLabel(getAggregate(score).status)"></a>
                 </template>
                 <template x-if="!getAggregate(score)">
                   <span>—</span>
