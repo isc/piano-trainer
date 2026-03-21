@@ -58,6 +58,7 @@ svg g.vf-notehead.active-note path {
 
 /* OSMD playback cursor: on system change, scrollIntoView({ block: 'start' }) positions
    the cursor at scroll-margin-top from the viewport top, leaving room for the next system.
+   Keep value in sync with SCROLL_TOP_MARGIN in musicxml.js.
    height and z-index are fixed in JS (OSMD sets inline styles that override CSS). */
 img[id^="cursorImg"] {
   scroll-margin-top: 80px;

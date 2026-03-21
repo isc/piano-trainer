@@ -404,6 +404,7 @@ function jumpToMeasure(measureIndex) {
   }
 }
 
+// Keep in sync with scroll-margin-top in styles.css
 const SCROLL_TOP_MARGIN = 80
 
 function scrollToMeasure(measureIndex) {
@@ -564,7 +565,7 @@ function deactivateNote(midiNote) {
 }
 
 // Scroll to next measure if it's on a different system, positioning it near the top
-function scrollToNextMeasureIfNeeded(currentIndex, nextIndex) {
+function scrollToNextMeasureIfNeeded(nextIndex) {
   if (nextIndex >= allNotes.length) return
 
   const nextMeasureData = allNotes[nextIndex]
@@ -644,7 +645,7 @@ function handleNoteValidated(measureData, noteData, validatedCount) {
           setTimeout(() => {
             resetMeasureProgress()
             // Scroll to next measure before incrementing
-            scrollToNextMeasureIfNeeded(currentMeasureIndex, currentMeasureIndex + 1)
+            scrollToNextMeasureIfNeeded(currentMeasureIndex + 1)
             currentMeasureIndex++
             updateMeasureCursor()
             updateRepeatIndicators()
@@ -683,7 +684,7 @@ function handleNoteValidated(measureData, noteData, validatedCount) {
           }
         }
         // Scroll to next measure before incrementing
-        scrollToNextMeasureIfNeeded(currentMeasureIndex, currentMeasureIndex + 1)
+        scrollToNextMeasureIfNeeded(currentMeasureIndex + 1)
         currentMeasureIndex++
         // Reset practice tracking for next measure in free mode
         measureStartTime = null
