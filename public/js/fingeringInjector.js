@@ -61,6 +61,9 @@ function injectFingeringIntoNote(doc, note, finger) {
   }
 
   const technical = getOrCreateChild(doc, notations, 'technical')
-  const fingering = getOrCreateChild(doc, technical, 'fingering')
+  // Remove all existing fingerings (e.g. turn ornaments can have multiple)
+  for (const f of [...technical.querySelectorAll('fingering')]) f.remove()
+  const fingering = doc.createElement('fingering')
   fingering.textContent = finger.toString()
+  technical.appendChild(fingering)
 }
