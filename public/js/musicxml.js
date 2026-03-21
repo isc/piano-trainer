@@ -200,11 +200,15 @@ function extractNotesFromScore() {
   allNotes = result.allNotes
   playbackSequence = result.playbackSequence
 
-  // Build fingeringKey -> noteData map for O(1) lookups
+  // Build fingeringKey -> noteData map for O(1) lookups.
+  // Ornament expansions create multiple notes with the same fingeringKey but noteheadIndex=-1.
+  // Prefer entries with a valid noteheadIndex so fingering click handlers can match SVG noteheads.
   noteDataByKey.clear()
   for (const { notes } of allNotes) {
     for (const noteData of notes) {
-      noteDataByKey.set(noteData.fingeringKey, noteData)
+      if (!noteDataByKey.has(noteData.fingeringKey) || noteData.noteheadIndex >= 0) {
+        noteDataByKey.set(noteData.fingeringKey, noteData)
+      }
     }
   }
 }
