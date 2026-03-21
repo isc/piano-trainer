@@ -22,19 +22,23 @@
           <tr>
             <th>Titre</th>
             <th>Compositeur</th>
+            <th>Jou&eacute; en entier</th>
+            <th>Dernier passage</th>
             <th>Temps pratiqu&eacute;</th>
           </tr>
         </thead>
         <tbody>
           <template x-for="score in scores" :key="score.file">
-            <tr>
+            <tr x-data="{ agg: getAggregate(score) }">
               <td>
                 <a :href="'score.html?url=' + encodeURIComponent(getScoreUrl(score))" x-text="score.title"></a>
               </td>
               <td>
                 <a :href="'composer.html?composer=' + encodeURIComponent(score.composer)" x-text="score.composer"></a>
               </td>
-              <td x-text="getAggregate(score) ? formatDuration(getAggregate(score).totalPracticeTimeMs) : '—'"></td>
+              <td x-text="agg?.timesCompleted || '—'"></td>
+              <td x-text="agg?.lastCompletedAt ? formatDate(agg.lastCompletedAt) : '—'"></td>
+              <td x-text="formatDuration(agg.totalPracticeTimeMs)"></td>
             </tr>
           </template>
         </tbody>
