@@ -10,7 +10,6 @@ let trainingMode = false
 let targetRepeatCount = 3
 let repeatCount = 0
 let currentRepetitionIsClean = true
-let lastStaffY = null
 let currentSystemIndex = null
 let measureClickRectangles = []
 let playedSourceMeasures = new Set() // Track source measures that have been fully played
@@ -145,7 +144,6 @@ function resetPlaybackState() {
   currentMeasureIndex = 0
   repeatCount = 0
   currentRepetitionIsClean = true
-  lastStaffY = null
   currentSystemIndex = null
   heldMidiNotes.clear()
   playedSourceMeasures.clear()
@@ -406,13 +404,15 @@ function jumpToMeasure(measureIndex) {
   }
 }
 
+const SCROLL_TOP_MARGIN = 80
+
 function scrollToMeasure(measureIndex) {
   const rect = measureClickRectangles[measureIndex]
   if (!rect) return
 
   const bbox = rect.getBoundingClientRect()
-  const targetY = window.scrollY + bbox.top - window.innerHeight / 2 + bbox.height / 2
-  window.scrollTo({ top: targetY, behavior: 'smooth' })
+  const targetY = window.scrollY + bbox.top - SCROLL_TOP_MARGIN
+  window.scrollTo({ top: Math.max(0, targetY), behavior: 'smooth' })
 }
 
 // Activate a note when pressed (Note ON) - for polyphonic validation
@@ -563,7 +563,7 @@ function deactivateNote(midiNote) {
   }
 }
 
-// Helper function to scroll to next measure if it's on a different system
+// Scroll to next measure if it's on a different system, positioning it near the top
 function scrollToNextMeasureIfNeeded(currentIndex, nextIndex) {
   if (nextIndex >= allNotes.length) return
 
@@ -573,19 +573,9 @@ function scrollToNextMeasureIfNeeded(currentIndex, nextIndex) {
   const nextMeasureFirstNote = nextMeasureData.notes[0].note
   const nextSystemIndex = getSystemIndexForNote(nextMeasureFirstNote)
 
-  // Scroll if we're moving to a new system
   if (currentSystemIndex !== null && nextSystemIndex !== currentSystemIndex) {
-    const nextNoteElement = svgNote(nextMeasureFirstNote)
-    if (!nextNoteElement) return
-    const nextY = nextNoteElement.getBBox().y
-
-    if (lastStaffY !== null) {
-      const scrollAmount = nextY - lastStaffY
-      window.scrollBy({ top: scrollAmount, behavior: 'smooth' })
-    }
-
+    scrollToMeasure(nextIndex)
     currentSystemIndex = nextSystemIndex
-    lastStaffY = nextY
   }
 }
 
@@ -599,10 +589,6 @@ function handleNoteValidated(measureData, noteData, validatedCount) {
     // Initialize/update system tracking on first note of each measure
     const noteSystemIndex = getSystemIndexForNote(noteData.note)
     currentSystemIndex = noteSystemIndex
-    const noteElement = svgNote(noteData.note)
-    if (noteElement) {
-      lastStaffY = noteElement.getBBox().y
-    }
 
     // Initialize practice tracking if not already set
     if (measureStartTime === null) {
