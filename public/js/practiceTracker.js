@@ -193,7 +193,10 @@ export function initPracticeTracker(storageInstance = null) {
     aggregate.totalSessions++
 
     if (!aggregate.timesCompleted) aggregate.timesCompleted = 0
-    if (session.completedAt) aggregate.timesCompleted++
+    if (session.completedAt) {
+      aggregate.timesCompleted++
+      aggregate.lastCompletedAt = session.completedAt
+    }
 
     if (!aggregate.practiceDays) aggregate.practiceDays = []
     const sessionDay = session.startedAt.substring(0, 10)

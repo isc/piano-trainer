@@ -1,5 +1,5 @@
 import { loadScoresWithAggregates, getScoreUrl, getAggregate, formatDuration } from './scoreListBase.js'
-import { statusLabel } from './utils.js'
+import { statusLabel, formatDate } from './utils.js'
 
 export function statusApp() {
   return {
@@ -24,9 +24,11 @@ export function statusApp() {
           return agg && agg.status === this.status
         })
         .sort((a, b) => {
-          const aLastPlayed = this.getAggregate(a).lastPlayedAt || ''
-          const bLastPlayed = this.getAggregate(b).lastPlayedAt || ''
-          return bLastPlayed.localeCompare(aLastPlayed)
+          const aggA = this.getAggregate(a)
+          const aggB = this.getAggregate(b)
+          const aDate = aggA.lastCompletedAt || aggA.lastPlayedAt || ''
+          const bDate = aggB.lastCompletedAt || aggB.lastPlayedAt || ''
+          return bDate.localeCompare(aDate)
         })
 
       document.title = `Piano Trainer - ${this.displayLabel}`
@@ -41,5 +43,6 @@ export function statusApp() {
     },
 
     formatDuration,
+    formatDate,
   }
 }
