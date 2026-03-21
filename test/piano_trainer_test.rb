@@ -311,6 +311,9 @@ class PianoTrainerTest < CapybaraTestBase
       # This brings us to the last note of measure 1 (end of first system)
       replay_cassette('melodie-2-bars')
 
+      # Reset scroll to top (Capybara may have scrolled down to click the cassette button)
+      page.execute_script('window.scrollTo(0, 0)')
+
       # Wait for scroll to stabilize before capturing position
       scroll_before_last_note = wait_for_stable_scroll
 

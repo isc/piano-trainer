@@ -234,11 +234,19 @@ async function togglePlayback(allNotes, osmdInstance) {
     cursor.reset()
     cursor.show()
     syncCursorStyle(cursor)
+    let lastCursorTop = null
     for (let i = 0; i < cursorSteps.length; i++) {
       scheduledTimeouts.push(setTimeout(() => {
         if (i > 0) cursor.next()
         syncCursorStyle(cursor)
-        cursor.cursorElement?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+        const el = cursor.cursorElement
+        if (el) {
+          const currentTop = el.getBoundingClientRect().top + window.scrollY
+          if (lastCursorTop === null || Math.abs(currentTop - lastCursorTop) > 10) {
+            el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+          }
+          lastCursorTop = currentTop
+        }
       }, cursorSteps[i]))
     }
   }
