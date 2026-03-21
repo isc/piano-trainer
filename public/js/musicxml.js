@@ -184,6 +184,7 @@ async function renderMusicXML(xmlContent) {
     const osmd = new opensheetmusicdisplay.OpenSheetMusicDisplay(scoreContainer, {
       drawPartNames: false,
     })
+    osmd.rules.MetronomeMarkYShift = -2.8;
     await osmd.load(xmlContent)
     osmdInstance = osmd
     window.osmdInstance = osmd
