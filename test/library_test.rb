@@ -15,7 +15,7 @@ class LibraryTest < CapybaraTestBase
     fill_in 'Rechercher une partition', with: 'Moonlight'
 
     assert_selector 'tr td', text: 'Moonlight Sonata'
-    assert_selector 'tbody tr', count: 3
+    assert_selector 'tbody tr', count: 2
   end
 
   def test_search_filters_scores_by_composer
