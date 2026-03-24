@@ -76,8 +76,14 @@ export function midiApp() {
       await midi.connectMIDI({ silent: true, autoSelectFirst: true })
       this.syncMidiState()
 
+      const NAVIGATE_HOME_KEY = 21 // A0 - lowest piano key
+
       midi.setCallbacks({
         onNotePlayed: (noteName, midiNote) => {
+          if (midiNote === NAVIGATE_HOME_KEY) {
+            window.location.href = 'index.html'
+            return
+          }
           musicxml.activateNote(midiNote)
         },
         onNoteReleased: (noteName, midiNote) => {
