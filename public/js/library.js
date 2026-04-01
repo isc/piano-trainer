@@ -4,18 +4,19 @@ import { initStorage } from './storage.js'
 import { formatDuration, formatDate } from './utils.js'
 
 const MIN_MATCH = 5
+const NAVIGATE_HOME_KEY = 21 // A0 - lowest piano key
 
 export function libraryApp() {
   const midi = initMidi()
   const storage = initStorage()
   const practiceTracker = initPracticeTracker(storage)
 
+  let fingerprints = []
   let matchPointers = {}
   let searchResetTimer = null
 
   return {
     scores: [],
-    fingerprints: [],
     searchQuery: '',
     baseUrl: '',
     dailyLogsByDate: [],
@@ -23,7 +24,7 @@ export function libraryApp() {
 
     async init() {
       midi.setCallbacks({
-        onNotePlayed: (_name, midiNote) => this.handleSearchNote(midiNote),
+        onNotePlayed: (_, midiNote) => this.handleSearchNote(midiNote),
       })
       midi.connectMIDI({ silent: true, autoSelectFirst: true })
 
@@ -36,7 +37,7 @@ export function libraryApp() {
       this.baseUrl = data.baseUrl
 
       const fpData = await fingerprintsResponse.json()
-      this.fingerprints = fpData.fingerprints
+      fingerprints = fpData.fingerprints
 
       // Build map of scoreId -> most recent play time
       const sessions = await storage.getSessions()
@@ -54,25 +55,32 @@ export function libraryApp() {
     },
 
     handleSearchNote(midiNote) {
-      if (midiNote === 21) return // A0 reserved for home navigation
-      if (this.fingerprints.length === 0) return
+      if (midiNote === NAVIGATE_HOME_KEY) return
+      if (fingerprints.length === 0) return
 
       clearTimeout(searchResetTimer)
 
-      for (const fp of this.fingerprints) {
+      let maxPos = 0
+      let leader = null
+
+      for (const fp of fingerprints) {
         const pos = matchPointers[fp.file] ?? 0
-        if (pos < fp.notes.length && fp.notes[pos] === midiNote) {
-          matchPointers[fp.file] = pos + 1
+        const advanced = pos < fp.notes.length && fp.notes[pos] === midiNote
+        const currentPos = advanced ? pos + 1 : pos
+
+        if (advanced) matchPointers[fp.file] = currentPos
+
+        if (currentPos > maxPos) {
+          maxPos = currentPos
+          leader = fp
+        } else if (currentPos === maxPos) {
+          leader = null
         }
       }
 
-      const maxPos = Math.max(...this.fingerprints.map(fp => matchPointers[fp.file] ?? 0))
-      if (maxPos >= MIN_MATCH) {
-        const leaders = this.fingerprints.filter(fp => (matchPointers[fp.file] ?? 0) === maxPos)
-        if (leaders.length === 1) {
-          window.location.href = `score.html?url=${encodeURIComponent(this.baseUrl + leaders[0].file)}`
-          return
-        }
+      if (maxPos >= MIN_MATCH && leader !== null) {
+        window.location.href = `score.html?url=${encodeURIComponent(this.baseUrl + leader.file)}`
+        return
       }
 
       searchResetTimer = setTimeout(() => this.resetNoteSearch(), 3000)

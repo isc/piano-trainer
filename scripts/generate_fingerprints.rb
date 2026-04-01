@@ -67,7 +67,6 @@ def extract_notes(xml_content)
     voice = note.elements['voice']&.text&.to_i || 1
     next if voice != 1
 
-    # Skip tie continuations (has stop but not start)
     has_stop  = REXML::XPath.first(note, "tie[@type='stop']")
     has_start = REXML::XPath.first(note, "tie[@type='start']")
     next if has_stop && !has_start
