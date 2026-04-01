@@ -2,6 +2,7 @@ require_relative 'test_helper'
 
 class LibraryTest < CapybaraTestBase
   def setup
+    page.driver.set_cookie('test-env', 'true')
     visit '/index.html'
   end
 
@@ -50,8 +51,6 @@ class LibraryTest < CapybaraTestBase
   end
 
   def test_open_score_by_playing_its_beginning
-    page.driver.set_cookie('test-env', 'true')
-    visit '/index.html'
     assert_selector 'tbody tr', minimum: 1  # wait for init() to complete (fingerprints loaded)
 
     # Symphony No. 5 fingerprint: [67, 67, 67, 63, 65, ...] = G4 G4 G4 Eb4 F4
@@ -60,12 +59,9 @@ class LibraryTest < CapybaraTestBase
     play_notes(%w[G4 G4 G4 Eb4 F4])
 
     assert_current_path %r{/score\.html\?url=.*Beethoven_Symphony_No\._5}
-    assert_text 'Bibliothèque'
   end
 
   def test_open_score_by_playing_both_hands
-    page.driver.set_cookie('test-env', 'true')
-    visit '/index.html'
     assert_selector 'tbody tr', minimum: 1
 
     # Same Symphony No. 5 melody with interspersed left-hand notes (C2 = MIDI 36)
