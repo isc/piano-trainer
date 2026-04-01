@@ -1,25 +1,42 @@
+import { initMidi } from './midi.js'
 import { initPracticeTracker } from './practiceTracker.js'
 import { initStorage } from './storage.js'
 import { formatDuration, formatDate } from './utils.js'
 
+const MIN_MATCH = 5
+
 export function libraryApp() {
+  const midi = initMidi()
   const storage = initStorage()
   const practiceTracker = initPracticeTracker(storage)
 
+  let matchPointers = {}
+  let searchResetTimer = null
+
   return {
     scores: [],
+    fingerprints: [],
     searchQuery: '',
     baseUrl: '',
     dailyLogsByDate: [],
     lastPlayedByScore: {},
 
     async init() {
-      const [scoresResponse] = await Promise.all([
+      midi.setCallbacks({
+        onNotePlayed: (_name, midiNote) => this.handleSearchNote(midiNote),
+      })
+      midi.connectMIDI({ silent: true, autoSelectFirst: true })
+
+      const [scoresResponse, fingerprintsResponse] = await Promise.all([
         fetch('data/scores.json'),
+        fetch('data/fingerprints.json'),
         practiceTracker.init(),
       ])
       const data = await scoresResponse.json()
       this.baseUrl = data.baseUrl
+
+      const fpData = await fingerprintsResponse.json()
+      this.fingerprints = fpData.fingerprints
 
       // Build map of scoreId -> most recent play time
       const sessions = await storage.getSessions()
@@ -34,6 +51,36 @@ export function libraryApp() {
       this.scores = data.scores
 
       await this.reloadDailyLogs()
+    },
+
+    handleSearchNote(midiNote) {
+      if (midiNote === 21) return // A0 reserved for home navigation
+      if (this.fingerprints.length === 0) return
+
+      clearTimeout(searchResetTimer)
+
+      for (const fp of this.fingerprints) {
+        const pos = matchPointers[fp.file] ?? 0
+        if (pos < fp.notes.length && fp.notes[pos] === midiNote) {
+          matchPointers[fp.file] = pos + 1
+        }
+      }
+
+      const maxPos = Math.max(...this.fingerprints.map(fp => matchPointers[fp.file] ?? 0))
+      if (maxPos >= MIN_MATCH) {
+        const leaders = this.fingerprints.filter(fp => (matchPointers[fp.file] ?? 0) === maxPos)
+        if (leaders.length === 1) {
+          window.location.href = `score.html?url=${encodeURIComponent(this.baseUrl + leaders[0].file)}`
+          return
+        }
+      }
+
+      searchResetTimer = setTimeout(() => this.resetNoteSearch(), 3000)
+    },
+
+    resetNoteSearch() {
+      matchPointers = {}
+      clearTimeout(searchResetTimer)
     },
 
     get filteredScores() {
