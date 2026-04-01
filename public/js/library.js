@@ -4,7 +4,6 @@ import { initStorage } from './storage.js'
 import { formatDuration, formatDate } from './utils.js'
 
 const MIN_MATCH = 5
-const NAVIGATE_HOME_KEY = 21 // A0 - lowest piano key
 
 export function libraryApp() {
   const midi = initMidi()
@@ -55,7 +54,6 @@ export function libraryApp() {
     },
 
     handleSearchNote(midiNote) {
-      if (midiNote === NAVIGATE_HOME_KEY) return
       if (fingerprints.length === 0) return
 
       clearTimeout(searchResetTimer)

@@ -75,16 +75,6 @@ class LibraryTest < CapybaraTestBase
     assert_current_path %r{/score\.html\?url=.*Beethoven_Symphony_No\._5}
   end
 
-  def test_a0_does_not_trigger_note_search
-    page.driver.set_cookie('test-env', 'true')
-    visit '/index.html'
-    assert_selector 'tbody tr', minimum: 1
-
-    play_note('A0')
-
-    assert_current_path '/index.html'
-  end
-
   def test_charger_ma_partition_link
     click_on 'Charger ma partition'
 
