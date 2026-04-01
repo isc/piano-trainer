@@ -131,5 +131,6 @@ unless errors.empty?
   errors.each { |e| warn "  ! #{e}" }
 end
 
-File.write(OUTPUT_FILE, JSON.pretty_generate({ 'fingerprints' => fingerprints }))
+lines = fingerprints.map { |fp| JSON.generate(fp) }
+File.write(OUTPUT_FILE, "{\n  \"fingerprints\": [\n    #{lines.join(",\n    ")}\n  ]\n}\n")
 puts "\nGenerated #{fingerprints.length}/#{data['scores'].length} fingerprints → #{OUTPUT_FILE}"
