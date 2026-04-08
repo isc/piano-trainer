@@ -13,6 +13,7 @@ export function libraryApp() {
   let fingerprints = []
   let matchPointers = {}
   let searchResetTimer = null
+  let sessionCountByFile = {}
 
   return {
     scores: [],
@@ -38,12 +39,16 @@ export function libraryApp() {
       const fpData = await fingerprintsResponse.json()
       fingerprints = fpData.fingerprints
 
-      // Build map of scoreId -> most recent play time
+      // Build maps from sessions: most recent play time + count per score file
       const sessions = await storage.getSessions()
       for (const session of sessions) {
         const existing = this.lastPlayedByScore[session.scoreId]
         if (!existing || session.startedAt > existing) {
           this.lastPlayedByScore[session.scoreId] = session.startedAt
+        }
+        if (session.scoreId.startsWith(this.baseUrl)) {
+          const file = session.scoreId.slice(this.baseUrl.length)
+          sessionCountByFile[file] = (sessionCountByFile[file] ?? 0) + 1
         }
       }
 
@@ -60,6 +65,7 @@ export function libraryApp() {
 
       let maxPos = 0
       let leader = null
+      let leaderSessions = -1
 
       for (const fp of fingerprints) {
         const pos = matchPointers[fp.file] ?? 0
@@ -71,8 +77,15 @@ export function libraryApp() {
         if (currentPos > maxPos) {
           maxPos = currentPos
           leader = fp
-        } else if (currentPos === maxPos) {
-          leader = null
+          leaderSessions = sessionCountByFile[fp.file] ?? 0
+        } else if (currentPos === maxPos && currentPos > 0) {
+          const count = sessionCountByFile[fp.file] ?? 0
+          if (count > leaderSessions) {
+            leader = fp
+            leaderSessions = count
+          } else if (count === leaderSessions) {
+            leader = null
+          }
         }
       }
 
