@@ -304,6 +304,7 @@ function adjustGraceNoteTimestamps(measureNotes) {
 // This is the raw extraction without considering playback order
 function extractNotesFromSourceMeasures(sourceMeasures) {
   const notesByMeasure = new Map()
+  const pedalEventsByMeasure = new Map()
   let currentFifths = 0
 
   sourceMeasures.forEach((measure, measureIndex) => {
