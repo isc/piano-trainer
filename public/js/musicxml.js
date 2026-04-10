@@ -200,7 +200,6 @@ function extractNotesFromScore() {
   const result = extractNotes(osmdInstance)
   allNotes = result.allNotes
   playbackSequence = result.playbackSequence
-
   // Build fingeringKey -> noteData map for O(1) lookups.
   // Ornament expansions create multiple notes with the same fingeringKey but noteheadIndex=-1.
   // Prefer entries with a valid noteheadIndex so fingering click handlers can match SVG noteheads.

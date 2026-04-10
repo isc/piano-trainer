@@ -21,20 +21,28 @@ export function initPlayback(externalMidiState = null) {
   }
 }
 
-function noteOn(midiNumber, velocity) {
+function sendMidi(midiBytes, pianoFn) {
   if (midiState?.midiOutput) {
-    midiState.midiOutput.send([0x90, midiNumber, Math.round(velocity * 127)])
+    midiState.midiOutput.send(midiBytes)
   } else if (piano) {
-    piano.keyDown({ midi: midiNumber, velocity })
+    pianoFn(piano)
   }
 }
 
+function noteOn(midiNumber, velocity) {
+  sendMidi([0x90, midiNumber, Math.round(velocity * 127)], (p) => p.keyDown({ midi: midiNumber, velocity }))
+}
+
 function noteOff(midiNumber) {
-  if (midiState?.midiOutput) {
-    midiState.midiOutput.send([0x80, midiNumber, 0])
-  } else if (piano) {
-    piano.keyUp({ midi: midiNumber })
-  }
+  sendMidi([0x80, midiNumber, 0], (p) => p.keyUp({ midi: midiNumber }))
+}
+
+function pedalDown() {
+  sendMidi([0xB0, 64, 127], (p) => p.pedalDown())
+}
+
+function pedalUp() {
+  sendMidi([0xB0, 64, 0], (p) => p.pedalUp())
 }
 
 async function ensurePianoLoaded() {
@@ -158,10 +166,9 @@ function stop() {
   for (const id of scheduledTimeouts) clearTimeout(id)
   scheduledTimeouts = []
   isPlaying = false
+  pedalUp()
   if (midiState?.midiOutput) {
     midiState.midiOutput.send([0xB0, 123, 0]) // All Notes Off
-  } else {
-    piano?.pedalUp()
   }
   hideCursor()
 }
@@ -224,6 +231,11 @@ async function togglePlayback(allNotes, osmdInstance) {
       scheduledTimeouts.push(setTimeout(() => noteOff(n.midiNumber), startMs + durationMs))
 
       maxEndMs = Math.max(maxEndMs, startMs + durationMs)
+    }
+
+    for (const pe of measureData.pedalEvents || []) {
+      const eventMs = tsToSeconds(measureOffset + pe.timestamp, bpm) * 1000
+      scheduledTimeouts.push(setTimeout(pe.type === 'pedalDown' ? pedalDown : pedalUp, eventMs))
     }
   }
 
