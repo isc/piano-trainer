@@ -37,6 +37,22 @@ function noteOff(midiNumber) {
   }
 }
 
+function pedalDown() {
+  if (midiState?.midiOutput) {
+    midiState.midiOutput.send([0xB0, 64, 127])
+  } else if (piano) {
+    piano.pedalDown()
+  }
+}
+
+function pedalUp() {
+  if (midiState?.midiOutput) {
+    midiState.midiOutput.send([0xB0, 64, 0])
+  } else if (piano) {
+    piano.pedalUp()
+  }
+}
+
 async function ensurePianoLoaded() {
   if (midiState?.midiOutput || piano) return
   piano = new Piano({ velocities: 1 })
@@ -159,6 +175,7 @@ function stop() {
   scheduledTimeouts = []
   isPlaying = false
   if (midiState?.midiOutput) {
+    midiState.midiOutput.send([0xB0, 64, 0]) // Sustain Pedal Off
     midiState.midiOutput.send([0xB0, 123, 0]) // All Notes Off
   } else {
     piano?.pedalUp()
@@ -189,7 +206,7 @@ function buildCursorTimeline(allNotes, cumStartTimes, bpm) {
   return steps.sort((a, b) => a - b)
 }
 
-async function togglePlayback(allNotes, osmdInstance) {
+async function togglePlayback(allNotes, osmdInstance, pedalEvents = []) {
   if (isPlaying) { stop(); return }
 
   await ensurePianoLoaded()
@@ -225,6 +242,12 @@ async function togglePlayback(allNotes, osmdInstance) {
 
       maxEndMs = Math.max(maxEndMs, startMs + durationMs)
     }
+  }
+
+  // Schedule pedal events.
+  for (const event of pedalEvents) {
+    const eventMs = tsToSeconds(event.timestamp, bpm) * 1000
+    scheduledTimeouts.push(setTimeout(event.type === 'pedalDown' ? pedalDown : pedalUp, eventMs))
   }
 
   // Cursor: schedule advances in sync with audio.

@@ -387,11 +387,44 @@ function extractNotesFromSourceMeasures(sourceMeasures) {
   return notesByMeasure
 }
 
+// Extract pedal events from source measures into a Map (sourceMeasureIndex -> pedal events array)
+function extractPedalEventsFromSourceMeasures(sourceMeasures) {
+  const pedalEventsByMeasure = new Map()
+
+  sourceMeasures.forEach((measure, measureIndex) => {
+    const events = []
+    const staffLinkedExpressions = measure.StaffLinkedExpressions
+    if (!staffLinkedExpressions) return
+
+    for (const staffExpressions of staffLinkedExpressions) {
+      if (!staffExpressions) continue
+      for (const multiExpr of staffExpressions) {
+        const ts = measureIndex + (multiExpr.Timestamp?.RealValue ?? 0)
+        if (multiExpr.PedalStart) {
+          events.push({ type: 'pedalDown', timestamp: ts, sourceMeasureIndex: measureIndex })
+        }
+        if (multiExpr.PedalEnd) {
+          events.push({ type: 'pedalUp', timestamp: ts, sourceMeasureIndex: measureIndex })
+          if (multiExpr.PedalEnd.ChangeEnd) {
+            events.push({ type: 'pedalDown', timestamp: ts, sourceMeasureIndex: measureIndex })
+          }
+        }
+      }
+    }
+
+    if (events.length > 0) {
+      pedalEventsByMeasure.set(measureIndex, events)
+    }
+  })
+
+  return pedalEventsByMeasure
+}
+
 // Extract notes from the score and build the playback sequence
-// Returns { allNotes, playbackSequence }
+// Returns { allNotes, playbackSequence, pedalEvents }
 export function extractNotesFromScore(osmdInstance) {
   if (!osmdInstance) {
-    return { allNotes: [], playbackSequence: [] }
+    return { allNotes: [], playbackSequence: [], pedalEvents: [] }
   }
 
   const sheet = osmdInstance.Sheet
@@ -403,8 +436,12 @@ export function extractNotesFromScore(osmdInstance) {
   // Extract notes from each source measure into a map
   const notesBySourceMeasure = extractNotesFromSourceMeasures(sourceMeasures)
 
+  // Extract pedal events from each source measure into a map
+  const pedalEventsBySourceMeasure = extractPedalEventsFromSourceMeasures(sourceMeasures)
+
   // Build allNotes array following the playback sequence
   const allNotes = []
+  const pedalEvents = []
   playbackSequence.forEach((seqItem, playbackIndex) => {
     const sourceNotes = notesBySourceMeasure.get(seqItem.sourceMeasureIndex)
     if (!sourceNotes || sourceNotes.length === 0) return
@@ -428,7 +465,17 @@ export function extractNotesFromScore(osmdInstance) {
       sourceMeasureIndex: seqItem.sourceMeasureIndex,
       notes: measureNotes,
     })
+
+    const sourcePedalEvents = pedalEventsBySourceMeasure.get(seqItem.sourceMeasureIndex)
+    if (sourcePedalEvents) {
+      for (const event of sourcePedalEvents) {
+        pedalEvents.push({
+          ...event,
+          timestamp: playbackIndex + (event.timestamp - event.sourceMeasureIndex),
+        })
+      }
+    }
   })
 
-  return { allNotes, playbackSequence }
+  return { allNotes, playbackSequence, pedalEvents }
 }
