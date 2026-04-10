@@ -1,10 +1,19 @@
+import { initMidi } from './midi.js'
 import { initPracticeTracker } from './practiceTracker.js'
 import { initStorage } from './storage.js'
 import { formatDuration, formatDate } from './utils.js'
 
+const MIN_MATCH = 5
+
 export function libraryApp() {
+  const midi = initMidi()
   const storage = initStorage()
   const practiceTracker = initPracticeTracker(storage)
+
+  let fingerprints = []
+  let matchPointers = {}
+  let searchResetTimer = null
+  let sessionCountByFile = {}
 
   return {
     scores: [],
@@ -14,19 +23,32 @@ export function libraryApp() {
     lastPlayedByScore: {},
 
     async init() {
-      const [scoresResponse] = await Promise.all([
+      midi.setCallbacks({
+        onNotePlayed: (_, midiNote) => this.handleSearchNote(midiNote),
+      })
+      midi.connectMIDI({ silent: true, autoSelectFirst: true })
+
+      const [scoresResponse, fingerprintsResponse] = await Promise.all([
         fetch('data/scores.json'),
+        fetch('data/fingerprints.json'),
         practiceTracker.init(),
       ])
       const data = await scoresResponse.json()
       this.baseUrl = data.baseUrl
 
-      // Build map of scoreId -> most recent play time
+      const fpData = await fingerprintsResponse.json()
+      fingerprints = fpData.fingerprints
+
+      // Build maps from sessions: most recent play time + count per score file
       const sessions = await storage.getSessions()
       for (const session of sessions) {
         const existing = this.lastPlayedByScore[session.scoreId]
         if (!existing || session.startedAt > existing) {
           this.lastPlayedByScore[session.scoreId] = session.startedAt
+        }
+        if (session.scoreId.startsWith(this.baseUrl)) {
+          const file = session.scoreId.slice(this.baseUrl.length)
+          sessionCountByFile[file] = (sessionCountByFile[file] ?? 0) + 1
         }
       }
 
@@ -34,6 +56,50 @@ export function libraryApp() {
       this.scores = data.scores
 
       await this.reloadDailyLogs()
+    },
+
+    handleSearchNote(midiNote) {
+      if (fingerprints.length === 0) return
+
+      clearTimeout(searchResetTimer)
+
+      let maxPos = 0
+      let leader = null
+      let leaderSessions = -1
+
+      for (const fp of fingerprints) {
+        const pos = matchPointers[fp.file] ?? 0
+        const advanced = pos < fp.notes.length && fp.notes[pos] === midiNote
+        const currentPos = advanced ? pos + 1 : pos
+
+        if (advanced) matchPointers[fp.file] = currentPos
+
+        if (currentPos > maxPos) {
+          maxPos = currentPos
+          leader = fp
+          leaderSessions = sessionCountByFile[fp.file] ?? 0
+        } else if (currentPos === maxPos && currentPos > 0) {
+          const count = sessionCountByFile[fp.file] ?? 0
+          if (count > leaderSessions) {
+            leader = fp
+            leaderSessions = count
+          } else if (count === leaderSessions) {
+            leader = null
+          }
+        }
+      }
+
+      if (maxPos >= MIN_MATCH && leader !== null) {
+        window.location.href = `score.html?url=${encodeURIComponent(this.baseUrl + leader.file)}`
+        return
+      }
+
+      searchResetTimer = setTimeout(() => this.resetNoteSearch(), 3000)
+    },
+
+    resetNoteSearch() {
+      matchPointers = {}
+      clearTimeout(searchResetTimer)
     },
 
     get filteredScores() {

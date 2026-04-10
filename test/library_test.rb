@@ -2,6 +2,7 @@ require_relative 'test_helper'
 
 class LibraryTest < CapybaraTestBase
   def setup
+    page.driver.set_cookie('test-env', 'true')
     visit '/index.html'
   end
 
@@ -47,6 +48,27 @@ class LibraryTest < CapybaraTestBase
     # Go back to library and verify the score is now first (most recently played)
     click_on 'Bibliothèque'
     assert_equal 'Carol of the Bells (Easy)', first('td a').text
+  end
+
+  def test_open_score_by_playing_its_beginning
+    assert_selector 'tbody tr', minimum: 1  # wait for init() to complete (fingerprints loaded)
+
+    # Symphony No. 5 fingerprint: [67, 67, 67, 63, 65, ...] = G4 G4 G4 Eb4 F4
+    # Happy Birthday also starts G4 G4 but diverges at note 3 (expects F#4/A4, not G4)
+    # → Symphony No. 5 is the unique leader after 5 matched notes (MIN_MATCH)
+    play_notes(%w[G4 G4 G4 Eb4 F4])
+
+    assert_current_path %r{/score\.html\?url=.*Beethoven_Symphony_No\._5}
+  end
+
+  def test_open_score_by_playing_both_hands
+    assert_selector 'tbody tr', minimum: 1
+
+    # Same Symphony No. 5 melody with interspersed left-hand notes (C2 = MIDI 36)
+    # Subsequence matching advances the pointer only on melody notes, ignoring the rest
+    play_notes(%w[C2 G4 G4 C2 G4 Eb4 C2 F4 F4])
+
+    assert_current_path %r{/score\.html\?url=.*Beethoven_Symphony_No\._5}
   end
 
   def test_charger_ma_partition_link
