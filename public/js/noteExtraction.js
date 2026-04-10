@@ -382,49 +382,39 @@ function extractNotesFromSourceMeasures(sourceMeasures) {
     if (expandedNotes.length > 0) {
       notesByMeasure.set(measureIndex, expandedNotes)
     }
-  })
 
-  return notesByMeasure
-}
-
-// Extract pedal events from source measures into a Map (sourceMeasureIndex -> pedal events array)
-function extractPedalEventsFromSourceMeasures(sourceMeasures) {
-  const pedalEventsByMeasure = new Map()
-
-  sourceMeasures.forEach((measure, measureIndex) => {
-    const events = []
+    // Extract pedal events from StaffLinkedExpressions
+    const pedalEvents = []
     const staffLinkedExpressions = measure.StaffLinkedExpressions
-    if (!staffLinkedExpressions) return
-
-    for (const staffExpressions of staffLinkedExpressions) {
-      if (!staffExpressions) continue
-      for (const multiExpr of staffExpressions) {
-        const ts = measureIndex + (multiExpr.Timestamp?.RealValue ?? 0)
-        if (multiExpr.PedalStart) {
-          events.push({ type: 'pedalDown', timestamp: ts, sourceMeasureIndex: measureIndex })
-        }
-        if (multiExpr.PedalEnd) {
-          events.push({ type: 'pedalUp', timestamp: ts, sourceMeasureIndex: measureIndex })
-          if (multiExpr.PedalEnd.ChangeEnd) {
-            events.push({ type: 'pedalDown', timestamp: ts, sourceMeasureIndex: measureIndex })
+    if (staffLinkedExpressions) {
+      for (const staffExpressions of staffLinkedExpressions) {
+        if (!staffExpressions) continue
+        for (const multiExpr of staffExpressions) {
+          const ts = measureIndex + (multiExpr.Timestamp?.RealValue ?? 0)
+          if (multiExpr.PedalStart) {
+            pedalEvents.push({ type: 'pedalDown', timestamp: ts })
+          }
+          if (multiExpr.PedalEnd) {
+            pedalEvents.push({ type: 'pedalUp', timestamp: ts })
+            if (multiExpr.PedalEnd.ChangeEnd) {
+              pedalEvents.push({ type: 'pedalDown', timestamp: ts })
+            }
           }
         }
       }
     }
-
-    if (events.length > 0) {
-      pedalEventsByMeasure.set(measureIndex, events)
+    if (pedalEvents.length > 0) {
+      pedalEventsByMeasure.set(measureIndex, pedalEvents)
     }
   })
 
-  return pedalEventsByMeasure
+  return { notesByMeasure, pedalEventsByMeasure }
 }
 
 // Extract notes from the score and build the playback sequence
-// Returns { allNotes, playbackSequence, pedalEvents }
 export function extractNotesFromScore(osmdInstance) {
   if (!osmdInstance) {
-    return { allNotes: [], playbackSequence: [], pedalEvents: [] }
+    return { allNotes: [], playbackSequence: [] }
   }
 
   const sheet = osmdInstance.Sheet
@@ -433,17 +423,12 @@ export function extractNotesFromScore(osmdInstance) {
   // Build the playback sequence (handles repeats and endings)
   const playbackSequence = buildPlaybackSequence(sourceMeasures)
 
-  // Extract notes from each source measure into a map
-  const notesBySourceMeasure = extractNotesFromSourceMeasures(sourceMeasures)
-
-  // Extract pedal events from each source measure into a map
-  const pedalEventsBySourceMeasure = extractPedalEventsFromSourceMeasures(sourceMeasures)
+  const { notesByMeasure, pedalEventsByMeasure } = extractNotesFromSourceMeasures(sourceMeasures)
 
   // Build allNotes array following the playback sequence
   const allNotes = []
-  const pedalEvents = []
   playbackSequence.forEach((seqItem, playbackIndex) => {
-    const sourceNotes = notesBySourceMeasure.get(seqItem.sourceMeasureIndex)
+    const sourceNotes = notesByMeasure.get(seqItem.sourceMeasureIndex)
     if (!sourceNotes || sourceNotes.length === 0) return
 
     // Create a copy of the notes for this playback position
@@ -460,22 +445,19 @@ export function extractNotesFromScore(osmdInstance) {
       played: false,
     }))
 
+    const sourcePedalEvents = pedalEventsByMeasure.get(seqItem.sourceMeasureIndex)
+    const pedalEvents = sourcePedalEvents?.map((event) => ({
+      type: event.type,
+      timestamp: playbackIndex + (event.timestamp - seqItem.sourceMeasureIndex),
+    }))
+
     allNotes.push({
       measureIndex: playbackIndex,
       sourceMeasureIndex: seqItem.sourceMeasureIndex,
       notes: measureNotes,
+      pedalEvents,
     })
-
-    const sourcePedalEvents = pedalEventsBySourceMeasure.get(seqItem.sourceMeasureIndex)
-    if (sourcePedalEvents) {
-      for (const event of sourcePedalEvents) {
-        pedalEvents.push({
-          ...event,
-          timestamp: playbackIndex + (event.timestamp - event.sourceMeasureIndex),
-        })
-      }
-    }
   })
 
-  return { allNotes, playbackSequence, pedalEvents }
+  return { allNotes, playbackSequence }
 }

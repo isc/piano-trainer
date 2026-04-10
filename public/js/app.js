@@ -271,7 +271,7 @@ export function midiApp() {
     },
 
     async togglePlayback() {
-      await playback.togglePlayback(musicxml.getAllNotes(), musicxml.getOsmdInstance(), musicxml.getPedalEvents())
+      await playback.togglePlayback(musicxml.getAllNotes(), musicxml.getOsmdInstance())
       this.isPlaying = playback.isPlaying
     },
 

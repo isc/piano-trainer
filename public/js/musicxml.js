@@ -5,7 +5,6 @@ let osmdInstance = null
 let allNotes = []
 let noteDataByKey = new Map() // Map<fingeringKey, noteData> for O(1) lookups
 let playbackSequence = [] // Ordered list of source measure indices for playback (handles repeats)
-let pedalEvents = [] // Pedal events ordered by playback timestamp
 let currentMeasureIndex = 0
 let trainingMode = false
 let targetRepeatCount = 3
@@ -62,7 +61,6 @@ export function initMusicXML() {
     },
     getOsmdInstance: () => osmdInstance,
     getAllNotes: () => allNotes,
-    getPedalEvents: () => pedalEvents,
     getScoreMetadata: () => ({
       title: osmdInstance?.Sheet?.Title?.text || null,
       composer: osmdInstance?.Sheet?.Composer?.text || null,
@@ -202,8 +200,6 @@ function extractNotesFromScore() {
   const result = extractNotes(osmdInstance)
   allNotes = result.allNotes
   playbackSequence = result.playbackSequence
-  pedalEvents = result.pedalEvents
-
   // Build fingeringKey -> noteData map for O(1) lookups.
   // Ornament expansions create multiple notes with the same fingeringKey but noteheadIndex=-1.
   // Prefer entries with a valid noteheadIndex so fingering click handlers can match SVG noteheads.

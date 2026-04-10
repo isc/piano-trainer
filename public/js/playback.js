@@ -21,36 +21,28 @@ export function initPlayback(externalMidiState = null) {
   }
 }
 
-function noteOn(midiNumber, velocity) {
+function sendMidi(midiBytes, pianoFn) {
   if (midiState?.midiOutput) {
-    midiState.midiOutput.send([0x90, midiNumber, Math.round(velocity * 127)])
+    midiState.midiOutput.send(midiBytes)
   } else if (piano) {
-    piano.keyDown({ midi: midiNumber, velocity })
+    pianoFn(piano)
   }
+}
+
+function noteOn(midiNumber, velocity) {
+  sendMidi([0x90, midiNumber, Math.round(velocity * 127)], (p) => p.keyDown({ midi: midiNumber, velocity }))
 }
 
 function noteOff(midiNumber) {
-  if (midiState?.midiOutput) {
-    midiState.midiOutput.send([0x80, midiNumber, 0])
-  } else if (piano) {
-    piano.keyUp({ midi: midiNumber })
-  }
+  sendMidi([0x80, midiNumber, 0], (p) => p.keyUp({ midi: midiNumber }))
 }
 
 function pedalDown() {
-  if (midiState?.midiOutput) {
-    midiState.midiOutput.send([0xB0, 64, 127])
-  } else if (piano) {
-    piano.pedalDown()
-  }
+  sendMidi([0xB0, 64, 127], (p) => p.pedalDown())
 }
 
 function pedalUp() {
-  if (midiState?.midiOutput) {
-    midiState.midiOutput.send([0xB0, 64, 0])
-  } else if (piano) {
-    piano.pedalUp()
-  }
+  sendMidi([0xB0, 64, 0], (p) => p.pedalUp())
 }
 
 async function ensurePianoLoaded() {
@@ -174,11 +166,9 @@ function stop() {
   for (const id of scheduledTimeouts) clearTimeout(id)
   scheduledTimeouts = []
   isPlaying = false
+  pedalUp()
   if (midiState?.midiOutput) {
-    midiState.midiOutput.send([0xB0, 64, 0]) // Sustain Pedal Off
     midiState.midiOutput.send([0xB0, 123, 0]) // All Notes Off
-  } else {
-    piano?.pedalUp()
   }
   hideCursor()
 }
@@ -206,7 +196,7 @@ function buildCursorTimeline(allNotes, cumStartTimes, bpm) {
   return steps.sort((a, b) => a - b)
 }
 
-async function togglePlayback(allNotes, osmdInstance, pedalEvents = []) {
+async function togglePlayback(allNotes, osmdInstance) {
   if (isPlaying) { stop(); return }
 
   await ensurePianoLoaded()
@@ -242,12 +232,11 @@ async function togglePlayback(allNotes, osmdInstance, pedalEvents = []) {
 
       maxEndMs = Math.max(maxEndMs, startMs + durationMs)
     }
-  }
 
-  // Schedule pedal events.
-  for (const event of pedalEvents) {
-    const eventMs = tsToSeconds(event.timestamp, bpm) * 1000
-    scheduledTimeouts.push(setTimeout(event.type === 'pedalDown' ? pedalDown : pedalUp, eventMs))
+    for (const pe of measureData.pedalEvents || []) {
+      const eventMs = tsToSeconds(measureOffset + pe.timestamp, bpm) * 1000
+      scheduledTimeouts.push(setTimeout(pe.type === 'pedalDown' ? pedalDown : pedalUp, eventMs))
+    }
   }
 
   // Cursor: schedule advances in sync with audio.
