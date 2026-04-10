@@ -481,6 +481,16 @@ class PianoTrainerTest < CapybaraTestBase
     assert_selector 'svg g.vf-notehead.played-note', count: 5
   end
 
+  def test_playback_starts_and_stops
+    load_score('simple-score.xml', 4)
+
+    click_on 'Écouter'
+    assert_text '⏹ Stop'
+
+    click_on 'Stop'
+    assert_text '▶ Écouter'
+  end
+
   private
 
   def replay_cassette(name, wait_for_end: true)
