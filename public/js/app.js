@@ -417,6 +417,7 @@ export function midiApp() {
     rerenderScore() {
       const scrollY = window.scrollY
       const { currentMeasureIndex } = musicxml.getTrainingState()
+      const playedSourceMeasures = musicxml.getPlayedSourceMeasures()
 
       const noteStates = new Map()
       for (const { notes } of musicxml.getAllNotes()) {
@@ -431,6 +432,7 @@ export function midiApp() {
       this.setupFingeringHandlers()
       fingeringEditor.restoreNoteStates(noteStates)
       musicxml.setCurrentMeasureIndex(currentMeasureIndex)
+      musicxml.setPlayedSourceMeasures(playedSourceMeasures)
       window.scrollTo(0, scrollY)
     },
   }

@@ -91,6 +91,11 @@ export function initMusicXML() {
     setCurrentMeasureIndex: (index) => {
       currentMeasureIndex = index
     },
+    getPlayedSourceMeasures: () => new Set(playedSourceMeasures),
+    setPlayedSourceMeasures: (measures) => {
+      playedSourceMeasures.clear()
+      for (const m of measures) playedSourceMeasures.add(m)
+    },
     resetMeasureProgress: () => {
       for (const measureData of allNotes) {
         for (const noteData of measureData.notes) {
