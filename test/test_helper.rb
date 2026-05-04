@@ -23,6 +23,8 @@ Capybara.register_driver(:cuprite) do |app|
   )
 end
 Capybara.default_driver = :cuprite
+# 2s default is borderline for cold-start OSMD renders on slower CI runners
+Capybara.default_max_wait_time = 5
 Capybara.enable_aria_label = true
 
 # Clean up download directory at exit
@@ -31,6 +33,10 @@ at_exit { FileUtils.rm_rf(DOWNLOAD_DIR) }
 class CapybaraTestBase < Minitest::Test
   include Capybara::DSL
   include Capybara::Minitest::Assertions
+
+  def teardown
+    Capybara.reset_sessions!
+  end
 
   # Wait for a file matching pattern to appear in download dir
   def wait_for_download(pattern, timeout: Capybara.default_max_wait_time)
