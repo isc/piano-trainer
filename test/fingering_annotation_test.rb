@@ -133,10 +133,6 @@ class FingeringAnnotationTest < CapybaraTestBase
 
   private
 
-  def wait_for_render
-    assert_selector '#score[data-render-complete]'
-  end
-
   def assert_fingering(text)
     assert_selector 'svg g.vf-text', text: text
   end
