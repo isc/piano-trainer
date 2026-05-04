@@ -73,10 +73,9 @@ class PracticeTrackingTest < CapybaraTestBase
     assert_selector 'dialog[open]'
     assert_text 'Évolution du temps de jeu'
 
-    # 3 playthroughs => 3 dots and a 3-vertex polyline
+    # 3 playthroughs => 3 dots
     within('.playthrough-chart') do
       assert_selector 'circle.chart-point', count: 3
-      assert_selector 'polyline.chart-line'
       assert_text '8m 0s' # max duration label
       assert_text '6m 0s' # min duration label
     end

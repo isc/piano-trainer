@@ -359,10 +359,7 @@ export function midiApp() {
       if (all.length < 2) return ''
 
       const sorted = [...all].sort((a, b) => new Date(a.startedAt) - new Date(b.startedAt))
-      const times = sorted.map((p) => new Date(p.startedAt).getTime())
       const durs = sorted.map((p) => p.durationMs)
-      const tMin = times[0]
-      const tMax = times[times.length - 1]
       const dMin = Math.min(...durs)
       const dMax = Math.max(...durs)
       const yMin = Math.max(0, dMin - (dMax - dMin) * 0.1)
@@ -373,21 +370,21 @@ export function midiApp() {
       const PAD = { top: 12, right: 12, bottom: 28, left: 56 }
       const innerW = W - PAD.left - PAD.right
       const innerH = H - PAD.top - PAD.bottom
-      // When all playthroughs share the same timestamp, spread them horizontally.
-      const xScale = (t) =>
-        PAD.left + (tMax === tMin ? innerW / 2 : ((t - tMin) / (tMax - tMin)) * innerW)
+      // Evenly spaced by playthrough index: gaps between dates aren't shown.
+      const n = sorted.length
+      const xScale = (i) =>
+        PAD.left + (n === 1 ? innerW / 2 : (i / (n - 1)) * innerW)
       const yScale = (d) =>
         PAD.top + innerH - ((d - yMin) / (yMax - yMin || 1)) * innerH
 
-      const points = sorted.map((p) => ({
-        x: xScale(new Date(p.startedAt).getTime()),
+      const points = sorted.map((p, i) => ({
+        x: xScale(i),
         y: yScale(p.durationMs),
         duration: formatDuration(p.durationMs),
         date: new Date(p.startedAt).toLocaleDateString('fr-FR'),
       }))
-      const polyline = points.map((p) => `${p.x},${p.y}`).join(' ')
-      const fmtAxis = (ms) =>
-        new Date(ms).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })
+      const fmtAxis = (iso) =>
+        new Date(iso).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })
 
       const axisY = PAD.top + innerH
       const xMin = PAD.left
@@ -398,8 +395,8 @@ export function midiApp() {
         `<text x="${xMin - 8}" y="${yScale(yMin) + 4}" text-anchor="end" class="chart-label">${formatDuration(yMin)}</text>`,
       ].join('')
       const xLabels = [
-        `<text x="${xMin}" y="${H - 8}" text-anchor="start" class="chart-label">${fmtAxis(tMin)}</text>`,
-        `<text x="${xMax}" y="${H - 8}" text-anchor="end" class="chart-label">${fmtAxis(tMax)}</text>`,
+        `<text x="${xMin}" y="${H - 8}" text-anchor="start" class="chart-label">${fmtAxis(sorted[0].startedAt)}</text>`,
+        `<text x="${xMax}" y="${H - 8}" text-anchor="end" class="chart-label">${fmtAxis(sorted[n - 1].startedAt)}</text>`,
       ].join('')
       const circles = points
         .map(
@@ -412,7 +409,6 @@ export function midiApp() {
         <line x1="${xMin}" x2="${xMax}" y1="${axisY}" y2="${axisY}" class="chart-axis" />
         ${yLabels}
         ${xLabels}
-        <polyline points="${polyline}" class="chart-line" />
         ${circles}
       </svg>`
     },

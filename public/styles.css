@@ -80,13 +80,6 @@ img[id^="cursorImg"] {
   font-size: 11px;
 }
 
-.playthrough-chart .chart-line {
-  fill: none;
-  stroke: var(--pico-primary);
-  stroke-width: 1.5;
-  opacity: 0.5;
-}
-
 .playthrough-chart .chart-point {
   fill: var(--pico-primary);
 }
