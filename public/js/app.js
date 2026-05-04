@@ -350,6 +350,73 @@ export function midiApp() {
       return `${playthroughs.length}× en entier (${formatter.format(durations)})`
     },
 
+    // Builds the playthrough-duration evolution chart as an SVG string.
+    // Built as a string (not <template x-for>) because Alpine's templates
+    // render in HTML namespace and won't show up inside an <svg>.
+    // Returns '' when there aren't enough points to plot.
+    playthroughChartSvg() {
+      const all = this.scoreHistory.flatMap((d) => d.fullPlaythroughs)
+      if (all.length < 2) return ''
+
+      const sorted = [...all].sort((a, b) => new Date(a.startedAt) - new Date(b.startedAt))
+      const times = sorted.map((p) => new Date(p.startedAt).getTime())
+      const durs = sorted.map((p) => p.durationMs)
+      const tMin = times[0]
+      const tMax = times[times.length - 1]
+      const dMin = Math.min(...durs)
+      const dMax = Math.max(...durs)
+      const yMin = Math.max(0, dMin - (dMax - dMin) * 0.1)
+      const yMax = (dMax + (dMax - dMin) * 0.1) || dMax * 1.1
+
+      const W = 600
+      const H = 200
+      const PAD = { top: 12, right: 12, bottom: 28, left: 56 }
+      const innerW = W - PAD.left - PAD.right
+      const innerH = H - PAD.top - PAD.bottom
+      // When all playthroughs share the same timestamp, spread them horizontally.
+      const xScale = (t) =>
+        PAD.left + (tMax === tMin ? innerW / 2 : ((t - tMin) / (tMax - tMin)) * innerW)
+      const yScale = (d) =>
+        PAD.top + innerH - ((d - yMin) / (yMax - yMin || 1)) * innerH
+
+      const points = sorted.map((p) => ({
+        x: xScale(new Date(p.startedAt).getTime()),
+        y: yScale(p.durationMs),
+        duration: formatDuration(p.durationMs),
+        date: new Date(p.startedAt).toLocaleDateString('fr-FR'),
+      }))
+      const polyline = points.map((p) => `${p.x},${p.y}`).join(' ')
+      const fmtAxis = (ms) =>
+        new Date(ms).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })
+
+      const axisY = PAD.top + innerH
+      const xMin = PAD.left
+      const xMax = PAD.left + innerW
+
+      const yLabels = [
+        `<text x="${xMin - 8}" y="${yScale(yMax) + 4}" text-anchor="end" class="chart-label">${formatDuration(yMax)}</text>`,
+        `<text x="${xMin - 8}" y="${yScale(yMin) + 4}" text-anchor="end" class="chart-label">${formatDuration(yMin)}</text>`,
+      ].join('')
+      const xLabels = [
+        `<text x="${xMin}" y="${H - 8}" text-anchor="start" class="chart-label">${fmtAxis(tMin)}</text>`,
+        `<text x="${xMax}" y="${H - 8}" text-anchor="end" class="chart-label">${fmtAxis(tMax)}</text>`,
+      ].join('')
+      const circles = points
+        .map(
+          (p) =>
+            `<circle cx="${p.x}" cy="${p.y}" r="4" class="chart-point"><title>${p.date} — ${p.duration}</title></circle>`,
+        )
+        .join('')
+
+      return `<svg viewBox="0 0 ${W} ${H}" class="playthrough-chart" role="img" aria-label="Évolution du temps de jeu par playthrough">
+        <line x1="${xMin}" x2="${xMax}" y1="${axisY}" y2="${axisY}" class="chart-axis" />
+        ${yLabels}
+        ${xLabels}
+        <polyline points="${polyline}" class="chart-line" />
+        ${circles}
+      </svg>`
+    },
+
     // Fingering annotation methods
     setupFingeringHandlers() {
       if (!this.fingeringEnabled) return
