@@ -137,6 +137,12 @@
         <template x-if="scoreHistory.length === 0">
           <p>Aucun historique pour cette partition.</p>
         </template>
+        <template x-if="playthroughChartSvg()">
+          <div>
+            <p><small>Évolution du temps de jeu</small></p>
+            <div x-html="playthroughChartSvg()"></div>
+          </div>
+        </template>
         <template x-for="day in scoreHistory" :key="day.date">
           <div>
             <strong x-text="formatDate(day.date)"></strong>

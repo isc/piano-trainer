@@ -31,6 +31,56 @@ class PracticeTrackingTest < CapybaraTestBase
     assert_text 'maintenant'
   end
 
+  def test_history_modal_shows_playthrough_evolution_chart
+    # Inject 3 completed playthroughs with decreasing durations into IndexedDB,
+    # then open the history modal and verify the chart renders.
+    visit "/score.html?url=/test-fixtures/two-measures.xml"
+    assert_selector 'svg g.vf-stavenote', count: 2
+
+    page.execute_script(<<~JS)
+      const SCORE_ID = '/test-fixtures/two-measures.xml'
+      const now = Date.now()
+      const day = 86400000
+      const sessions = [
+        { daysAgo: 7, durationMin: 8 },
+        { daysAgo: 4, durationMin: 7 },
+        { daysAgo: 1, durationMin: 6 },
+      ].map((s, i) => {
+        const startedAt = new Date(now - s.daysAgo * day).toISOString()
+        const completedAt = new Date(now - s.daysAgo * day + s.durationMin * 60000).toISOString()
+        return {
+          id: 'chart-test-' + i,
+          scoreId: SCORE_ID,
+          mode: 'free',
+          startedAt,
+          endedAt: completedAt,
+          playthroughStartedAt: startedAt,
+          completedAt,
+          totalMeasures: 2,
+          measures: [{ sourceMeasureIndex: 0, attempts: [{ startedAt, durationMs: s.durationMin * 60000, wrongNotes: 0, clean: true }] }],
+        }
+      })
+      const req = indexedDB.open('piano-trainer', 3)
+      req.onsuccess = () => {
+        const tx = req.result.transaction('sessions', 'readwrite')
+        const store = tx.objectStore('sessions')
+        for (const s of sessions) store.put(s)
+      }
+    JS
+    sleep 0.2
+
+    click_on 'Historique'
+    assert_selector 'dialog[open]'
+    assert_text 'Évolution du temps de jeu'
+
+    # 3 playthroughs => 3 dots
+    within('.playthrough-chart') do
+      assert_selector 'circle.chart-point', count: 3
+      assert_text '8m 0s' # max duration label
+      assert_text '6m 0s' # min duration label
+    end
+  end
+
   def test_daily_log_shows_practiced_score
     # Play a score to generate practice data
     visit "/score.html?url=/test-fixtures/simple-score.xml"

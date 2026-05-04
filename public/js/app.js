@@ -350,6 +350,69 @@ export function midiApp() {
       return `${playthroughs.length}× en entier (${formatter.format(durations)})`
     },
 
+    // Builds the playthrough-duration evolution chart as an SVG string.
+    // Built as a string (not <template x-for>) because Alpine's templates
+    // render in HTML namespace and won't show up inside an <svg>.
+    // Returns '' when there aren't enough points to plot.
+    playthroughChartSvg() {
+      const all = this.scoreHistory.flatMap((d) => d.fullPlaythroughs)
+      if (all.length < 2) return ''
+
+      const sorted = [...all].sort((a, b) => new Date(a.startedAt) - new Date(b.startedAt))
+      const durs = sorted.map((p) => p.durationMs)
+      const dMin = Math.min(...durs)
+      const dMax = Math.max(...durs)
+      const yMin = Math.max(0, dMin - (dMax - dMin) * 0.1)
+      const yMax = (dMax + (dMax - dMin) * 0.1) || dMax * 1.1
+
+      const W = 600
+      const H = 200
+      const PAD = { top: 12, right: 12, bottom: 28, left: 56 }
+      const innerW = W - PAD.left - PAD.right
+      const innerH = H - PAD.top - PAD.bottom
+      // Evenly spaced by playthrough index: gaps between dates aren't shown.
+      const n = sorted.length
+      const xScale = (i) =>
+        PAD.left + (n === 1 ? innerW / 2 : (i / (n - 1)) * innerW)
+      const yScale = (d) =>
+        PAD.top + innerH - ((d - yMin) / (yMax - yMin || 1)) * innerH
+
+      const points = sorted.map((p, i) => ({
+        x: xScale(i),
+        y: yScale(p.durationMs),
+        duration: formatDuration(p.durationMs),
+        date: new Date(p.startedAt).toLocaleDateString('fr-FR'),
+      }))
+      const fmtAxis = (iso) =>
+        new Date(iso).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })
+
+      const axisY = PAD.top + innerH
+      const xMin = PAD.left
+      const xMax = PAD.left + innerW
+
+      const yLabels = [
+        `<text x="${xMin - 8}" y="${yScale(yMax) + 4}" text-anchor="end" class="chart-label">${formatDuration(yMax)}</text>`,
+        `<text x="${xMin - 8}" y="${yScale(yMin) + 4}" text-anchor="end" class="chart-label">${formatDuration(yMin)}</text>`,
+      ].join('')
+      const xLabels = [
+        `<text x="${xMin}" y="${H - 8}" text-anchor="start" class="chart-label">${fmtAxis(sorted[0].startedAt)}</text>`,
+        `<text x="${xMax}" y="${H - 8}" text-anchor="end" class="chart-label">${fmtAxis(sorted[n - 1].startedAt)}</text>`,
+      ].join('')
+      const circles = points
+        .map(
+          (p) =>
+            `<circle cx="${p.x}" cy="${p.y}" r="4" class="chart-point"><title>${p.date} — ${p.duration}</title></circle>`,
+        )
+        .join('')
+
+      return `<svg viewBox="0 0 ${W} ${H}" class="playthrough-chart" role="img" aria-label="Évolution du temps de jeu par playthrough">
+        <line x1="${xMin}" x2="${xMax}" y1="${axisY}" y2="${axisY}" class="chart-axis" />
+        ${yLabels}
+        ${xLabels}
+        ${circles}
+      </svg>`
+    },
+
     // Fingering annotation methods
     setupFingeringHandlers() {
       if (!this.fingeringEnabled) return
