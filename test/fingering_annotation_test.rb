@@ -86,6 +86,26 @@ class FingeringAnnotationTest < CapybaraTestBase
     assert_selector '.vf-notehead.played-note', count: 2
   end
 
+  def test_score_completion_after_adding_fingering_mid_play
+    visit "/score.html?url=/test-fixtures/two-measures.xml"
+    wait_for_render
+
+    # Play C4 to complete measure 1
+    play_note('C4')
+
+    # Add a fingering to the D4 note in measure 2 — triggers rerenderScore()
+    # which previously cleared playedSourceMeasures, breaking the completion check.
+    all('.vf-notehead')[1].click
+    assert_selector 'dialog#fingeringModal[open]'
+    click_button '3'
+    click_button '✓ Valider'
+    wait_for_render
+
+    # Play D4 to finish — completion modal should appear
+    play_note('D4')
+    assert_text 'Partition terminée'
+  end
+
   def test_fingering_on_pickup_measure_persists_correctly
     visit "/score.html?url=#{PICKUP_SCORE_URL}"
     wait_for_render
