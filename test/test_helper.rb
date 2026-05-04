@@ -36,11 +36,6 @@ class CapybaraTestBase < Minitest::Test
     Capybara.reset_sessions!
   end
 
-  # Wait for the score to finish its initial OSMD render
-  def wait_for_render
-    assert_selector '#score[data-render-complete]'
-  end
-
   # Wait for a file matching pattern to appear in download dir
   def wait_for_download(pattern, timeout: Capybara.default_max_wait_time)
     Timeout.timeout(timeout) do
