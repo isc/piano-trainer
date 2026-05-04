@@ -413,6 +413,7 @@ class PianoTrainerTest < CapybaraTestBase
 
   def test_reinforcement_mode_after_playthrough_with_mistakes
     visit '/score.html?url=/test-fixtures/repeat-endings.xml'
+    assert_selector '#score[data-render-complete]'
     assert_selector 'svg g.vf-stavenote', count: 4
     sleep 0.05  # Wait for all initialization to complete
 

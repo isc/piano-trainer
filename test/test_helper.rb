@@ -23,6 +23,8 @@ Capybara.register_driver(:cuprite) do |app|
   )
 end
 Capybara.default_driver = :cuprite
+# 2s default is borderline for cold-start OSMD renders on slower CI runners
+Capybara.default_max_wait_time = 5
 Capybara.enable_aria_label = true
 
 # Clean up download directory at exit
