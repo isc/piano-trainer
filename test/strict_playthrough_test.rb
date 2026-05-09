@@ -68,23 +68,10 @@ class StrictPlaythroughTest < CapybaraTestBase
     sleep 2
     play_chord(%w[E4])
 
-    # Sleep into the second-pass m1 window (m1 reopens at T~8s; we're at T~6.1
-    # after the last play, so +2s lands shortly after the repeat boundary).
-    sleep 2
-
-    # m1 (C4) is currently the expected note. m2 (D4) has not yet had its
-    # second-pass window open. The boundary reset must already have wiped m2's
-    # first-pass played-note class, so only E4 (volta-1, won't replay) should
-    # still carry played-note.
-    played_note_count = page.evaluate_script(<<~JS)
-      Array.from(document.querySelectorAll('svg g.vf-notehead'))
-        .filter(el => el.classList.contains('played-note'))
-        .length
-    JS
-    assert_equal 1, played_note_count,
-                 'Expected only E4 (volta-1) to still show played-note after the repeat boundary; ' \
-                 "found #{played_note_count} noteheads with played-note. Per-measure reset is " \
-                 'leaving later measures in the repeat block stale.'
+    # After E4, the cursor jumps back to m1 at T~8s and the boundary reset
+    # fires. Only E4 (volta-1, never replayed) should still show played-note.
+    # Polling assertion gives the engine a few seconds to reach the boundary.
+    assert_selector 'svg g.vf-notehead.played-note', count: 1, wait: 4
 
     # Let the run finish so teardown is clean.
     assert_text 'Playthrough strict terminé', wait: 12

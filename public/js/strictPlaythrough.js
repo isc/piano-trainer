@@ -1,8 +1,9 @@
-import { tsToSeconds, buildCumStartTimes, buildCursorTimeline, syncCursorStyle } from './playback.js'
+import { tsToSeconds, buildCumStartTimes, buildCursorTimeline, scheduleCursorAdvances } from './playback.js'
 import {
   isOrnamentOrGrace,
   isNoteActiveForHands,
   sourceMeasuresToResetOnEntry,
+  svgNoteheadFor,
 } from './noteExtraction.js'
 import {
   findMatchingEvent,
@@ -79,50 +80,35 @@ function quarterBeatsInFirstMeasure(sourceMeasures) {
   const fullBar = sourceMeasures.find((m) => !m.ImplicitMeasure) ?? sourceMeasures[0]
   const dur = fullBar?.Duration?.RealValue
   if (!dur) return FALLBACK_COUNT_IN_BEATS
+  // Floor at 1 so a degenerate sub-quarter first measure (e.g. 1/16)
+  // doesn't round to a zero-beat count-in.
   return Math.max(1, Math.round(dur * 4))
 }
 
-// Time-driven mirror of free mode's repeat handling. Free mode calls
-// sourceMeasuresToResetOnEntry on each MIDI-validated measure transition;
-// strict mode walks the whole playback sequence at engine start and schedules
-// the equivalent reset at the cursor-entry time of each transition that
-// crosses into a repeat.
-//
-// Ordering: registered before the per-event window-open scheduling so when a
-// chord lands on the first beat of a repeated measure (reset and highlight
-// share the same timestamp), FIFO on equal-time setTimeouts fires the reset
-// first — otherwise the new "expected" class would land and be wiped.
-function scheduleRepeatResets(allNotes, cumStartTimes, bpm, countInMs) {
+// Returns [{ atMs, sources }] for each repeat-boundary crossing in allNotes.
+// Caller schedules the actual class-clear timeouts. Ordering matters at the
+// scheduling site: when a chord lands on the first beat of a repeated
+// measure, the reset must be enqueued before the chord's window-open so FIFO
+// on equal-time setTimeouts fires the reset first — otherwise the new
+// expected-note class lands and is immediately wiped.
+function planRepeatResets(allNotes, cumStartTimes, bpm, countInMs) {
   const playedSources = new Set([allNotes[0].sourceMeasureIndex])
-
+  const plans = []
   for (let i = 0; i < allNotes.length - 1; i++) {
-    const toReset = sourceMeasuresToResetOnEntry(allNotes, i, playedSources)
-    if (toReset.size > 0) {
-      const measureStartMs = countInMs + tsToSeconds(cumStartTimes[i + 1], bpm) * 1000
-      timeouts.push(setTimeout(() => {
-        for (const event of pendingEvents) {
-          if (toReset.has(event.sourceMeasureIndex)) {
-            event.noteheadEl?.classList.remove(...STRICT_CLASSES)
-          }
-        }
-      }, measureStartMs))
+    const sources = sourceMeasuresToResetOnEntry(allNotes, i, playedSources)
+    if (sources.size > 0) {
+      const atMs = countInMs + tsToSeconds(cumStartTimes[i + 1], bpm) * 1000
+      plans.push({ atMs, sources })
     }
     playedSources.add(allNotes[i + 1].sourceMeasureIndex)
   }
+  return plans
 }
 
 function shouldExpectInput(noteData) {
   if (isOrnamentOrGrace(noteData)) return false
   if (noteData.isTieContinuation) return false
   return isNoteActiveForHands(noteData, activeHands)
-}
-
-function svgNoteheadFor(noteData) {
-  if (!activeOsmd) return null
-  const svgGroup = activeOsmd.rules.GNote(noteData.note)?.getSVGGElement()
-  if (!svgGroup) return null
-  const noteheads = svgGroup.querySelectorAll('.vf-notehead')
-  return noteheads[noteData.noteheadIndex] ?? null
 }
 
 function start({
@@ -162,7 +148,7 @@ function start({
     const measureOffset = cumStartTimes[i] - measureData.measureIndex
 
     for (const noteData of measureData.notes) {
-      const noteheadEl = svgNoteheadFor(noteData)
+      const noteheadEl = svgNoteheadFor(activeOsmd, noteData)
       noteheadEl?.classList.remove(...STRICT_CLASSES)
 
       if (!shouldExpectInput(noteData)) continue
@@ -208,29 +194,23 @@ function start({
     }
   }
 
-  const cursor = osmdInstance.cursor
-  if (cursor) {
-    cursor.reset()
-    cursor.show()
-    syncCursorStyle(cursor)
-    let lastCursorTop = null
-    for (let i = 0; i < cursorTimes.length; i++) {
-      timeouts.push(setTimeout(() => {
-        if (i > 0) cursor.next()
-        syncCursorStyle(cursor)
-        const el = cursor.cursorElement
-        if (el) {
-          const top = el.getBoundingClientRect().top + window.scrollY
-          if (lastCursorTop === null || Math.abs(top - lastCursorTop) > 10) {
-            el.scrollIntoView({ behavior: 'smooth', block: 'center' })
-          }
-          lastCursorTop = top
-        }
-      }, cursorTimes[i]))
-    }
+  if (osmdInstance.cursor) {
+    timeouts.push(...scheduleCursorAdvances(osmdInstance.cursor, cursorTimes, { scrollBlock: 'center' }))
   }
 
-  scheduleRepeatResets(allNotes, cumStartTimes, bpm, countInMs)
+  // Schedule repeat-reset class wipes BEFORE the per-event window-open loop:
+  // when both fire at the same instant (chord on the first beat of a
+  // repeated measure), FIFO order on equal-time setTimeouts ensures the wipe
+  // runs first and the new expected-note class survives.
+  for (const { atMs, sources } of planRepeatResets(allNotes, cumStartTimes, bpm, countInMs)) {
+    timeouts.push(setTimeout(() => {
+      for (const event of pendingEvents) {
+        if (sources.has(event.sourceMeasureIndex)) {
+          event.noteheadEl?.classList.remove(...STRICT_CLASSES)
+        }
+      }
+    }, atMs))
+  }
 
   // Visual cue lights up at T (in sync with cursor). Match remains possible
   // until T + offTempoWindow — within tolerance is "in tempo", beyond is

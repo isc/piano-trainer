@@ -149,6 +149,27 @@ function expandOrnamentTimings(notes) {
 // Fix two OSMD cursor issues that can't be solved with CSS alone:
 // - PicoCSS `img { height: auto }` collapses the 1px-tall cursor image
 // - OSMD's adjustToBackgroundColor() resets z-index to -1 via inline style
+// Schedule cursor.next() advances on the given timeline. Returns the timeout
+// IDs so the caller can register them with its own teardown list. The cursor
+// starts visible at the first position; subsequent ticks advance it.
+export function scheduleCursorAdvances(cursor, cursorTimes, { scrollBlock = 'start' } = {}) {
+  cursor.reset()
+  cursor.show()
+  syncCursorStyle(cursor)
+  let lastCursorTop = null
+  return cursorTimes.map((t, i) => setTimeout(() => {
+    if (i > 0) cursor.next()
+    syncCursorStyle(cursor)
+    const el = cursor.cursorElement
+    if (!el) return
+    const top = el.getBoundingClientRect().top + window.scrollY
+    if (lastCursorTop === null || Math.abs(top - lastCursorTop) > 10) {
+      el.scrollIntoView({ behavior: 'smooth', block: scrollBlock })
+    }
+    lastCursorTop = top
+  }, t))
+}
+
 export function syncCursorStyle(cursor) {
   const el = cursor.cursorElement
   if (!el) return
@@ -242,28 +263,9 @@ async function togglePlayback(allNotes, osmdInstance) {
     }
   }
 
-  // Cursor: schedule advances in sync with audio.
-  const cursor = osmdInstance.cursor
-  if (cursor) {
+  if (osmdInstance.cursor) {
     const cursorSteps = buildCursorTimeline(allNotes, cumStartTimes, bpm)
-    cursor.reset()
-    cursor.show()
-    syncCursorStyle(cursor)
-    let lastCursorTop = null
-    for (let i = 0; i < cursorSteps.length; i++) {
-      scheduledTimeouts.push(setTimeout(() => {
-        if (i > 0) cursor.next()
-        syncCursorStyle(cursor)
-        const el = cursor.cursorElement
-        if (el) {
-          const currentTop = el.getBoundingClientRect().top + window.scrollY
-          if (lastCursorTop === null || Math.abs(currentTop - lastCursorTop) > 10) {
-            el.scrollIntoView({ behavior: 'smooth', block: 'start' })
-          }
-          lastCursorTop = currentTop
-        }
-      }, cursorSteps[i]))
-    }
+    scheduledTimeouts.push(...scheduleCursorAdvances(osmdInstance.cursor, cursorSteps))
   }
 
   isPlaying = true

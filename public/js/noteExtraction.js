@@ -428,6 +428,14 @@ export function isNoteActiveForHands(noteData, activeHands) {
   return noteData.staffIndex === 0 ? activeHands.right : activeHands.left
 }
 
+export function svgNoteheadFor(osmdInstance, noteData) {
+  if (!osmdInstance) return null
+  const svgGroup = osmdInstance.rules.GNote(noteData.note)?.getSVGGElement()
+  if (!svgGroup) return null
+  const noteheads = svgGroup.querySelectorAll('.vf-notehead')
+  return noteheads[noteData.noteheadIndex] ?? null
+}
+
 // Returns the set of source measures whose visual state should be reset when
 // the cursor moves from `allNotes[fromIdx]` to `allNotes[fromIdx + 1]`.
 //

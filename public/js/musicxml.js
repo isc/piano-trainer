@@ -3,6 +3,7 @@ import {
   extractNotesFromScore as extractNotes,
   isNoteActiveForHands as isNoteActiveForHandsShared,
   sourceMeasuresToResetOnEntry,
+  svgNoteheadFor,
 } from './noteExtraction.js'
 
 let osmdInstance = null
@@ -707,13 +708,8 @@ function svgNote(note) {
   return osmdInstance.rules.GNote(note).getSVGGElement()
 }
 
-// Get the specific notehead element for a note (handles chords correctly)
 function svgNotehead(noteData) {
-  const svgGroup = svgNote(noteData.note)
-  if (!svgGroup) return null
-
-  const noteheads = svgGroup.querySelectorAll('.vf-notehead')
-  return noteheads[noteData.noteheadIndex]
+  return svgNoteheadFor(osmdInstance, noteData)
 }
 
 function getSystemIndexForNote(note) {
