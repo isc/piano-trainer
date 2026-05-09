@@ -15,6 +15,29 @@ svg g.vf-notehead.active-note path {
   fill: #f59e0b;
 }
 
+/* Strict mode: note whose timing window is currently open */
+svg g.vf-notehead.expected-note path {
+  fill: #3b82f6;
+}
+
+/* Strict mode: note whose timing window closed without a hit */
+svg g.vf-notehead.missed-note path {
+  fill: #ef4444;
+}
+
+/* Inline BPM control next to the strict mode button */
+.strict-bpm-control {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0;
+}
+
+.strict-bpm-control input {
+  width: 5rem;
+  margin: 0;
+}
+
 /* Clickable areas for measures */
 .measure-click-area {
   fill: transparent;

@@ -52,7 +52,7 @@ async function ensurePianoLoaded() {
   await piano.load()
 }
 
-function getBPM(osmdInstance) {
+export function getBPM(osmdInstance) {
   const sm = osmdInstance.Sheet?.SourceMeasures?.[0]
   const tempo = sm?.TempoExpressions?.[0]?.InstantaneousTempo
   if (!tempo) return sm?.TempoInBPM || 120
@@ -62,13 +62,13 @@ function getBPM(osmdInstance) {
   return tempo.tempoInBpm * ratio
 }
 
-function tsToSeconds(ts, bpm) {
+export function tsToSeconds(ts, bpm) {
   return ts * 4 * 60 / bpm
 }
 
 // Build cumulative start times (in whole-note fractions) for each measure in playback order.
 // Each measure's actual duration comes from OSMD, so time signatures other than 4/4 work correctly.
-function buildCumStartTimes(allNotes, sourceMeasures) {
+export function buildCumStartTimes(allNotes, sourceMeasures) {
   const cumTimes = []
   let cumulativeTime = 0
   for (const measureData of allNotes) {
@@ -148,7 +148,7 @@ function expandOrnamentTimings(notes) {
 // Fix two OSMD cursor issues that can't be solved with CSS alone:
 // - PicoCSS `img { height: auto }` collapses the 1px-tall cursor image
 // - OSMD's adjustToBackgroundColor() resets z-index to -1 via inline style
-function syncCursorStyle(cursor) {
+export function syncCursorStyle(cursor) {
   const el = cursor.cursorElement
   if (!el) return
   el.style.height = el.getAttribute('height') + 'px'
