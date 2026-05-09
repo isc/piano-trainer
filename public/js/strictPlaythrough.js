@@ -1,16 +1,22 @@
 import { tsToSeconds, buildCumStartTimes, syncCursorStyle } from './playback.js'
 import { isOrnamentOrGrace, isNoteActiveForHands } from './noteExtraction.js'
-import { findMatchingEvent, classifyMatch } from './strictMatching.js'
+import {
+  findMatchingEvent,
+  classifyMatch,
+  EVENT_STATUS,
+  CLASSIFICATION,
+} from './strictMatching.js'
 
 const DEFAULT_TOLERANCE_MS = 150
 // Notes played beyond the strict tolerance but within this wider window are
-// counted as "off-tempo" (correct pitch, wrong timing) instead of wrong notes.
-const OFFTEMPO_WINDOW_MS = 450
+// counted as "off-tempo" instead of wrong notes.
+const DEFAULT_OFFTEMPO_WINDOW_MS = 450
 const DEFAULT_COUNT_IN_BEATS = 4
 const CLS_EXPECTED = 'expected-note'
 const CLS_PLAYED = 'played-note'
 const CLS_OFFTEMPO = 'offtempo-note'
 const CLS_MISSED = 'missed-note'
+const STRICT_CLASSES = [CLS_EXPECTED, CLS_PLAYED, CLS_OFFTEMPO, CLS_MISSED]
 
 let timeouts = []
 let isRunning = false
@@ -23,6 +29,7 @@ let activeHands = { right: true, left: true }
 let audioContext = null
 let startedAtPerf = 0
 let currentToleranceMs = DEFAULT_TOLERANCE_MS
+let currentOffTempoWindowMs = DEFAULT_OFFTEMPO_WINDOW_MS
 
 export function initStrictPlaythrough() {
   return {
@@ -69,21 +76,12 @@ function svgNoteheadFor(noteData) {
   return noteheads[noteData.noteheadIndex] ?? null
 }
 
-function clearAllVisualState(allNotes) {
-  for (const measureData of allNotes) {
-    for (const noteData of measureData.notes) {
-      svgNoteheadFor(noteData)?.classList.remove(
-        CLS_EXPECTED, CLS_PLAYED, CLS_OFFTEMPO, CLS_MISSED,
-      )
-    }
-  }
-}
-
 function start({
   bpm,
   allNotes,
   osmdInstance,
   tolerance = DEFAULT_TOLERANCE_MS,
+  offTempoWindow = DEFAULT_OFFTEMPO_WINDOW_MS,
   countInBeats = DEFAULT_COUNT_IN_BEATS,
   onComplete,
   onProgress,
@@ -96,9 +94,8 @@ function start({
   onCompleteCb = onComplete
   onProgressCb = onProgress
   currentToleranceMs = tolerance
+  currentOffTempoWindowMs = offTempoWindow
   isRunning = true
-
-  clearAllVisualState(allNotes)
 
   const sourceMeasures = osmdInstance.Sheet.SourceMeasures
   const cumStartTimes = buildCumStartTimes(allNotes, sourceMeasures)
@@ -108,6 +105,8 @@ function start({
   pendingEvents = []
   const cursorTimesSet = new Set()
 
+  // Single pass: look up each notehead once, clear residual strict-mode
+  // classes from prior runs, push expected inputs into pendingEvents.
   for (let i = 0; i < allNotes.length; i++) {
     const measureData = allNotes[i]
     const measureOffset = cumStartTimes[i] - measureData.measureIndex
@@ -118,16 +117,19 @@ function start({
 
       cursorTimesSet.add(noteTimeMs)
 
+      const noteheadEl = svgNoteheadFor(noteData)
+      noteheadEl?.classList.remove(...STRICT_CLASSES)
+
       if (!shouldExpectInput(noteData)) continue
 
       pendingEvents.push({
         timeMs: noteTimeMs,
         midiNumber: noteData.midiNumber,
         noteData,
-        noteheadEl: svgNoteheadFor(noteData),
+        noteheadEl,
         measureIndex: i,
         sourceMeasureIndex: measureData.sourceMeasureIndex,
-        status: 'pending',
+        status: EVENT_STATUS.PENDING,
       })
     }
   }
@@ -182,22 +184,22 @@ function start({
   }
 
   // Visual cue lights up at T (in sync with cursor). Match remains possible
-  // until T + OFFTEMPO_WINDOW_MS — within tolerance is "in tempo", beyond is
+  // until T + offTempoWindow — within tolerance is "in tempo", beyond is
   // "off tempo late". Past that, the event is genuinely missed.
   for (const event of pendingEvents) {
     timeouts.push(setTimeout(() => {
-      if (event.status !== 'pending') return
+      if (event.status !== EVENT_STATUS.PENDING) return
       event.noteheadEl?.classList.add(CLS_EXPECTED)
     }, event.timeMs))
 
     timeouts.push(setTimeout(() => {
-      if (event.status !== 'pending') return
-      event.status = 'missed'
+      if (event.status !== EVENT_STATUS.PENDING) return
+      event.status = EVENT_STATUS.MISSED
       stats.missed++
       event.noteheadEl?.classList.remove(CLS_EXPECTED)
       event.noteheadEl?.classList.add(CLS_MISSED)
       onProgressCb?.({ ...stats })
-    }, event.timeMs + OFFTEMPO_WINDOW_MS))
+    }, event.timeMs + offTempoWindow))
   }
 
   const lastEventTime = pendingEvents.length > 0
@@ -210,7 +212,7 @@ function start({
 function handleNoteOn(midiNumber) {
   if (!isRunning) return false
   const now = performance.now() - startedAtPerf
-  const match = findMatchingEvent(pendingEvents, midiNumber, now, OFFTEMPO_WINDOW_MS)
+  const match = findMatchingEvent(pendingEvents, midiNumber, now, currentOffTempoWindowMs)
   if (!match) {
     stats.wrongNotes++
     onProgressCb?.({ ...stats })
@@ -219,13 +221,14 @@ function handleNoteOn(midiNumber) {
   const { event, delta } = match
   const classification = classifyMatch(delta, currentToleranceMs)
   event.noteheadEl?.classList.remove(CLS_EXPECTED)
-  if (classification === 'hit') {
-    event.status = 'hit'
+  if (classification === CLASSIFICATION.HIT) {
+    event.status = EVENT_STATUS.HIT
     stats.hit++
     event.noteheadEl?.classList.add(CLS_PLAYED)
   } else {
-    event.status = 'offtempo'
-    if (classification === 'offtempoEarly') stats.offTempoEarly++
+    // Single offtempo status; early vs late is captured in the stats only.
+    event.status = EVENT_STATUS.OFFTEMPO
+    if (classification === CLASSIFICATION.OFFTEMPO_EARLY) stats.offTempoEarly++
     else stats.offTempoLate++
     event.noteheadEl?.classList.add(CLS_OFFTEMPO)
   }
@@ -240,8 +243,11 @@ function teardown() {
     activeOsmd.cursor.hide()
     activeOsmd.cursor.reset()
   }
+  // Played/offtempo/missed marks stay visible after the run so the player can
+  // see the breakdown; the next start() wipes them. Only clear the in-flight
+  // expected-note highlight that no terminal status would have removed.
   for (const event of pendingEvents) {
-    if (event.status === 'pending') {
+    if (event.status === EVENT_STATUS.PENDING) {
       event.noteheadEl?.classList.remove(CLS_EXPECTED)
     }
   }

@@ -25,16 +25,14 @@ class StrictPlaythroughTest < CapybaraTestBase
     fill_in 'Tempo en BPM', with: '30'
     click_on '⏱ Mode strict'
 
-    # Land in the strict ±150ms window after the 8s count-in.
-    sleep 8
+    # Wait for the engine to open the timing window (cursor arrival at T=8s).
+    assert_selector 'svg g.vf-notehead.expected-note', wait: 10
+
     play_note('C4')
     play_note('E4')
     play_note('G4')
 
-    # Wait past the off-tempo close + 300ms tail.
-    sleep 1.2
-
-    assert_text 'Playthrough strict terminé'
+    assert_text 'Playthrough strict terminé', wait: 3
     assert_text '100%'
     assert_text '3 / 3'
     assert_no_text 'mauvaises notes'
@@ -48,10 +46,8 @@ class StrictPlaythroughTest < CapybaraTestBase
 
     click_on '⏱ Mode strict'
 
-    # Count-in 8s + chord at T=8s + off-tempo window 450ms + tail 300ms = ~8.75s
-    sleep 9.5
-
-    assert_text 'Playthrough strict terminé'
+    # Count-in 8s + off-tempo window 450ms + 300ms tail. Wait headroom = 12s.
+    assert_text 'Playthrough strict terminé', wait: 12
     assert_text '0%'
     assert_text '3 notes manquées'
   end
