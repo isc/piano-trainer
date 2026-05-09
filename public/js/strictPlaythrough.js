@@ -198,6 +198,27 @@ function start({
     }
   }
 
+  // Mirror free mode's repeat handling: when the cursor enters a source
+  // measure that has already been played in this run, wipe its strict-mode
+  // classes so the player sees a fresh slate for the new pass instead of the
+  // results from the previous pass.
+  const seenSourceMeasures = new Set()
+  for (let i = 0; i < allNotes.length; i++) {
+    const md = allNotes[i]
+    if (seenSourceMeasures.has(md.sourceMeasureIndex)) {
+      const measureStartMs = countInMs + tsToSeconds(cumStartTimes[i], bpm) * 1000
+      const sourceIdx = md.sourceMeasureIndex
+      timeouts.push(setTimeout(() => {
+        for (const event of pendingEvents) {
+          if (event.sourceMeasureIndex === sourceIdx) {
+            event.noteheadEl?.classList.remove(...STRICT_CLASSES)
+          }
+        }
+      }, measureStartMs))
+    }
+    seenSourceMeasures.add(md.sourceMeasureIndex)
+  }
+
   // Visual cue lights up at T (in sync with cursor). Match remains possible
   // until T + offTempoWindow — within tolerance is "in tempo", beyond is
   // "off tempo late". Past that, the event is genuinely missed.
