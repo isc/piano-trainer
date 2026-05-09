@@ -49,10 +49,17 @@
           :aria-pressed="isStrictPlaying"
           class="secondary"
         ></button>
-        <label x-show="!!osmdInstance" class="strict-bpm-control">
-          <small>BPM</small>
-          <input type="number" min="20" max="300" step="1" x-model.number="strictBpm" :disabled="isStrictPlaying" />
-        </label>
+        <input
+          type="number"
+          min="20"
+          max="300"
+          step="1"
+          x-model.number="strictBpm"
+          :disabled="isStrictPlaying"
+          x-show="!!osmdInstance"
+          aria-label="Tempo en BPM"
+          title="BPM"
+        />
         <button @click="openScoreHistory" x-show="!!scoreUrl" class="secondary">📜 Historique</button>
         <label>
           <input type="checkbox" x-model="rightHandActive" @change="updateActiveHands" />
