@@ -1,4 +1,5 @@
 import { Piano } from '@tonejs/piano'
+import { isOrnamentOrGrace } from './noteExtraction.js'
 
 let piano = null
 let midiState = null
@@ -173,10 +174,12 @@ function stop() {
   hideCursor()
 }
 
-// Build the list of cursor advance timestamps (in ms from start) from allNotes data.
-// Avoids traversing the OSMD cursor (which corrupts its visual state after EndReached+reset).
-// Each unique absolute timestamp (whole-note fractions from start) maps to one cursor.next() call.
-function buildCursorTimeline(allNotes, cumStartTimes, bpm) {
+// Build the list of cursor advance timestamps (in ms from start) from allNotes
+// data. Avoids traversing the OSMD cursor (which corrupts its visual state
+// after EndReached+reset). Each unique absolute timestamp (whole-note
+// fractions from start) maps to one cursor.next() call. Ornaments and grace
+// notes are skipped — the visible cursor doesn't stop on them.
+export function buildCursorTimeline(allNotes, cumStartTimes, bpm, offsetMs = 0) {
   const seen = new Set()
   const steps = []
 
@@ -185,11 +188,11 @@ function buildCursorTimeline(allNotes, cumStartTimes, bpm) {
     const measureOffset = cumStartTimes[i] - measureData.measureIndex
 
     for (const n of measureData.notes) {
-      if (n.isTrillNote || n.isTurnNote || n.isMordentNote || n.isTrillEnd || n.isGrace) continue
+      if (isOrnamentOrGrace(n) || n.isTrillEnd) continue
       const absoluteTs = measureOffset + n.timestamp
       if (seen.has(absoluteTs)) continue
       seen.add(absoluteTs)
-      steps.push(tsToSeconds(absoluteTs, bpm) * 1000)
+      steps.push(offsetMs + tsToSeconds(absoluteTs, bpm) * 1000)
     }
   }
 

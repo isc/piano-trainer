@@ -1,4 +1,4 @@
-import { tsToSeconds, buildCumStartTimes, syncCursorStyle } from './playback.js'
+import { tsToSeconds, buildCumStartTimes, buildCursorTimeline, syncCursorStyle } from './playback.js'
 import {
   isOrnamentOrGrace,
   isNoteActiveForHands,
@@ -153,7 +153,7 @@ function start({
   const countInMs = resolvedCountInBeats * beatMs
 
   pendingEvents = []
-  const cursorTimesSet = new Set()
+  const cursorTimes = buildCursorTimeline(allNotes, cumStartTimes, bpm, countInMs)
 
   // Single pass: look up each notehead once, clear residual strict-mode
   // classes from prior runs, push expected inputs into pendingEvents.
@@ -162,15 +162,13 @@ function start({
     const measureOffset = cumStartTimes[i] - measureData.measureIndex
 
     for (const noteData of measureData.notes) {
-      const ts = measureOffset + noteData.timestamp
-      const noteTimeMs = countInMs + tsToSeconds(ts, bpm) * 1000
-
-      cursorTimesSet.add(noteTimeMs)
-
       const noteheadEl = svgNoteheadFor(noteData)
       noteheadEl?.classList.remove(...STRICT_CLASSES)
 
       if (!shouldExpectInput(noteData)) continue
+
+      const ts = measureOffset + noteData.timestamp
+      const noteTimeMs = countInMs + tsToSeconds(ts, bpm) * 1000
 
       pendingEvents.push({
         timeMs: noteTimeMs,
@@ -215,9 +213,8 @@ function start({
     cursor.reset()
     cursor.show()
     syncCursorStyle(cursor)
-    const sortedCursorTimes = [...cursorTimesSet].sort((a, b) => a - b)
     let lastCursorTop = null
-    for (let i = 0; i < sortedCursorTimes.length; i++) {
+    for (let i = 0; i < cursorTimes.length; i++) {
       timeouts.push(setTimeout(() => {
         if (i > 0) cursor.next()
         syncCursorStyle(cursor)
@@ -229,7 +226,7 @@ function start({
           }
           lastCursorTop = top
         }
-      }, sortedCursorTimes[i]))
+      }, cursorTimes[i]))
     }
   }
 
