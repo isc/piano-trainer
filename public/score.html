@@ -205,6 +205,13 @@
           (<span x-text="strictResult?.hit ?? 0"></span> /
           <span x-text="strictResult?.total ?? 0"></span>)
         </p>
+        <p x-show="strictOffTempoTotal() > 0">
+          <small>
+            <span x-text="strictOffTempoTotal()"></span> notes hors tempo
+            (<span x-text="strictResult?.offTempoEarly ?? 0"></span> trop tôt,
+            <span x-text="strictResult?.offTempoLate ?? 0"></span> trop tard)
+          </small>
+        </p>
         <p x-show="strictResult?.missed > 0">
           <small><span x-text="strictResult?.missed ?? 0"></span> notes manquées</small>
         </p>

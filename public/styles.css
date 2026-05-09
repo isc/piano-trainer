@@ -20,6 +20,11 @@ svg g.vf-notehead.expected-note path {
   fill: #3b82f6;
 }
 
+/* Strict mode: correct pitch but played outside the strict tolerance */
+svg g.vf-notehead.offtempo-note path {
+  fill: #eab308;
+}
+
 /* Strict mode: note whose timing window closed without a hit */
 svg g.vf-notehead.missed-note path {
   fill: #ef4444;

@@ -321,6 +321,12 @@ export function midiApp() {
       return Math.round((this.strictResult.hit / this.strictResult.total) * 100)
     },
 
+    strictOffTempoTotal() {
+      const r = this.strictResult
+      if (!r) return 0
+      return (r.offTempoEarly ?? 0) + (r.offTempoLate ?? 0)
+    },
+
     async toggleTrainingMode() {
       this.trainingMode = !this.trainingMode
       this.trainingComplete = false

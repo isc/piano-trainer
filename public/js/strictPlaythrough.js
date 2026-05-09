@@ -1,10 +1,15 @@
 import { tsToSeconds, buildCumStartTimes, syncCursorStyle } from './playback.js'
 import { isOrnamentOrGrace, isNoteActiveForHands } from './noteExtraction.js'
+import { findMatchingEvent, classifyMatch } from './strictMatching.js'
 
 const DEFAULT_TOLERANCE_MS = 150
+// Notes played beyond the strict tolerance but within this wider window are
+// counted as "off-tempo" (correct pitch, wrong timing) instead of wrong notes.
+const OFFTEMPO_WINDOW_MS = 450
 const DEFAULT_COUNT_IN_BEATS = 4
 const CLS_EXPECTED = 'expected-note'
 const CLS_PLAYED = 'played-note'
+const CLS_OFFTEMPO = 'offtempo-note'
 const CLS_MISSED = 'missed-note'
 
 let timeouts = []
@@ -67,7 +72,9 @@ function svgNoteheadFor(noteData) {
 function clearAllVisualState(allNotes) {
   for (const measureData of allNotes) {
     for (const noteData of measureData.notes) {
-      svgNoteheadFor(noteData)?.classList.remove(CLS_EXPECTED, CLS_PLAYED, CLS_MISSED)
+      svgNoteheadFor(noteData)?.classList.remove(
+        CLS_EXPECTED, CLS_PLAYED, CLS_OFFTEMPO, CLS_MISSED,
+      )
     }
   }
 }
@@ -126,7 +133,14 @@ function start({
   }
 
   pendingEvents.sort((a, b) => a.timeMs - b.timeMs)
-  stats = { total: pendingEvents.length, hit: 0, missed: 0, wrongNotes: 0 }
+  stats = {
+    total: pendingEvents.length,
+    hit: 0,
+    offTempoEarly: 0,
+    offTempoLate: 0,
+    missed: 0,
+    wrongNotes: 0,
+  }
 
   startedAtPerf = performance.now()
 
@@ -167,9 +181,9 @@ function start({
     }
   }
 
-  // Match window is [T - tol, T + tol] but the visual cue lights up at T,
-  // in sync with the cursor — otherwise the blue appears tol ms ahead of
-  // the cursor and the player tracks it instead of the cursor.
+  // Visual cue lights up at T (in sync with cursor). Match remains possible
+  // until T + OFFTEMPO_WINDOW_MS — within tolerance is "in tempo", beyond is
+  // "off tempo late". Past that, the event is genuinely missed.
   for (const event of pendingEvents) {
     timeouts.push(setTimeout(() => {
       if (event.status !== 'pending') return
@@ -183,7 +197,7 @@ function start({
       event.noteheadEl?.classList.remove(CLS_EXPECTED)
       event.noteheadEl?.classList.add(CLS_MISSED)
       onProgressCb?.({ ...stats })
-    }, event.timeMs + tolerance))
+    }, event.timeMs + OFFTEMPO_WINDOW_MS))
   }
 
   const lastEventTime = pendingEvents.length > 0
@@ -193,32 +207,30 @@ function start({
   timeouts.push(setTimeout(() => finish(false), tailMs))
 }
 
-function findMatchingEvent(midiNumber, now) {
-  for (const event of pendingEvents) {
-    if (event.status !== 'pending') continue
-    // pendingEvents is sorted by timeMs; once we're past the next window we can stop
-    if (now < event.timeMs - currentToleranceMs) break
-    if (event.midiNumber !== midiNumber) continue
-    if (now <= event.timeMs + currentToleranceMs) return event
-  }
-  return null
-}
-
 function handleNoteOn(midiNumber) {
   if (!isRunning) return false
   const now = performance.now() - startedAtPerf
-  const event = findMatchingEvent(midiNumber, now)
-  if (event) {
+  const match = findMatchingEvent(pendingEvents, midiNumber, now, OFFTEMPO_WINDOW_MS)
+  if (!match) {
+    stats.wrongNotes++
+    onProgressCb?.({ ...stats })
+    return false
+  }
+  const { event, delta } = match
+  const classification = classifyMatch(delta, currentToleranceMs)
+  event.noteheadEl?.classList.remove(CLS_EXPECTED)
+  if (classification === 'hit') {
     event.status = 'hit'
     stats.hit++
-    event.noteheadEl?.classList.remove(CLS_EXPECTED)
     event.noteheadEl?.classList.add(CLS_PLAYED)
-    onProgressCb?.({ ...stats })
-    return true
+  } else {
+    event.status = 'offtempo'
+    if (classification === 'offtempoEarly') stats.offTempoEarly++
+    else stats.offTempoLate++
+    event.noteheadEl?.classList.add(CLS_OFFTEMPO)
   }
-  stats.wrongNotes++
   onProgressCb?.({ ...stats })
-  return false
+  return true
 }
 
 function teardown() {
