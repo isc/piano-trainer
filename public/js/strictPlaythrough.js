@@ -11,8 +11,10 @@ const DEFAULT_TOLERANCE_MS = 150
 // Notes played beyond the strict tolerance but within this wider window are
 // counted as "off-tempo" instead of wrong notes.
 const DEFAULT_OFFTEMPO_WINDOW_MS = 450
-// Fallback when the score's first measure has no usable duration.
 const FALLBACK_COUNT_IN_BEATS = 4
+// Buffer past the last miss timeout before finish() fires, so onComplete
+// always sees the final stats rather than a stale snapshot.
+const TAIL_PADDING_MS = 300
 const CLS_EXPECTED = 'expected-note'
 const CLS_PLAYED = 'played-note'
 const CLS_OFFTEMPO = 'offtempo-note'
@@ -74,6 +76,52 @@ function quarterBeatsInFirstMeasure(sourceMeasures) {
   const dur = fullBar?.Duration?.RealValue
   if (!dur) return FALLBACK_COUNT_IN_BEATS
   return Math.max(1, Math.round(dur * 4))
+}
+
+// Mirror free mode's repeat handling: at every boundary where the cursor
+// crosses into a source measure that has already been played in the run,
+// schedule a class-wipe for the entire upcoming repeat section (all
+// contiguous source measures from that point that have been seen), so the
+// player gets a fresh slate for the whole replayed block — not just the
+// measure they're entering.
+//
+// Order matters: this is called before the per-event window-open scheduling.
+// At an instant shared with a chord on the first beat of a repeated measure,
+// FIFO on equal-time setTimeouts fires the reset first, then the highlight
+// — otherwise the new "expected" class would land and immediately get wiped.
+function scheduleRepeatResets(allNotes, cumStartTimes, bpm, countInMs) {
+  const playedSources = new Set()
+  playedSources.add(allNotes[0].sourceMeasureIndex)
+
+  for (let i = 1; i < allNotes.length; i++) {
+    const currSource = allNotes[i].sourceMeasureIndex
+    if (!playedSources.has(currSource)) {
+      playedSources.add(currSource)
+      continue
+    }
+
+    // Collect every source measure in the contiguous repeat block starting
+    // at i (stops at the first measure whose source has not been played —
+    // typically a volta-2 ending).
+    const blockSources = new Set()
+    for (let j = i; j < allNotes.length; j++) {
+      const s = allNotes[j].sourceMeasureIndex
+      if (!playedSources.has(s)) break
+      blockSources.add(s)
+    }
+
+    if (blockSources.size > 0) {
+      const measureStartMs = countInMs + tsToSeconds(cumStartTimes[i], bpm) * 1000
+      timeouts.push(setTimeout(() => {
+        for (const event of pendingEvents) {
+          if (blockSources.has(event.sourceMeasureIndex)) {
+            event.noteheadEl?.classList.remove(...STRICT_CLASSES)
+          }
+        }
+      }, measureStartMs))
+    }
+    playedSources.add(currSource)
+  }
 }
 
 function shouldExpectInput(noteData) {
@@ -198,26 +246,7 @@ function start({
     }
   }
 
-  // Mirror free mode's repeat handling: when the cursor enters a source
-  // measure that has already been played in this run, wipe its strict-mode
-  // classes so the player sees a fresh slate for the new pass instead of the
-  // results from the previous pass.
-  const seenSourceMeasures = new Set()
-  for (let i = 0; i < allNotes.length; i++) {
-    const md = allNotes[i]
-    if (seenSourceMeasures.has(md.sourceMeasureIndex)) {
-      const measureStartMs = countInMs + tsToSeconds(cumStartTimes[i], bpm) * 1000
-      const sourceIdx = md.sourceMeasureIndex
-      timeouts.push(setTimeout(() => {
-        for (const event of pendingEvents) {
-          if (event.sourceMeasureIndex === sourceIdx) {
-            event.noteheadEl?.classList.remove(...STRICT_CLASSES)
-          }
-        }
-      }, measureStartMs))
-    }
-    seenSourceMeasures.add(md.sourceMeasureIndex)
-  }
+  scheduleRepeatResets(allNotes, cumStartTimes, bpm, countInMs)
 
   // Visual cue lights up at T (in sync with cursor). Match remains possible
   // until T + offTempoWindow — within tolerance is "in tempo", beyond is
@@ -242,7 +271,7 @@ function start({
     ? pendingEvents[pendingEvents.length - 1].timeMs
     : countInMs
   // Finish only after every miss timeout has had a chance to fire.
-  const tailMs = lastEventTime + offTempoWindow + 300
+  const tailMs = lastEventTime + offTempoWindow + TAIL_PADDING_MS
   timeouts.push(setTimeout(() => finish(false), tailMs))
 }
 

@@ -49,4 +49,44 @@ class StrictPlaythroughTest < CapybaraTestBase
     assert_text '0%'
     assert_text '3 manquées'
   end
+
+  # Regression: when the cursor crosses a repeat barline, free mode wipes the
+  # whole upcoming repeat section. Strict mode must do the same — clearing only
+  # the entered measure leaves later notes in the section showing first-pass
+  # results until the cursor walks into them.
+  def test_repeat_clears_whole_section_at_boundary_not_per_measure
+    load_score('repeat-endings.xml', 4)
+    fill_in 'Tempo en BPM', with: '120'
+    click_on '⏱ Mode strict'
+
+    # First pass: play m1 (C4), m2 (D4), m3 (E4) correctly. Each is a whole
+    # note → 2s/measure at BPM=120. Land ~T=2,4,6.
+    assert_selector 'svg g.vf-notehead.expected-note', wait: 4
+    play_chord(%w[C4])
+    sleep 2
+    play_chord(%w[D4])
+    sleep 2
+    play_chord(%w[E4])
+
+    # Sleep into the second-pass m1 window (m1 reopens at T~8s; we're at T~6.1
+    # after the last play, so +2s lands shortly after the repeat boundary).
+    sleep 2
+
+    # m1 (C4) is currently the expected note. m2 (D4) has not yet had its
+    # second-pass window open. The boundary reset must already have wiped m2's
+    # first-pass played-note class, so only E4 (volta-1, won't replay) should
+    # still carry played-note.
+    played_note_count = page.evaluate_script(<<~JS)
+      Array.from(document.querySelectorAll('svg g.vf-notehead'))
+        .filter(el => el.classList.contains('played-note'))
+        .length
+    JS
+    assert_equal 1, played_note_count,
+                 'Expected only E4 (volta-1) to still show played-note after the repeat boundary; ' \
+                 "found #{played_note_count} noteheads with played-note. Per-measure reset is " \
+                 'leaving later measures in the repeat block stale.'
+
+    # Let the run finish so teardown is clean.
+    assert_text 'Playthrough strict terminé', wait: 12
+  end
 end
