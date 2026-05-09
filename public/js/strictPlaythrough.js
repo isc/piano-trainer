@@ -167,12 +167,14 @@ function start({
     }
   }
 
+  // Match window is [T - tol, T + tol] but the visual cue lights up at T,
+  // in sync with the cursor — otherwise the blue appears tol ms ahead of
+  // the cursor and the player tracks it instead of the cursor.
   for (const event of pendingEvents) {
-    const openAt = Math.max(0, event.timeMs - tolerance)
     timeouts.push(setTimeout(() => {
       if (event.status !== 'pending') return
       event.noteheadEl?.classList.add(CLS_EXPECTED)
-    }, openAt))
+    }, event.timeMs))
 
     timeouts.push(setTimeout(() => {
       if (event.status !== 'pending') return
