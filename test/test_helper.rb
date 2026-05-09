@@ -91,6 +91,21 @@ class CapybaraTestBase < Minitest::Test
     end
   end
 
+  # Dispatch a chord (all notes ON, then all OFF) in a single JS turn so the
+  # engine sees them at virtually the same instant. Useful for strict-tempo
+  # tests where consecutive simulate_midi_input round-trips would smear notes
+  # across the timing window.
+  def play_chord(notes)
+    on_data = notes.map { |n| parse_midi_notation("ON #{n}") }
+    off_data = notes.map { |n| parse_midi_notation("OFF #{n}") }
+    page.execute_script(<<~JS)
+      const events = #{(on_data + off_data).to_json};
+      for (const data of events) {
+        window.dispatchEvent(new CustomEvent('mock-midi-input', { detail: { data } }));
+      }
+    JS
+  end
+
   # Helper to load a score from test fixtures
   def load_score(filename, expected_notes)
     attach_file('musicxml-upload', File.expand_path("fixtures/#{filename}", __dir__))

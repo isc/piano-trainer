@@ -205,7 +205,8 @@ function start({
   const lastEventTime = pendingEvents.length > 0
     ? pendingEvents[pendingEvents.length - 1].timeMs
     : countInMs
-  const tailMs = lastEventTime + tolerance + 300
+  // Finish only after every miss timeout has had a chance to fire.
+  const tailMs = lastEventTime + offTempoWindow + 300
   timeouts.push(setTimeout(() => finish(false), tailMs))
 }
 

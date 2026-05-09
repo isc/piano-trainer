@@ -18,21 +18,19 @@ class StrictPlaythroughTest < CapybaraTestBase
     assert_no_text 'Playthrough strict terminé'
   end
 
-  def test_perfect_play_at_slow_tempo_reports_100_percent
+  def test_perfect_play_reports_100_percent
     load_score('chord.xml', 1)
 
-    # BPM=30 → 8s count-in, ±450ms off-tempo window. Generous timing budget.
-    fill_in 'Tempo en BPM', with: '30'
+    # BPM=120 → 2s count-in, ±150ms strict window, ±450ms off-tempo.
+    fill_in 'Tempo en BPM', with: '120'
     click_on '⏱ Mode strict'
 
-    # Wait for the engine to open the timing window (cursor arrival at T=8s).
-    assert_selector 'svg g.vf-notehead.expected-note', wait: 10
+    # Sync on the engine opening the timing window (cursor arrival at T=2s).
+    assert_selector 'svg g.vf-notehead.expected-note', wait: 4
 
-    play_note('C4')
-    play_note('E4')
-    play_note('G4')
+    play_chord(%w[C4 E4 G4])
 
-    assert_text 'Playthrough strict terminé', wait: 3
+    assert_text 'Playthrough strict terminé', wait: 2
     assert_text '100%'
     assert_text '3 / 3'
     assert_no_text 'mauvaises notes'
@@ -42,12 +40,12 @@ class StrictPlaythroughTest < CapybaraTestBase
 
   def test_no_input_marks_all_notes_missed
     load_score('chord.xml', 1)
-    fill_in 'Tempo en BPM', with: '30'
+    fill_in 'Tempo en BPM', with: '120'
 
     click_on '⏱ Mode strict'
 
-    # Count-in 8s + off-tempo window 450ms + 300ms tail. Wait headroom = 12s.
-    assert_text 'Playthrough strict terminé', wait: 12
+    # Count-in 2s + off-tempo window 450ms + 300ms tail. Headroom = 4s.
+    assert_text 'Playthrough strict terminé', wait: 4
     assert_text '0%'
     assert_text '3 notes manquées'
   end
