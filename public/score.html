@@ -202,21 +202,26 @@
         <p x-show="strictResult">
           <strong x-text="strictAccuracyPercent() + '%'"></strong>
           de notes jouées dans le tempo
-          (<span x-text="strictResult?.hit ?? 0"></span> /
+          (<span x-text="strictResult?.hit ?? 0"></span> sur
           <span x-text="strictResult?.total ?? 0"></span>)
         </p>
-        <p x-show="strictOffTempoTotal() > 0">
-          <small>
-            <span x-text="strictOffTempoTotal()"></span> notes hors tempo
-            (<span x-text="strictResult?.offTempoEarly ?? 0"></span> trop tôt,
-            <span x-text="strictResult?.offTempoLate ?? 0"></span> trop tard)
-          </small>
-        </p>
-        <p x-show="strictResult?.missed > 0">
-          <small><span x-text="strictResult?.missed ?? 0"></span> notes manquées</small>
-        </p>
+        <ul x-show="strictOffTempoTotal() > 0 || strictResult?.missed > 0">
+          <li x-show="strictOffTempoTotal() > 0">
+            <small>
+              <span x-text="strictOffTempoTotal()"></span> hors tempo
+              (<span x-text="strictResult?.offTempoEarly ?? 0"></span> trop tôt,
+              <span x-text="strictResult?.offTempoLate ?? 0"></span> trop tard)
+            </small>
+          </li>
+          <li x-show="strictResult?.missed > 0">
+            <small><span x-text="strictResult?.missed ?? 0"></span> manquées</small>
+          </li>
+        </ul>
         <p x-show="strictResult?.wrongNotes > 0">
-          <small><span x-text="strictResult?.wrongNotes ?? 0"></span> mauvaises notes</small>
+          <small>
+            En plus :
+            <span x-text="strictResult?.wrongNotes ?? 0"></span> fausses notes
+          </small>
         </p>
       </article>
     </dialog>

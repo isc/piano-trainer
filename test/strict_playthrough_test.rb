@@ -32,8 +32,8 @@ class StrictPlaythroughTest < CapybaraTestBase
 
     assert_text 'Playthrough strict terminé', wait: 2
     assert_text '100%'
-    assert_text '3 / 3'
-    assert_no_text 'mauvaises notes'
+    assert_text '3 sur 3'
+    assert_no_text 'fausses notes'
     assert_no_text 'manquées'
     assert_no_text 'hors tempo'
   end
@@ -47,6 +47,6 @@ class StrictPlaythroughTest < CapybaraTestBase
     # Count-in 2s + off-tempo window 450ms + 300ms tail. Headroom = 4s.
     assert_text 'Playthrough strict terminé', wait: 4
     assert_text '0%'
-    assert_text '3 notes manquées'
+    assert_text '3 manquées'
   end
 end
