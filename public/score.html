@@ -189,7 +189,7 @@
     <dialog :open="showStrictResultModal">
       <article>
         <header>
-          <button aria-label="Close" rel="prev" @click="closeStrictResultModal()"></button>
+          <button aria-label="Close" rel="prev" @click="showStrictResultModal = false"></button>
           <p><strong>⏱ Playthrough strict terminé</strong></p>
         </header>
         <p x-show="strictResult">
@@ -198,10 +198,10 @@
           (<span x-text="strictResult?.hit ?? 0"></span> /
           <span x-text="strictResult?.total ?? 0"></span>)
         </p>
-        <p x-show="strictResult && strictResult.missed > 0">
+        <p x-show="strictResult?.missed > 0">
           <small><span x-text="strictResult?.missed ?? 0"></span> notes manquées</small>
         </p>
-        <p x-show="strictResult && strictResult.wrongNotes > 0">
+        <p x-show="strictResult?.wrongNotes > 0">
           <small><span x-text="strictResult?.wrongNotes ?? 0"></span> mauvaises notes</small>
         </p>
       </article>

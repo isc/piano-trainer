@@ -1,7 +1,11 @@
 import { tsToSeconds, buildCumStartTimes, syncCursorStyle } from './playback.js'
+import { isOrnamentOrGrace, isNoteActiveForHands } from './noteExtraction.js'
 
 const DEFAULT_TOLERANCE_MS = 150
 const DEFAULT_COUNT_IN_BEATS = 4
+const CLS_EXPECTED = 'expected-note'
+const CLS_PLAYED = 'played-note'
+const CLS_MISSED = 'missed-note'
 
 let timeouts = []
 let isRunning = false
@@ -46,20 +50,10 @@ function click({ accent = false } = {}) {
   osc.stop(t0 + 0.06)
 }
 
-function isNoteActiveForHands(noteData) {
-  return noteData.staffIndex === 0 ? activeHands.right : activeHands.left
-}
-
-// Skip ornaments, grace notes, tie continuations and inactive hands.
-// They aren't expected as discrete user inputs in strict mode v1.
 function shouldExpectInput(noteData) {
-  if (noteData.isGrace) return false
-  if (noteData.isTrillNote) return false
-  if (noteData.isTurnNote) return false
-  if (noteData.isMordentNote) return false
-  if (noteData.isTrillEnd) return false
+  if (isOrnamentOrGrace(noteData)) return false
   if (noteData.isTieContinuation) return false
-  return isNoteActiveForHands(noteData)
+  return isNoteActiveForHands(noteData, activeHands)
 }
 
 function svgNoteheadFor(noteData) {
@@ -73,9 +67,7 @@ function svgNoteheadFor(noteData) {
 function clearAllVisualState(allNotes) {
   for (const measureData of allNotes) {
     for (const noteData of measureData.notes) {
-      svgNoteheadFor(noteData)?.classList.remove(
-        'expected-note', 'played-note', 'missed-note', 'active-note',
-      )
+      svgNoteheadFor(noteData)?.classList.remove(CLS_EXPECTED, CLS_PLAYED, CLS_MISSED)
     }
   }
 }
@@ -117,7 +109,6 @@ function start({
       const ts = measureOffset + noteData.timestamp
       const noteTimeMs = countInMs + tsToSeconds(ts, bpm) * 1000
 
-      // Cursor advances on every visual position regardless of which staff/hand
       cursorTimesSet.add(noteTimeMs)
 
       if (!shouldExpectInput(noteData)) continue
@@ -126,6 +117,7 @@ function start({
         timeMs: noteTimeMs,
         midiNumber: noteData.midiNumber,
         noteData,
+        noteheadEl: svgNoteheadFor(noteData),
         measureIndex: i,
         sourceMeasureIndex: measureData.sourceMeasureIndex,
         status: 'pending',
@@ -138,13 +130,11 @@ function start({
 
   startedAtPerf = performance.now()
 
-  // Count-in clicks
   for (let i = 0; i < countInBeats; i++) {
     const t = i * beatMs
     timeouts.push(setTimeout(() => click({ accent: i === 0 }), t))
   }
 
-  // Metronome clicks during the music. Clicks every quarter beat from countIn through last event.
   if (pendingEvents.length > 0) {
     const lastTimeMs = pendingEvents[pendingEvents.length - 1].timeMs
     const beatsDuringMusic = Math.ceil((lastTimeMs - countInMs) / beatMs) + 1
@@ -154,7 +144,6 @@ function start({
     }
   }
 
-  // Cursor advance schedule
   const cursor = osmdInstance.cursor
   if (cursor) {
     cursor.reset()
@@ -178,26 +167,23 @@ function start({
     }
   }
 
-  // Window open + miss-detection per event
   for (const event of pendingEvents) {
     const openAt = Math.max(0, event.timeMs - tolerance)
     timeouts.push(setTimeout(() => {
       if (event.status !== 'pending') return
-      svgNoteheadFor(event.noteData)?.classList.add('expected-note')
+      event.noteheadEl?.classList.add(CLS_EXPECTED)
     }, openAt))
 
     timeouts.push(setTimeout(() => {
       if (event.status !== 'pending') return
       event.status = 'missed'
       stats.missed++
-      const head = svgNoteheadFor(event.noteData)
-      head?.classList.remove('expected-note')
-      head?.classList.add('missed-note')
+      event.noteheadEl?.classList.remove(CLS_EXPECTED)
+      event.noteheadEl?.classList.add(CLS_MISSED)
       onProgressCb?.({ ...stats })
     }, event.timeMs + tolerance))
   }
 
-  // End-of-run
   const lastEventTime = pendingEvents.length > 0
     ? pendingEvents[pendingEvents.length - 1].timeMs
     : countInMs
@@ -223,9 +209,8 @@ function handleNoteOn(midiNumber) {
   if (event) {
     event.status = 'hit'
     stats.hit++
-    const head = svgNoteheadFor(event.noteData)
-    head?.classList.remove('expected-note')
-    head?.classList.add('played-note')
+    event.noteheadEl?.classList.remove(CLS_EXPECTED)
+    event.noteheadEl?.classList.add(CLS_PLAYED)
     onProgressCb?.({ ...stats })
     return true
   }
@@ -241,19 +226,21 @@ function teardown() {
     activeOsmd.cursor.hide()
     activeOsmd.cursor.reset()
   }
-  // Clear any expected-note marks still up
   for (const event of pendingEvents) {
     if (event.status === 'pending') {
-      svgNoteheadFor(event.noteData)?.classList.remove('expected-note')
+      event.noteheadEl?.classList.remove(CLS_EXPECTED)
     }
   }
+  activeOsmd = null
+  pendingEvents = []
 }
 
 function finish(aborted) {
   if (!isRunning) return
   isRunning = false
+  const finalStats = stats
   teardown()
-  onCompleteCb?.({ ...stats, aborted })
+  onCompleteCb?.({ ...finalStats, aborted })
 }
 
 function stop() {

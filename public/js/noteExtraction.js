@@ -413,6 +413,21 @@ function extractNotesFromSourceMeasures(sourceMeasures) {
 }
 
 // Extract notes from the score and build the playback sequence
+export function isOrnamentOrGrace(noteData) {
+  return Boolean(
+    noteData.isGrace ||
+    noteData.isTrillNote ||
+    noteData.isTurnNote ||
+    noteData.isMordentNote ||
+    noteData.isTrillEnd
+  )
+}
+
+// Staff 0 = right hand, Staff 1+ = left hand.
+export function isNoteActiveForHands(noteData, activeHands) {
+  return noteData.staffIndex === 0 ? activeHands.right : activeHands.left
+}
+
 export function extractNotesFromScore(osmdInstance) {
   if (!osmdInstance) {
     return { allNotes: [], playbackSequence: [] }

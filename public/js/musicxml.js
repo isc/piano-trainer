@@ -1,5 +1,5 @@
 import { noteName } from './midi.js'
-import { extractNotesFromScore as extractNotes } from './noteExtraction.js'
+import { extractNotesFromScore as extractNotes, isNoteActiveForHands as isNoteActiveForHandsShared } from './noteExtraction.js'
 
 let osmdInstance = null
 let allNotes = []
@@ -139,10 +139,8 @@ function setCallbacks(cbs) {
   callbacks = { ...callbacks, ...cbs }
 }
 
-// Check if a note should be considered based on active hands
-// Staff 0 = right hand, Staff 1+ = left hand
 function isNoteActiveForHands(noteData) {
-  return noteData.staffIndex === 0 ? activeHands.right : activeHands.left
+  return isNoteActiveForHandsShared(noteData, activeHands)
 }
 
 function resetPlaybackState() {

@@ -36,7 +36,6 @@ export function midiApp() {
     isPlaying: false,
     isStrictPlaying: false,
     strictBpm: 120,
-    strictTolerance: 150,
     strictResult: null,
     showStrictResultModal: false,
     cassettes: [],
@@ -295,7 +294,6 @@ export function midiApp() {
         return
       }
 
-      // Stop conflicting modes
       if (this.isPlaying) playback.stop()
       this.isPlaying = false
       if (this.trainingMode) {
@@ -305,11 +303,9 @@ export function midiApp() {
 
       strictPlaythrough.setActiveHands({ right: this.rightHandActive, left: this.leftHandActive })
       this.isStrictPlaying = true
-      this.showStrictResultModal = false
 
       strictPlaythrough.start({
         bpm: this.strictBpm,
-        tolerance: this.strictTolerance,
         allNotes: musicxml.getAllNotes(),
         osmdInstance: musicxml.getOsmdInstance(),
         onComplete: (result) => {
@@ -318,10 +314,6 @@ export function midiApp() {
           if (!result.aborted) this.showStrictResultModal = true
         },
       })
-    },
-
-    closeStrictResultModal() {
-      this.showStrictResultModal = false
     },
 
     strictAccuracyPercent() {
