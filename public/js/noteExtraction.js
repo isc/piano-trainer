@@ -428,6 +428,38 @@ export function isNoteActiveForHands(noteData, activeHands) {
   return noteData.staffIndex === 0 ? activeHands.right : activeHands.left
 }
 
+// Returns the set of source measures whose visual state should be reset when
+// the cursor moves from `allNotes[fromIdx]` to `allNotes[fromIdx + 1]`.
+//
+// A reset is needed when the next measure's source has already been played
+// (i.e., we're entering a repeat). The section to clear is every previously
+// played source whose index is >= the repeat target AND that lies before the
+// current measure — plus the current measure itself when it will be replayed
+// later in the playback sequence (simple repeat, not a volta-1 ending).
+export function sourceMeasuresToResetOnEntry(allNotes, fromIdx, playedSources) {
+  const toIdx = fromIdx + 1
+  if (toIdx >= allNotes.length) return new Set()
+
+  const nextSource = allNotes[toIdx].sourceMeasureIndex
+  if (!playedSources.has(nextSource)) return new Set()
+
+  const currentSource = allNotes[fromIdx].sourceMeasureIndex
+  const currentWillReplay = allNotes
+    .slice(toIdx)
+    .some((m) => m.sourceMeasureIndex === currentSource)
+
+  const result = new Set()
+  for (const s of playedSources) {
+    if (
+      s >= nextSource &&
+      (s < currentSource || (s === currentSource && currentWillReplay))
+    ) {
+      result.add(s)
+    }
+  }
+  return result
+}
+
 export function extractNotesFromScore(osmdInstance) {
   if (!osmdInstance) {
     return { allNotes: [], playbackSequence: [] }

@@ -1,5 +1,9 @@
 import { tsToSeconds, buildCumStartTimes, syncCursorStyle } from './playback.js'
-import { isOrnamentOrGrace, isNoteActiveForHands } from './noteExtraction.js'
+import {
+  isOrnamentOrGrace,
+  isNoteActiveForHands,
+  sourceMeasuresToResetOnEntry,
+} from './noteExtraction.js'
 import {
   findMatchingEvent,
   classifyMatch,
@@ -78,49 +82,32 @@ function quarterBeatsInFirstMeasure(sourceMeasures) {
   return Math.max(1, Math.round(dur * 4))
 }
 
-// Mirror free mode's repeat handling: at every boundary where the cursor
-// crosses into a source measure that has already been played in the run,
-// schedule a class-wipe for the entire upcoming repeat section (all
-// contiguous source measures from that point that have been seen), so the
-// player gets a fresh slate for the whole replayed block — not just the
-// measure they're entering.
+// Time-driven mirror of free mode's repeat handling. Free mode calls
+// sourceMeasuresToResetOnEntry on each MIDI-validated measure transition;
+// strict mode walks the whole playback sequence at engine start and schedules
+// the equivalent reset at the cursor-entry time of each transition that
+// crosses into a repeat.
 //
-// Order matters: this is called before the per-event window-open scheduling.
-// At an instant shared with a chord on the first beat of a repeated measure,
-// FIFO on equal-time setTimeouts fires the reset first, then the highlight
-// — otherwise the new "expected" class would land and immediately get wiped.
+// Ordering: registered before the per-event window-open scheduling so when a
+// chord lands on the first beat of a repeated measure (reset and highlight
+// share the same timestamp), FIFO on equal-time setTimeouts fires the reset
+// first — otherwise the new "expected" class would land and be wiped.
 function scheduleRepeatResets(allNotes, cumStartTimes, bpm, countInMs) {
-  const playedSources = new Set()
-  playedSources.add(allNotes[0].sourceMeasureIndex)
+  const playedSources = new Set([allNotes[0].sourceMeasureIndex])
 
-  for (let i = 1; i < allNotes.length; i++) {
-    const currSource = allNotes[i].sourceMeasureIndex
-    if (!playedSources.has(currSource)) {
-      playedSources.add(currSource)
-      continue
-    }
-
-    // Collect every source measure in the contiguous repeat block starting
-    // at i (stops at the first measure whose source has not been played —
-    // typically a volta-2 ending).
-    const blockSources = new Set()
-    for (let j = i; j < allNotes.length; j++) {
-      const s = allNotes[j].sourceMeasureIndex
-      if (!playedSources.has(s)) break
-      blockSources.add(s)
-    }
-
-    if (blockSources.size > 0) {
-      const measureStartMs = countInMs + tsToSeconds(cumStartTimes[i], bpm) * 1000
+  for (let i = 0; i < allNotes.length - 1; i++) {
+    const toReset = sourceMeasuresToResetOnEntry(allNotes, i, playedSources)
+    if (toReset.size > 0) {
+      const measureStartMs = countInMs + tsToSeconds(cumStartTimes[i + 1], bpm) * 1000
       timeouts.push(setTimeout(() => {
         for (const event of pendingEvents) {
-          if (blockSources.has(event.sourceMeasureIndex)) {
+          if (toReset.has(event.sourceMeasureIndex)) {
             event.noteheadEl?.classList.remove(...STRICT_CLASSES)
           }
         }
       }, measureStartMs))
     }
-    playedSources.add(currSource)
+    playedSources.add(allNotes[i + 1].sourceMeasureIndex)
   }
 }
 
