@@ -11,7 +11,8 @@ const DEFAULT_TOLERANCE_MS = 150
 // Notes played beyond the strict tolerance but within this wider window are
 // counted as "off-tempo" instead of wrong notes.
 const DEFAULT_OFFTEMPO_WINDOW_MS = 450
-const DEFAULT_COUNT_IN_BEATS = 4
+// Fallback when the score's first measure has no usable duration.
+const FALLBACK_COUNT_IN_BEATS = 4
 const CLS_EXPECTED = 'expected-note'
 const CLS_PLAYED = 'played-note'
 const CLS_OFFTEMPO = 'offtempo-note'
@@ -62,6 +63,19 @@ function click({ accent = false } = {}) {
   osc.stop(t0 + 0.06)
 }
 
+// One full measure of count-in, expressed in quarter-note beats so it lines up
+// with the engine's quarter-note metronome. OSMD's measure Duration.RealValue
+// is a fraction of a whole note, so ×4 converts to quarter notes
+// (4/4 → 4, 3/4 → 3, 6/8 → 3, 2/2 → 4). Pickup measures are skipped so the
+// count-in lasts a full bar, not just the anacrusis.
+function quarterBeatsInFirstMeasure(sourceMeasures) {
+  if (!sourceMeasures?.length) return FALLBACK_COUNT_IN_BEATS
+  const fullBar = sourceMeasures.find((m) => !m.ImplicitMeasure) ?? sourceMeasures[0]
+  const dur = fullBar?.Duration?.RealValue
+  if (!dur) return FALLBACK_COUNT_IN_BEATS
+  return Math.max(1, Math.round(dur * 4))
+}
+
 function shouldExpectInput(noteData) {
   if (isOrnamentOrGrace(noteData)) return false
   if (noteData.isTieContinuation) return false
@@ -82,7 +96,7 @@ function start({
   osmdInstance,
   tolerance = DEFAULT_TOLERANCE_MS,
   offTempoWindow = DEFAULT_OFFTEMPO_WINDOW_MS,
-  countInBeats = DEFAULT_COUNT_IN_BEATS,
+  countInBeats,
   onComplete,
   onProgress,
 }) {
@@ -100,7 +114,8 @@ function start({
   const sourceMeasures = osmdInstance.Sheet.SourceMeasures
   const cumStartTimes = buildCumStartTimes(allNotes, sourceMeasures)
   const beatMs = 60_000 / bpm
-  const countInMs = countInBeats * beatMs
+  const resolvedCountInBeats = countInBeats ?? quarterBeatsInFirstMeasure(sourceMeasures)
+  const countInMs = resolvedCountInBeats * beatMs
 
   pendingEvents = []
   const cursorTimesSet = new Set()
@@ -146,7 +161,7 @@ function start({
 
   startedAtPerf = performance.now()
 
-  for (let i = 0; i < countInBeats; i++) {
+  for (let i = 0; i < resolvedCountInBeats; i++) {
     const t = i * beatMs
     timeouts.push(setTimeout(() => click({ accent: i === 0 }), t))
   }
