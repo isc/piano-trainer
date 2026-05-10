@@ -7,7 +7,8 @@ import { formatDuration, formatDate } from './utils.js'
 import { initStorage } from './storage.js'
 import { loadMxlAsXml } from './mxlLoader.js'
 import { injectFingerings } from './fingeringInjector.js'
-import { initPlayback } from './playback.js'
+import { initPlayback, getBPM } from './playback.js'
+import { initStrictPlaythrough } from './strictPlaythrough.js'
 
 export function midiApp() {
   const midi = initMidi()
@@ -23,6 +24,7 @@ export function midiApp() {
   const storage = initStorage()
   const practiceTracker = initPracticeTracker(storage)
   const playback = initPlayback(midi.state)
+  const strictPlaythrough = initStrictPlaythrough()
 
   return {
     bluetoothConnected: false,
@@ -32,6 +34,10 @@ export function midiApp() {
     isReplaying: false,
     replayEnded: false,
     isPlaying: false,
+    isStrictPlaying: false,
+    strictBpm: 120,
+    strictResult: null,
+    showStrictResultModal: false,
     cassettes: [],
     selectedCassette: '',
     cassetteApiAvailable: false,
@@ -84,9 +90,14 @@ export function midiApp() {
             window.location.href = 'index.html'
             return
           }
+          if (strictPlaythrough.isPlaying) {
+            strictPlaythrough.handleNoteOn(midiNote)
+            return
+          }
           musicxml.activateNote(midiNote)
         },
         onNoteReleased: (noteName, midiNote) => {
+          if (strictPlaythrough.isPlaying) return
           musicxml.deactivateNote(midiNote)
         },
       })
@@ -257,6 +268,7 @@ export function midiApp() {
       await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)))
       musicxml.renderScore()
       document.getElementById('score').dataset.renderComplete = Date.now()
+      this.strictBpm = Math.round(getBPM(this.osmdInstance))
       await this.requestWakeLock()
     },
 
@@ -271,8 +283,48 @@ export function midiApp() {
     },
 
     async togglePlayback() {
+      if (this.isStrictPlaying) this.toggleStrictPlaythrough()
       await playback.togglePlayback(musicxml.getAllNotes(), musicxml.getOsmdInstance())
       this.isPlaying = playback.isPlaying
+    },
+
+    toggleStrictPlaythrough() {
+      if (strictPlaythrough.isPlaying) {
+        strictPlaythrough.stop()
+        return
+      }
+
+      if (this.isPlaying) playback.stop()
+      this.isPlaying = false
+      if (this.trainingMode) {
+        this.trainingMode = false
+        musicxml.setTrainingMode(false)
+      }
+
+      strictPlaythrough.setActiveHands({ right: this.rightHandActive, left: this.leftHandActive })
+      this.isStrictPlaying = true
+
+      strictPlaythrough.start({
+        bpm: this.strictBpm,
+        allNotes: musicxml.getAllNotes(),
+        osmdInstance: musicxml.getOsmdInstance(),
+        onComplete: (result) => {
+          this.isStrictPlaying = false
+          this.strictResult = result
+          if (!result.aborted) this.showStrictResultModal = true
+        },
+      })
+    },
+
+    strictAccuracyPercent() {
+      if (!this.strictResult || !this.strictResult.total) return 0
+      return Math.round((this.strictResult.hit / this.strictResult.total) * 100)
+    },
+
+    strictOffTempoTotal() {
+      const r = this.strictResult
+      if (!r) return 0
+      return (r.offTempoEarly ?? 0) + (r.offTempoLate ?? 0)
     },
 
     async toggleTrainingMode() {
@@ -328,10 +380,9 @@ export function midiApp() {
     },
 
     updateActiveHands() {
-      musicxml.setActiveHands({
-        right: this.rightHandActive,
-        left: this.leftHandActive,
-      })
+      const hands = { right: this.rightHandActive, left: this.leftHandActive }
+      musicxml.setActiveHands(hands)
+      strictPlaythrough.setActiveHands(hands)
     },
 
     async openScoreHistory() {

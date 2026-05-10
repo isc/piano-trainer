@@ -1,4 +1,5 @@
 import { Piano } from '@tonejs/piano'
+import { isOrnamentOrGrace } from './noteExtraction.js'
 
 let piano = null
 let midiState = null
@@ -52,7 +53,7 @@ async function ensurePianoLoaded() {
   await piano.load()
 }
 
-function getBPM(osmdInstance) {
+export function getBPM(osmdInstance) {
   const sm = osmdInstance.Sheet?.SourceMeasures?.[0]
   const tempo = sm?.TempoExpressions?.[0]?.InstantaneousTempo
   if (!tempo) return sm?.TempoInBPM || 120
@@ -62,13 +63,13 @@ function getBPM(osmdInstance) {
   return tempo.tempoInBpm * ratio
 }
 
-function tsToSeconds(ts, bpm) {
+export function tsToSeconds(ts, bpm) {
   return ts * 4 * 60 / bpm
 }
 
 // Build cumulative start times (in whole-note fractions) for each measure in playback order.
 // Each measure's actual duration comes from OSMD, so time signatures other than 4/4 work correctly.
-function buildCumStartTimes(allNotes, sourceMeasures) {
+export function buildCumStartTimes(allNotes, sourceMeasures) {
   const cumTimes = []
   let cumulativeTime = 0
   for (const measureData of allNotes) {
@@ -148,7 +149,28 @@ function expandOrnamentTimings(notes) {
 // Fix two OSMD cursor issues that can't be solved with CSS alone:
 // - PicoCSS `img { height: auto }` collapses the 1px-tall cursor image
 // - OSMD's adjustToBackgroundColor() resets z-index to -1 via inline style
-function syncCursorStyle(cursor) {
+// Schedule cursor.next() advances on the given timeline. Returns the timeout
+// IDs so the caller can register them with its own teardown list. The cursor
+// starts visible at the first position; subsequent ticks advance it.
+export function scheduleCursorAdvances(cursor, cursorTimes, { scrollBlock = 'start' } = {}) {
+  cursor.reset()
+  cursor.show()
+  syncCursorStyle(cursor)
+  let lastCursorTop = null
+  return cursorTimes.map((t, i) => setTimeout(() => {
+    if (i > 0) cursor.next()
+    syncCursorStyle(cursor)
+    const el = cursor.cursorElement
+    if (!el) return
+    const top = el.getBoundingClientRect().top + window.scrollY
+    if (lastCursorTop === null || Math.abs(top - lastCursorTop) > 10) {
+      el.scrollIntoView({ behavior: 'smooth', block: scrollBlock })
+    }
+    lastCursorTop = top
+  }, t))
+}
+
+export function syncCursorStyle(cursor) {
   const el = cursor.cursorElement
   if (!el) return
   el.style.height = el.getAttribute('height') + 'px'
@@ -173,10 +195,12 @@ function stop() {
   hideCursor()
 }
 
-// Build the list of cursor advance timestamps (in ms from start) from allNotes data.
-// Avoids traversing the OSMD cursor (which corrupts its visual state after EndReached+reset).
-// Each unique absolute timestamp (whole-note fractions from start) maps to one cursor.next() call.
-function buildCursorTimeline(allNotes, cumStartTimes, bpm) {
+// Build the list of cursor advance timestamps (in ms from start) from allNotes
+// data. Avoids traversing the OSMD cursor (which corrupts its visual state
+// after EndReached+reset). Each unique absolute timestamp (whole-note
+// fractions from start) maps to one cursor.next() call. Ornaments and grace
+// notes are skipped — the visible cursor doesn't stop on them.
+export function buildCursorTimeline(allNotes, cumStartTimes, bpm, offsetMs = 0) {
   const seen = new Set()
   const steps = []
 
@@ -185,11 +209,11 @@ function buildCursorTimeline(allNotes, cumStartTimes, bpm) {
     const measureOffset = cumStartTimes[i] - measureData.measureIndex
 
     for (const n of measureData.notes) {
-      if (n.isTrillNote || n.isTurnNote || n.isMordentNote || n.isTrillEnd || n.isGrace) continue
+      if (isOrnamentOrGrace(n) || n.isTrillEnd) continue
       const absoluteTs = measureOffset + n.timestamp
       if (seen.has(absoluteTs)) continue
       seen.add(absoluteTs)
-      steps.push(tsToSeconds(absoluteTs, bpm) * 1000)
+      steps.push(offsetMs + tsToSeconds(absoluteTs, bpm) * 1000)
     }
   }
 
@@ -239,28 +263,9 @@ async function togglePlayback(allNotes, osmdInstance) {
     }
   }
 
-  // Cursor: schedule advances in sync with audio.
-  const cursor = osmdInstance.cursor
-  if (cursor) {
+  if (osmdInstance.cursor) {
     const cursorSteps = buildCursorTimeline(allNotes, cumStartTimes, bpm)
-    cursor.reset()
-    cursor.show()
-    syncCursorStyle(cursor)
-    let lastCursorTop = null
-    for (let i = 0; i < cursorSteps.length; i++) {
-      scheduledTimeouts.push(setTimeout(() => {
-        if (i > 0) cursor.next()
-        syncCursorStyle(cursor)
-        const el = cursor.cursorElement
-        if (el) {
-          const currentTop = el.getBoundingClientRect().top + window.scrollY
-          if (lastCursorTop === null || Math.abs(currentTop - lastCursorTop) > 10) {
-            el.scrollIntoView({ behavior: 'smooth', block: 'start' })
-          }
-          lastCursorTop = currentTop
-        }
-      }, cursorSteps[i]))
-    }
+    scheduledTimeouts.push(...scheduleCursorAdvances(osmdInstance.cursor, cursorSteps))
   }
 
   isPlaying = true

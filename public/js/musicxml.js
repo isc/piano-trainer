@@ -1,5 +1,10 @@
 import { noteName } from './midi.js'
-import { extractNotesFromScore as extractNotes } from './noteExtraction.js'
+import {
+  extractNotesFromScore as extractNotes,
+  isNoteActiveForHands as isNoteActiveForHandsShared,
+  sourceMeasuresToResetOnEntry,
+  svgNoteheadFor,
+} from './noteExtraction.js'
 
 let osmdInstance = null
 let allNotes = []
@@ -139,10 +144,8 @@ function setCallbacks(cbs) {
   callbacks = { ...callbacks, ...cbs }
 }
 
-// Check if a note should be considered based on active hands
-// Staff 0 = right hand, Staff 1+ = left hand
 function isNoteActiveForHands(noteData) {
-  return noteData.staffIndex === 0 ? activeHands.right : activeHands.left
+  return isNoteActiveForHandsShared(noteData, activeHands)
 }
 
 function resetPlaybackState() {
@@ -672,25 +675,13 @@ function handleNoteValidated(measureData, noteData, validatedCount) {
       playedSourceMeasures.add(currentSourceMeasure)
 
       if (currentMeasureIndex + 1 < allNotes.length) {
-        // Check if next measure's source has been played before (repeat)
-        const nextSourceMeasure = allNotes[currentMeasureIndex + 1].sourceMeasureIndex
-        if (playedSourceMeasures.has(nextSourceMeasure)) {
-          // Check if current measure will be replayed (appears later in playback sequence)
-          // If yes (simple repeat), reset it. If no (volta 1 ending), don't reset it.
-          const currentMeasureWillBeReplayed = allNotes
-            .slice(currentMeasureIndex + 1)
-            .some((m) => m.sourceMeasureIndex === currentSourceMeasure)
-
-          // Reset visual state for source measures that will be replayed
-          for (const sourceMeasureIndex of playedSourceMeasures) {
-            const shouldReset =
-              sourceMeasureIndex >= nextSourceMeasure &&
-              (sourceMeasureIndex < currentSourceMeasure ||
-                (sourceMeasureIndex === currentSourceMeasure && currentMeasureWillBeReplayed))
-            if (shouldReset) {
-              resetSourceMeasureVisualState(sourceMeasureIndex)
-            }
-          }
+        const toReset = sourceMeasuresToResetOnEntry(
+          allNotes,
+          currentMeasureIndex,
+          playedSourceMeasures,
+        )
+        for (const sourceMeasureIndex of toReset) {
+          resetSourceMeasureVisualState(sourceMeasureIndex)
         }
         // Scroll to next measure before incrementing
         scrollToNextMeasureIfNeeded(currentMeasureIndex + 1)
@@ -717,13 +708,8 @@ function svgNote(note) {
   return osmdInstance.rules.GNote(note).getSVGGElement()
 }
 
-// Get the specific notehead element for a note (handles chords correctly)
 function svgNotehead(noteData) {
-  const svgGroup = svgNote(noteData.note)
-  if (!svgGroup) return null
-
-  const noteheads = svgGroup.querySelectorAll('.vf-notehead')
-  return noteheads[noteData.noteheadIndex]
+  return svgNoteheadFor(osmdInstance, noteData)
 }
 
 function getSystemIndexForNote(note) {
