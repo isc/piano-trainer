@@ -416,8 +416,9 @@ function jumpToMeasure(measureIndex) {
   }
 }
 
-// Keep in sync with scroll-margin-top in styles.css
-const SCROLL_TOP_MARGIN = 80
+// Keep in sync with `img[id^="cursorImg"] { scroll-margin-top }` in styles.css.
+// Topbar (48px) + modebar (~44px) + small breathing room.
+const SCROLL_TOP_MARGIN = 100
 
 function scrollToMeasure(measureIndex) {
   const rect = measureClickRectangles[measureIndex]

@@ -37,7 +37,6 @@ export function midiApp() {
     isStrictPlaying: false,
     strictBpm: 120,
     strictResult: null,
-    showStrictResultModal: false,
     cassettes: [],
     selectedCassette: '',
     cassetteApiAvailable: false,
@@ -45,6 +44,8 @@ export function midiApp() {
 
     // Practice tracking (only for scores loaded via URL, not uploads)
     scoreUrl: null,
+    scoreTitle: null,
+    scoreComposer: null,
 
     // Hand selection (both active by default)
     rightHandActive: true,
@@ -52,16 +53,22 @@ export function midiApp() {
 
     // UI states
     errorMessage: null,
-    trainingComplete: false,
-    showScoreCompleteModal: false,
-    currentPlaythroughDuration: null,
-    previousPlaythroughs: [],
     showHistoryModal: false,
     scoreHistory: [],
+    historyTotalMs: 0,
+    historyHotMeasures: [],
     measuresToReinforce: [],
     reinforcementMode: false,
-    showReinforcementCompleteModal: false,
     showMidiHelpModal: false,
+    settingsMenuOpen: false,
+
+    // Unified result modal (replaces showScoreCompleteModal,
+    // showStrictResultModal, showReinforcementCompleteModal,
+    // and the inline trainingComplete banner).
+    showResultModal: false,
+    resultMode: null, // 'free' | 'training' | 'strict' | 'reinforcement'
+    currentPlaythroughDuration: null,
+    previousPlaythroughs: [],
 
     // Fingering annotation
     fingeringEnabled: false,
@@ -119,13 +126,13 @@ export function midiApp() {
           await this.refreshReinforcementSuggestions()
         },
         onNoteError: (expected, played) => {
-          this.errorMessage = `❌ Erreur: attendu ${expected}, joué ${played}`
+          this.errorMessage = `Attendu ${expected}, joué ${played}`
           setTimeout(() => {
             this.errorMessage = ''
           }, 2000)
         },
         onTrainingComplete: async () => {
-          this.showTrainingComplete()
+          this.openResultModal('training')
           await practiceTracker.endSession()
           // Start new session for next playthrough
           const metadata = musicxml.getScoreMetadata()
@@ -148,7 +155,7 @@ export function midiApp() {
           this.trainingMode = false
           musicxml.setTrainingMode(false)
           await practiceTracker.endSession()
-          this.showReinforcementCompleteModal = true
+          this.openResultModal('reinforcement')
 
           // Start new free session so subsequent play is tracked
           const metadata = musicxml.getScoreMetadata()
@@ -237,6 +244,7 @@ export function midiApp() {
       this.scoreUrl = null
       await musicxml.loadMusicXML(event)
       await this.afterScoreLoad()
+      this.captureScoreMetadata()
     },
 
     async loadScoreFromURL(url) {
@@ -244,12 +252,23 @@ export function midiApp() {
       this.fingeringEnabled = true
 
       await this.renderScoreWithFingerings()
+      this.captureScoreMetadata()
 
       const metadata = musicxml.getScoreMetadata()
       practiceTracker.startSession(url, metadata.title, metadata.composer, 'free', metadata.totalMeasures)
 
       // Load reinforcement suggestions from last completed playthrough
       await this.refreshReinforcementSuggestions()
+    },
+
+    captureScoreMetadata() {
+      if (!this.osmdInstance) return
+      const metadata = musicxml.getScoreMetadata()
+      this.scoreTitle = metadata.title || null
+      this.scoreComposer = metadata.composer || null
+      if (metadata.title) {
+        document.title = `${metadata.title}${metadata.composer ? ' — ' + metadata.composer : ''} · Piano Trainer`
+      }
     },
 
     async renderScoreWithFingerings() {
@@ -311,9 +330,42 @@ export function midiApp() {
         onComplete: (result) => {
           this.isStrictPlaying = false
           this.strictResult = result
-          if (!result.aborted) this.showStrictResultModal = true
+          if (!result.aborted) this.openResultModal('strict')
         },
       })
+    },
+
+    // Returns the active practice mode for the segmented control and
+    // contextual band. Reinforcement is a *flavor* of training, not a
+    // separate radio option, so the segmented stays on 'training' for it.
+    get currentMode() {
+      if (this.isStrictPlaying) return 'strict'
+      if (this.trainingMode) return 'training'
+      return 'free'
+    },
+
+    // Centralized mode switcher used by the segmented control. Stops any
+    // active mode before activating the next one.
+    setMode(name) {
+      if (this.currentMode === name && name !== 'free') return
+      if (name === 'free') {
+        if (this.isStrictPlaying) this.toggleStrictPlaythrough()
+        if (this.trainingMode) this.toggleTrainingMode()
+        return
+      }
+      if (name === 'training') {
+        if (this.isStrictPlaying) this.toggleStrictPlaythrough()
+        if (!this.trainingMode) this.toggleTrainingMode()
+        return
+      }
+      if (name === 'strict') {
+        if (this.trainingMode) {
+          this.trainingMode = false
+          musicxml.setTrainingMode(false)
+        }
+        if (!this.isStrictPlaying) this.toggleStrictPlaythrough()
+        return
+      }
     },
 
     strictAccuracyPercent() {
@@ -329,19 +381,13 @@ export function midiApp() {
 
     async toggleTrainingMode() {
       this.trainingMode = !this.trainingMode
-      this.trainingComplete = false
 
       const mode = this.trainingMode ? 'training' : 'free'
       await practiceTracker.toggleMode(mode)
       musicxml.setTrainingMode(this.trainingMode)
     },
 
-    showTrainingComplete() {
-      this.trainingComplete = true
-    },
-
     showScoreComplete(allPlaythroughs) {
-      // Find the most recent playthrough (the one just completed)
       const sorted = [...allPlaythroughs].sort((a, b) => new Date(b.startedAt) - new Date(a.startedAt))
       const mostRecent = sorted[0] || null
 
@@ -352,11 +398,25 @@ export function midiApp() {
         .map((pt) => ({ ...pt, isCurrent: pt === mostRecent }))
         .sort((a, b) => a.durationMs - b.durationMs)
 
-      this.showScoreCompleteModal = true
+      this.openResultModal('free')
     },
 
-    closeScoreCompleteModal() {
-      this.showScoreCompleteModal = false
+    openResultModal(mode) {
+      this.resultMode = mode
+      this.showResultModal = true
+    },
+
+    closeResultModal() {
+      this.showResultModal = false
+    },
+
+    resultTitle() {
+      switch (this.resultMode) {
+        case 'strict':         return '⏱ Playthrough strict terminé'
+        case 'training':       return '🎉 Félicitations — Entraînement terminé'
+        case 'reinforcement':  return '🎯 Renforcement terminé'
+        default:               return '🎉 Partition terminée'
+      }
     },
 
     async refreshReinforcementSuggestions() {
@@ -388,7 +448,34 @@ export function midiApp() {
     async openScoreHistory() {
       if (!this.scoreUrl) return
       this.scoreHistory = await practiceTracker.getScoreHistory(this.scoreUrl)
+      this.historyTotalMs = this.scoreHistory.reduce((sum, d) => sum + (d.totalPracticeTimeMs || 0), 0)
+      this.historyHotMeasures = await this.computeHotMeasures()
       this.showHistoryModal = true
+    },
+
+    // Top measures with the highest error rate, surfaced inside the
+    // history modal so practiced measures with persistent trouble are
+    // visible without diving into the data.
+    async computeHotMeasures() {
+      const agg = await storage.getAggregate(this.scoreUrl)
+      if (!agg || !agg.measures) return []
+      const entries = Object.entries(agg.measures)
+        .map(([idx, m]) => ({
+          index: Number(idx),
+          attempts: m.totalAttempts || 0,
+          errorRate: m.errorRate || 0,
+        }))
+        .filter((m) => m.attempts >= 2 && m.errorRate > 0)
+        .sort((a, b) => b.errorRate - a.errorRate)
+      return entries.slice(0, 5)
+    },
+
+    toggleSettingsMenu() {
+      this.settingsMenuOpen = !this.settingsMenuOpen
+    },
+
+    closeSettingsMenu() {
+      this.settingsMenuOpen = false
     },
 
     formatDate,

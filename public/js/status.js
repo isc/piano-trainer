@@ -31,7 +31,11 @@ export function statusApp() {
           return bDate.localeCompare(aDate)
         })
 
-      document.title = `Piano Trainer - ${this.displayLabel}`
+      document.title = `Piano Trainer · ${this.displayLabel}`
+    },
+
+    get totalPracticeMs() {
+      return this.scores.reduce((sum, s) => sum + (this.getAggregate(s)?.totalPracticeTimeMs || 0), 0)
     },
 
     getScoreUrl(score) {

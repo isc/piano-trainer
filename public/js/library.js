@@ -1,9 +1,11 @@
 import { initMidi } from './midi.js'
 import { initPracticeTracker } from './practiceTracker.js'
 import { initStorage } from './storage.js'
-import { formatDuration, formatDate } from './utils.js'
+import { formatDuration, formatDate, statusLabel } from './utils.js'
 
 const MIN_MATCH = 5
+const STATUS_ORDER = ['dechiffrage', 'perfectionnement', 'repertoire']
+const STALE_DAYS = 7
 
 export function libraryApp() {
   const midi = initMidi()
@@ -18,9 +20,12 @@ export function libraryApp() {
   return {
     scores: [],
     searchQuery: '',
+    statusFilter: '',
+    composerFilter: '',
     baseUrl: '',
     dailyLogsByDate: [],
     lastPlayedByScore: {},
+    aggregatesByScore: {},
 
     async init() {
       midi.setCallbacks({
@@ -52,7 +57,13 @@ export function libraryApp() {
         }
       }
 
-      // Set scores only after lastPlayedByScore is ready, so the table renders sorted
+      // Aggregates power the status filter, status pills, and practice-focus banner.
+      const aggregates = await storage.getAllAggregates()
+      for (const agg of aggregates) {
+        if (!agg || (agg.practiceDays || []).length === 0) continue
+        this.aggregatesByScore[agg.scoreId] = agg
+      }
+
       this.scores = data.scores
 
       await this.reloadDailyLogs()
@@ -111,7 +122,12 @@ export function libraryApp() {
           return words.every((word) => new RegExp(`\\b${word}`).test(searchableText))
         })
       }
-      // Sort by most recently played first
+      if (this.statusFilter) {
+        results = results.filter((score) => this.getStatusFor(score) === this.statusFilter)
+      }
+      if (this.composerFilter) {
+        results = results.filter((score) => score.composer === this.composerFilter)
+      }
       return results.toSorted((a, b) => {
         const aPlayed = this.lastPlayedByScore[this.getScoreUrl(a)] || ''
         const bPlayed = this.lastPlayedByScore[this.getScoreUrl(b)] || ''
@@ -119,12 +135,72 @@ export function libraryApp() {
       })
     },
 
+    get statusOptions() {
+      const counts = { dechiffrage: 0, perfectionnement: 0, repertoire: 0 }
+      for (const score of this.scores) {
+        const status = this.getStatusFor(score)
+        if (status && counts[status] !== undefined) counts[status]++
+      }
+      return STATUS_ORDER.map((value) => ({ value, label: statusLabel(value), count: counts[value] }))
+    },
+
+    get composerOptions() {
+      const set = new Set(this.scores.map((s) => s.composer).filter(Boolean))
+      return [...set].sort((a, b) => a.localeCompare(b, 'fr'))
+    },
+
+    // Practice focus: surfaces 3 useful signals at the top of the library
+    // so the user immediately knows what to work on next:
+    //  - scores with measures still flagged for reinforcement
+    //  - scores in 'perfectionnement' close to mastery (≥80% clean)
+    //  - scores not practiced in the last STALE_DAYS days
+    get practiceFocus() {
+      const now = Date.now()
+      const stale = STALE_DAYS * 24 * 60 * 60 * 1000
+      let toReinforce = 0
+      let nearMastery = 0
+      let staleCount = 0
+
+      for (const agg of Object.values(this.aggregatesByScore)) {
+        const measures = agg.measures || {}
+        const measureList = Object.values(measures)
+
+        if (measureList.some((m) => (m.totalAttempts || 0) >= 2 && (m.errorRate || 0) > 0.4)) {
+          toReinforce++
+        }
+        if (agg.status === 'perfectionnement' && measureList.length > 0) {
+          const clean = measureList.filter((m) => (m.cleanAttempts || 0) >= 3).length
+          if (clean / measureList.length >= 0.8) nearMastery++
+        }
+        if (agg.lastPlayedAt) {
+          const last = new Date(agg.lastPlayedAt).getTime()
+          if (now - last > stale) staleCount++
+        }
+      }
+
+      const parts = []
+      if (toReinforce > 0)  parts.push(`<strong>${toReinforce}</strong> morceau${toReinforce > 1 ? 'x' : ''} avec des mesures à renforcer`)
+      if (nearMastery > 0)  parts.push(`<strong>${nearMastery}</strong> proche${nearMastery > 1 ? 's' : ''} du répertoire`)
+      if (staleCount > 0)   parts.push(`<strong>${staleCount}</strong> non pratiqué${staleCount > 1 ? 's' : ''} depuis ${STALE_DAYS} jours`)
+
+      return { summary: parts.length > 0 ? parts.join(' · ') : null }
+    },
+
     getScoreUrl(score) {
       return this.baseUrl + score.file
     },
 
+    getStatusFor(score) {
+      return this.aggregatesByScore[this.getScoreUrl(score)]?.status || null
+    },
+
+    getPracticeTimeFor(score) {
+      return this.aggregatesByScore[this.getScoreUrl(score)]?.totalPracticeTimeMs || 0
+    },
+
     formatDuration,
     formatDate,
+    statusLabel,
 
     getTotalPracticeTimeForDate(dateEntry) {
       return dateEntry.log.reduce((sum, entry) => sum + entry.totalPracticeTimeMs, 0)
@@ -148,7 +224,6 @@ export function libraryApp() {
             `${result.importedFingerings} doigté(s) importé(s)`
           )
 
-          // Reload daily logs after import
           await this.reloadDailyLogs()
         }
       } catch (error) {
@@ -184,7 +259,7 @@ export function libraryApp() {
     },
 
     async reloadDailyLogs() {
-      const DAYS_TO_SHOW = 8 // Today + 7 previous days
+      const DAYS_TO_SHOW = 8
       const logPromises = []
       for (let i = 0; i < DAYS_TO_SHOW; i++) {
         const date = new Date()

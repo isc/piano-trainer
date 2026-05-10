@@ -17,7 +17,18 @@ export function composerApp() {
       this.scores = scores.filter((s) => s.composer === this.composer)
       this.aggregatesByScore = aggregatesByScore
 
-      document.title = `Piano Trainer - ${this.composer}`
+      document.title = `Piano Trainer · ${this.composer}`
+    },
+
+    get totalPracticeMs() {
+      return this.scores.reduce((sum, s) => {
+        const agg = this.getAggregate(s)
+        return sum + (agg?.totalPracticeTimeMs || 0)
+      }, 0)
+    },
+
+    get repertoireCount() {
+      return this.scores.filter((s) => this.getAggregate(s)?.status === 'repertoire').length
     },
 
     getScoreUrl(score) {

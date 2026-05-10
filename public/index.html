@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Piano Trainer - Bibliothèque</title>
+    <title>Piano Trainer · Bibliothèque</title>
     <link rel="stylesheet" href="vendor/pico.2.1.1min.css" />
     <link rel="stylesheet" href="styles.css" />
     <script type="module">
@@ -14,73 +14,105 @@
   </head>
   <body>
     <main class="container">
-      <div class="grid">
-        <!-- Left column: Daily Log -->
-        <aside id="daily-log">
-          <h2>Journal de pratique</h2>
-          <template x-for="dateEntry in dailyLogsByDate" :key="dateEntry.date.toISOString()">
-            <div>
-              <h3>
-                <span x-text="formatDate(dateEntry.date)"></span>
-                <small x-show="dateEntry.log.length > 0">· <span x-text="formatDuration(getTotalPracticeTimeForDate(dateEntry))"></span></small>
-              </h3>
-              <template x-if="dateEntry.log.length === 0">
-                <p>Aucune pratique</p>
-              </template>
-              <ul>
-                <template x-for="entry in dateEntry.log" :key="entry.scoreId">
-                  <li>
-                    <a :href="'score.html?url=' + encodeURIComponent(entry.scoreId)" x-text="(entry.scoreTitle || 'Sans titre') + ' · ' + entry.composer"></a>
-                    <small>
-                      <span x-text="formatDuration(entry.totalPracticeTimeMs)"></span>
-                      <span x-show="entry.timesPlayedInFull === 1"> · Joué en entier</span>
-                      <span x-show="entry.timesPlayedInFull > 1"> · Joué <span x-text="entry.timesPlayedInFull"></span>× en entier</span>
-                      <span x-show="entry.timesPlayedInFull === 0"> · <span x-text="entry.measuresWorked.length"></span> mesures</span>
-                      <span x-show="entry.measuresReinforced.length > 0"> · <span x-text="entry.measuresReinforced.length"></span> renforcées</span>
-                    </small>
-                  </li>
-                </template>
-              </ul>
-            </div>
-          </template>
+      <div class="pt-page-header">
+        <h1>Bibliothèque</h1>
+        <div class="pt-page-header__actions">
+          <div class="pt-page-header__search">
+            <input
+              type="search"
+              x-model="searchQuery"
+              placeholder="Rechercher une partition…"
+              aria-label="Rechercher une partition"
+            />
+          </div>
+          <a href="score.html" role="button" class="secondary">📄 Charger ma partition</a>
+        </div>
+      </div>
 
-          <details>
+      <div class="pt-filters" x-show="scores.length > 0">
+        <button
+          class="pt-filter-pill"
+          :aria-pressed="!statusFilter"
+          @click="statusFilter = ''"
+        >Tous <span class="pt-filter-pill__count" x-text="scores.length"></span></button>
+        <template x-for="opt in statusOptions" :key="opt.value">
+          <button
+            class="pt-filter-pill"
+            :data-status="opt.value"
+            :aria-pressed="statusFilter === opt.value"
+            @click="statusFilter = (statusFilter === opt.value ? '' : opt.value)"
+            x-show="opt.count > 0"
+          >
+            <span x-text="opt.label"></span>
+            <span class="pt-filter-pill__count" x-text="opt.count"></span>
+          </button>
+        </template>
+        <select x-model="composerFilter" aria-label="Filtrer par compositeur" x-show="composerOptions.length > 1">
+          <option value="">Tous compositeurs</option>
+          <template x-for="c in composerOptions" :key="c">
+            <option :value="c" x-text="c"></option>
+          </template>
+        </select>
+      </div>
+
+      <template x-if="practiceFocus.summary">
+        <div class="pt-banner">
+          <span class="pt-banner__icon">📌</span>
+          <div class="pt-banner__body" x-html="practiceFocus.summary"></div>
+        </div>
+      </template>
+
+      <div class="pt-library">
+        <!-- Sidebar: practice journal + data management -->
+        <aside class="pt-library__sidebar">
+          <h2 style="font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--pt-text-subtle); margin: 0;">Journal de pratique</h2>
+          <div id="daily-log" style="display: flex; flex-direction: column; gap: var(--pt-space-2);">
+            <template x-for="dateEntry in dailyLogsByDate" :key="dateEntry.date.toISOString()">
+              <div class="pt-journal__day">
+                <div class="pt-journal__day-header">
+                  <h3 x-text="formatDate(dateEntry.date)"></h3>
+                  <small x-show="dateEntry.log.length > 0" x-text="formatDuration(getTotalPracticeTimeForDate(dateEntry))"></small>
+                </div>
+                <template x-if="dateEntry.log.length === 0">
+                  <p class="pt-journal__entry pt-journal__entry--empty">Aucune pratique</p>
+                </template>
+                <div class="pt-journal__entries">
+                  <template x-for="entry in dateEntry.log" :key="entry.scoreId">
+                    <div class="pt-journal__entry">
+                      <a :href="'score.html?url=' + encodeURIComponent(entry.scoreId)" x-text="(entry.scoreTitle || 'Sans titre') + ' · ' + entry.composer"></a>
+                      <small>
+                        <span x-text="formatDuration(entry.totalPracticeTimeMs)"></span>
+                        <span x-show="entry.timesPlayedInFull === 1"> · Joué en entier</span>
+                        <span x-show="entry.timesPlayedInFull > 1"> · Joué <span x-text="entry.timesPlayedInFull"></span>× en entier</span>
+                        <span x-show="entry.timesPlayedInFull === 0"> · <span x-text="entry.measuresWorked.length"></span> mesures</span>
+                        <span x-show="entry.measuresReinforced.length > 0"> · <span x-text="entry.measuresReinforced.length"></span> renforcées</span>
+                      </small>
+                    </div>
+                  </template>
+                </div>
+              </div>
+            </template>
+          </div>
+
+          <details class="pt-data-mgmt">
             <summary>⚙️ Gestion des données</summary>
-            <div class="grid">
-              <div>
-                <label for="backup-import">📥 Importer sauvegarde</label>
-                <input type="file" accept=".json" @change="importBackup($event)" id="backup-import" />
-              </div>
-              <div>
-                <button @click="exportBackup" class="secondary">📤 Exporter sauvegarde</button>
-              </div>
+            <div class="pt-data-mgmt__body">
+              <label for="backup-import">📥 Importer sauvegarde</label>
+              <input type="file" accept=".json" @change="importBackup($event)" id="backup-import" />
+              <button @click="exportBackup" class="secondary">📤 Exporter sauvegarde</button>
             </div>
           </details>
         </aside>
 
-        <!-- Right column: Library -->
-        <div>
-          <h1>Bibliothèque</h1>
-
-          <div class="grid">
-            <div>
-              <input
-                type="search"
-                x-model="searchQuery"
-                placeholder="Rechercher une partition..."
-                aria-label="Rechercher une partition"
-              />
-            </div>
-            <div>
-              <a href="score.html" role="button" class="secondary">Charger ma partition</a>
-            </div>
-          </div>
-
+        <!-- Library list -->
+        <div class="pt-library__main">
           <table>
             <thead>
               <tr>
                 <th>Titre</th>
                 <th>Compositeur</th>
+                <th class="pt-sr-only">Statut</th>
+                <th class="pt-sr-only">Pratique</th>
               </tr>
             </thead>
             <tbody>
@@ -89,7 +121,22 @@
                   <td>
                     <a :href="'score.html?url=' + encodeURIComponent(getScoreUrl(score))" x-text="score.title"></a>
                   </td>
-                  <td><a :href="'composer.html?composer=' + encodeURIComponent(score.composer)" x-text="score.composer"></a></td>
+                  <td>
+                    <a :href="'composer.html?composer=' + encodeURIComponent(score.composer)" x-text="score.composer"></a>
+                  </td>
+                  <td>
+                    <template x-if="getStatusFor(score)">
+                      <a :href="'status.html?status=' + encodeURIComponent(getStatusFor(score))"
+                         class="pt-pill is-link"
+                         :class="'pt-pill--' + getStatusFor(score)"
+                         x-text="statusLabel(getStatusFor(score))"></a>
+                    </template>
+                  </td>
+                  <td class="pt-row__time">
+                    <template x-if="getPracticeTimeFor(score)">
+                      <span x-text="formatDuration(getPracticeTimeFor(score))"></span>
+                    </template>
+                  </td>
                 </tr>
               </template>
             </tbody>

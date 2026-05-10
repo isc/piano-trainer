@@ -14,8 +14,15 @@
   </head>
   <body>
     <main class="container">
-      <a href="index.html">&larr; Bibliothèque</a>
-      <h1 x-text="composer"></h1>
+      <header class="pt-section-header">
+        <a href="index.html" class="pt-section-header__back">&larr; Bibliothèque</a>
+        <h1 x-text="composer"></h1>
+        <div class="pt-section-header__stats" x-show="scores.length > 0">
+          <span><strong x-text="scores.length"></strong> morceau<span x-show="scores.length > 1">x</span></span>
+          <span x-show="totalPracticeMs > 0"><strong x-text="formatDuration(totalPracticeMs)"></strong> pratiqué</span>
+          <span x-show="repertoireCount > 0"><strong x-text="repertoireCount"></strong> au répertoire</span>
+        </div>
+      </header>
 
       <table>
         <thead>
@@ -34,10 +41,13 @@
               <td x-text="getAggregate(score) ? formatDuration(getAggregate(score).totalPracticeTimeMs) : '—'"></td>
               <td>
                 <template x-if="getAggregate(score)">
-                  <a :href="'status.html?status=' + encodeURIComponent(getAggregate(score).status)" x-text="statusLabel(getAggregate(score).status)"></a>
+                  <a :href="'status.html?status=' + encodeURIComponent(getAggregate(score).status)"
+                     class="pt-pill is-link"
+                     :class="'pt-pill--' + getAggregate(score).status"
+                     x-text="statusLabel(getAggregate(score).status)"></a>
                 </template>
                 <template x-if="!getAggregate(score)">
-                  <span>—</span>
+                  <span class="pt-pill pt-pill--muted">—</span>
                 </template>
               </td>
             </tr>
