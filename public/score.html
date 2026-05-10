@@ -49,22 +49,6 @@
           title="Historique"
         >📜</button>
 
-        <!-- Settings menu -->
-        <span class="pt-popover-anchor" x-show="!!osmdInstance" @click.stop>
-          <button
-            class="pt-icon-button"
-            @click="toggleSettingsMenu()"
-            :aria-pressed="settingsMenuOpen"
-            aria-label="Paramètres"
-            title="Paramètres"
-          >⚙</button>
-          <div class="pt-popover" x-show="settingsMenuOpen" x-cloak>
-            <div class="pt-popover__section">
-              <h4>Affichage</h4>
-              <small>Le sélecteur de mains est visible dans la barre des modes.</small>
-            </div>
-          </div>
-        </span>
       </div>
     </header>
 

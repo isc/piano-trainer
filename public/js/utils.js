@@ -4,10 +4,14 @@ export function isTestEnv() {
 
 export function formatDuration(ms) {
   const totalSeconds = Math.floor(ms / 1000)
-  const minutes = Math.floor(totalSeconds / 60)
+  const totalMinutes = Math.floor(totalSeconds / 60)
   const seconds = totalSeconds % 60
-  if (minutes === 0) return `${seconds}s`
-  return `${minutes}m ${seconds}s`
+  if (totalMinutes === 0) return `${seconds}s`
+  if (totalMinutes < 60) return `${totalMinutes}m ${seconds}s`
+  // Past an hour, seconds become noise — show "Xh Ym" only.
+  const hours = Math.floor(totalMinutes / 60)
+  const minutes = totalMinutes % 60
+  return `${hours}h ${minutes}m`
 }
 
 const STATUS_LABELS = {

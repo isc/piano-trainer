@@ -109,6 +109,10 @@ body {
 
 main.container { padding-block: var(--pt-space-4); max-width: 1200px; }
 
+/* Vertical rhythm for index / composer / status pages (consistent gaps
+   between page-level sections so margins on individual blocks don't fight). */
+.pt-page { display: flex; flex-direction: column; gap: var(--pt-space-4); }
+
 /* Headings tighter than Pico defaults */
 h1 { font-size: 1.6rem; font-weight: 600; margin: 0 0 var(--pt-space-3); letter-spacing: -0.01em; }
 h2 { font-size: 1.2rem; font-weight: 600; margin: 0 0 var(--pt-space-3); }
@@ -216,6 +220,18 @@ button { transition: background-color var(--pt-transition-fast), border-color va
 .pt-modebar input, .pt-topbar input { margin: 0; }
 .pt-modebar > * { flex: 0 0 auto; }
 .pt-modebar__spacer { flex: 1 1 auto !important; min-width: var(--pt-space-3); }
+
+/* Normalize control heights so segmented / BPM / hands / action button
+   share a baseline. Keeps the toolbar visually a single horizontal band. */
+.pt-modebar > .pt-segmented,
+.pt-modebar > .pt-hands,
+.pt-modebar > .pt-bpm-field,
+.pt-modebar > .pt-action-button { height: 34px; align-items: center; box-sizing: border-box; }
+.pt-modebar > .pt-action-button { display: inline-flex; }
+/* The reinforce badge stays inline-block (no flex) so the screen-reader
+   text stays a single line — Capybara matches "Renforcer N mesure" without
+   newlines splitting it across flex items. Height handled via line-height. */
+.pt-modebar > .pt-reinforce-badge { padding-block: 7px; line-height: 18px; box-sizing: border-box; }
 
 .pt-segmented {
   display: inline-flex;
@@ -456,7 +472,6 @@ button { transition: background-color var(--pt-transition-fast), border-color va
   border: 1px solid color-mix(in srgb, var(--pt-info) 20%, transparent);
   color: var(--pt-info);
   font-size: 0.9rem;
-  margin-bottom: var(--pt-space-3);
 }
 .pt-banner--error { background: var(--pt-error-bg); border-color: color-mix(in srgb, var(--pt-error) 25%, transparent); color: var(--pt-error); }
 .pt-banner--success { background: var(--pt-success-bg); border-color: color-mix(in srgb, var(--pt-success) 25%, transparent); color: var(--pt-success); }
@@ -543,6 +558,7 @@ table tbody td {
 table tbody tr:first-child td { border-top: none; }
 table tbody tr { transition: background-color var(--pt-transition-fast); }
 table tbody tr:hover { background: var(--pt-surface-2); }
+table th.pt-th-right { text-align: right; }
 table tbody td a { color: var(--pt-text); font-weight: 500; }
 table tbody td a:hover { color: var(--pt-accent); text-decoration: none; }
 table tbody td:nth-child(2) a { color: var(--pt-text-muted); font-weight: 400; text-decoration: underline dotted; text-underline-offset: 3px; }
@@ -599,32 +615,46 @@ table tbody td:nth-child(2) a:hover { color: var(--pt-accent); }
   align-items: center;
   gap: var(--pt-space-4);
   flex-wrap: wrap;
-  margin-bottom: var(--pt-space-2);
 }
 .pt-page-header h1 { margin: 0; flex-shrink: 0; }
 .pt-page-header__actions { margin-left: auto; display: flex; gap: var(--pt-space-2); align-items: center; }
+.pt-page-header__actions [role="button"] {
+  margin: 0;
+  padding: 8px 14px;
+  font-size: 0.9rem;
+  height: auto;
+  background: var(--pt-bg-elevated);
+  color: var(--pt-text);
+  border: 1px solid var(--pt-border);
+  border-radius: var(--pt-radius-md);
+  white-space: nowrap;
+  font-weight: 500;
+}
+.pt-page-header__actions [role="button"]:hover { background: var(--pt-surface-2); border-color: var(--pt-border-strong); color: var(--pt-text); }
 .pt-page-header__search {
   position: relative;
-  flex: 1;
-  max-width: 360px;
-  min-width: 200px;
+  flex: 1 1 320px;
+  max-width: 420px;
+  min-width: 240px;
 }
 .pt-page-header__search input[type="search"] {
   margin: 0;
-  padding: 8px 12px 8px 36px;
+  padding: 8px 12px 8px 32px;
   border-radius: var(--pt-radius-md);
   background: var(--pt-bg-elevated);
   height: auto;
   font-size: 0.9rem;
+  width: 100%;
 }
 .pt-page-header__search::before {
   content: "🔍";
   position: absolute;
-  left: 10px; top: 50%;
+  left: 8px; top: 50%;
   transform: translateY(-50%);
-  font-size: 0.85rem;
+  font-size: 0.78rem;
   pointer-events: none;
   color: var(--pt-text-muted);
+  opacity: 0.6;
 }
 
 /* Filters row (status pills + composer dropdown) */
@@ -742,16 +772,47 @@ table tbody td:nth-child(2) a:hover { color: var(--pt-accent); }
    Modals (override Pico's <dialog>)
    ========================================================================== */
 
-dialog {
+/* Pico opens dialogs by setting the [open] attribute (no showModal()), so
+   ::backdrop never fires. We render the backdrop ourselves via a fixed
+   overlay anchored to <html> using the [open] presence. */
+dialog:not([open]) { display: none; }
+dialog[open] {
+  position: fixed;
+  inset: 0;
+  z-index: var(--pt-z-modal);
+  margin: auto;
+  border: none;
+  background: transparent;
+  padding: 0;
+  width: min(560px, calc(100vw - 32px));
+  max-height: calc(100vh - 64px);
+  overflow: visible;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+/* Full-page backdrop drawn on the <html> via :has() — no extra DOM needed.
+   Falls back gracefully on browsers without :has() (no dim, but modal still
+   readable thanks to the white card + shadow). */
+html:has(dialog[open])::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 18, 30, 0.45);
+  z-index: calc(var(--pt-z-modal) - 1);
+}
+html:has(dialog[open]) { overflow: hidden; }
+dialog > article {
+  margin: 0;
+  padding: var(--pt-space-5) var(--pt-space-6);
   border: none;
   border-radius: var(--pt-radius-lg);
-  padding: 0;
-  max-width: min(560px, calc(100vw - 32px));
   background: var(--pt-bg-elevated);
   box-shadow: var(--pt-shadow-lg);
+  width: 100%;
+  max-height: calc(100vh - 64px);
+  overflow-y: auto;
 }
-dialog::backdrop, dialog + .backdrop { background: rgba(15, 18, 30, 0.45); }
-dialog > article { margin: 0; padding: var(--pt-space-5) var(--pt-space-6) var(--pt-space-5); border: none; box-shadow: none; }
 dialog > article > header {
   padding: 0 0 var(--pt-space-3);
   margin: 0 0 var(--pt-space-3);
@@ -853,7 +914,6 @@ dialog > article > footer button { margin: 0; }
   display: flex;
   flex-direction: column;
   gap: var(--pt-space-2);
-  margin-bottom: var(--pt-space-5);
   padding: var(--pt-space-4);
   background: var(--pt-bg-elevated);
   border: 1px solid var(--pt-border);
@@ -872,6 +932,7 @@ dialog > article > footer button { margin: 0; }
 #score {
   width: 100vw;
   margin-left: calc(-50vw + 50%);
+  margin-top: var(--pt-space-3);
   background: var(--pt-bg-elevated);
 }
 
