@@ -184,6 +184,26 @@ button { transition: background-color var(--pt-transition-fast), border-color va
   text-decoration: underline dotted;
 }
 
+/* Small pill button in the topbar (e.g. Historique). Less prominent than
+   .pt-action-button so it doesn't compete with the modebar actions. */
+button.pt-topbar__pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--pt-bg-elevated);
+  border: 1px solid var(--pt-border);
+  border-radius: var(--pt-radius-pill);
+  padding: 4px 12px;
+  color: var(--pt-text);
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  margin: 0;
+  width: auto;
+  height: auto;
+}
+button.pt-topbar__pill:hover { background: var(--pt-surface-2); border-color: var(--pt-border-strong); }
+
 /* Icon buttons (settings, history) */
 .pt-icon-button {
   width: 36px; height: 36px;
@@ -990,10 +1010,15 @@ dialog > article > footer button { margin: 0; }
    Score area (preserved from before, restyled)
    ========================================================================== */
 
+/* Score page main: zero top padding so the score sits flush against the
+   sticky bars (no gray strip showing through between modebar/context
+   band and the white score area). Keeps bottom padding for the cassette
+   strip below. */
+.pt-score-main { padding-top: 0 !important; }
+
 #score {
   width: 100vw;
   margin-left: calc(-50vw + 50%);
-  margin-top: var(--pt-space-3);
   background: var(--pt-bg-elevated);
 }
 

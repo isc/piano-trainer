@@ -42,12 +42,11 @@
 
         <!-- History (only for library scores) -->
         <button
-          class="pt-icon-button"
+          class="pt-topbar__pill"
           x-show="!!scoreUrl"
           @click="openScoreHistory"
           aria-label="Historique"
-          title="Historique"
-        >📜</button>
+        >📜 Historique</button>
 
       </div>
     </header>
@@ -140,7 +139,7 @@
       <span><span x-text="measuresToReinforce.length"></span> mesure<span x-show="measuresToReinforce.length > 1">s</span> à renforcer.</span>
     </div>
 
-    <main class="container">
+    <main class="container pt-score-main">
       <!-- Onboarding: shown when no score is loaded. The "Bibliothèque"
            link in the topbar handles catalog access, so this card focuses
            only on the case the topbar doesn't cover: importing a local
@@ -153,12 +152,6 @@
             <input type="file" accept=".xml,.musicxml,.mxl" @change="loadMusicXML($event)" id="musicxml-upload" />
           </label>
         </div>
-      </div>
-
-      <!-- Inline error banner (transient) -->
-      <div class="pt-banner pt-banner--error" x-show="errorMessage" x-transition>
-        <span class="pt-banner__icon">❌</span>
-        <div class="pt-banner__body">Erreur : <span x-text="errorMessage"></span></div>
       </div>
 
       <!-- Score (full-bleed) -->

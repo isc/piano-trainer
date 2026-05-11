@@ -52,7 +52,6 @@ export function midiApp() {
     leftHandActive: true,
 
     // UI states
-    errorMessage: null,
     showHistoryModal: false,
     scoreHistory: [],
     historyTotalMs: 0,
@@ -138,12 +137,6 @@ export function midiApp() {
 
           // Refresh reinforcement suggestions from the just-completed session
           await this.refreshReinforcementSuggestions()
-        },
-        onNoteError: (expected, played) => {
-          this.errorMessage = `Attendu ${expected}, joué ${played}`
-          setTimeout(() => {
-            this.errorMessage = ''
-          }, 2000)
         },
         onTrainingComplete: async () => {
           this.openResultModal('training')
