@@ -215,10 +215,13 @@ button { transition: background-color var(--pt-transition-fast), border-color va
   padding: var(--pt-space-2) var(--pt-space-4);
   flex-wrap: wrap;
 }
-/* Neutralize Pico's button/input defaults inside our toolbars */
+/* Neutralize Pico's button/input/label defaults inside our toolbars.
+   Pico's form-group margin-bottoms (16px on <div role="group">, 6px on
+   <label>) otherwise interact with flex-wrap to push items to different
+   vertical positions even when they share the same height. */
 .pt-modebar button, .pt-topbar button { margin: 0; width: auto; }
 .pt-modebar input, .pt-topbar input { margin: 0; }
-.pt-modebar > * { flex: 0 0 auto; }
+.pt-modebar > * { flex: 0 0 auto; margin: 0; align-self: center; }
 .pt-modebar__spacer { flex: 1 1 auto !important; min-width: var(--pt-space-3); }
 
 /* Normalize control heights so segmented / BPM / hands / action button
@@ -565,6 +568,10 @@ table tbody tr:first-child td { border-top: none; }
 table tbody tr { transition: background-color var(--pt-transition-fast); }
 table tbody tr:hover { background: var(--pt-surface-2); }
 table th.pt-th-right { text-align: right; }
+table th.pt-th-sort { cursor: pointer; user-select: none; }
+table th.pt-th-sort:hover { color: var(--pt-text); background: var(--pt-border); }
+table th.pt-th-sort[aria-sort="ascending"],
+table th.pt-th-sort[aria-sort="descending"] { color: var(--pt-text); }
 table tbody td a { color: var(--pt-text); font-weight: 500; }
 table tbody td a:hover { color: var(--pt-accent); text-decoration: none; }
 table tbody td:nth-child(2) a { color: var(--pt-text-muted); font-weight: 400; text-decoration: underline dotted; text-underline-offset: 3px; }

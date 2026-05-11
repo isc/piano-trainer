@@ -25,7 +25,7 @@
               aria-label="Rechercher une partition"
             />
           </div>
-          <a href="score.html" role="button" class="secondary">📄 Charger ma partition</a>
+          <a href="score.html" role="button" class="secondary">📄 Charger une partition</a>
         </div>
       </div>
 
@@ -109,10 +109,18 @@
           <table>
             <thead>
               <tr>
-                <th>Titre</th>
-                <th>Compositeur</th>
-                <th>Statut</th>
-                <th class="pt-th-right">Pratiqué</th>
+                <th class="pt-th-sort" @click="toggleSort('title')" :aria-sort="sortBy === 'title' ? (sortDir === 'asc' ? 'ascending' : 'descending') : 'none'">
+                  Titre<span x-text="sortArrow('title')"></span>
+                </th>
+                <th class="pt-th-sort" @click="toggleSort('composer')" :aria-sort="sortBy === 'composer' ? (sortDir === 'asc' ? 'ascending' : 'descending') : 'none'">
+                  Compositeur<span x-text="sortArrow('composer')"></span>
+                </th>
+                <th class="pt-th-sort" @click="toggleSort('status')" :aria-sort="sortBy === 'status' ? (sortDir === 'asc' ? 'ascending' : 'descending') : 'none'">
+                  Statut<span x-text="sortArrow('status')"></span>
+                </th>
+                <th class="pt-th-sort pt-th-right" @click="toggleSort('practice')" :aria-sort="sortBy === 'practice' ? (sortDir === 'asc' ? 'ascending' : 'descending') : 'none'">
+                  Pratiqué<span x-text="sortArrow('practice')"></span>
+                </th>
               </tr>
             </thead>
             <tbody>

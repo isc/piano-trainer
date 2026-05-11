@@ -22,6 +22,8 @@ export function libraryApp() {
     searchQuery: '',
     statusFilter: '',
     composerFilter: '',
+    sortBy: 'lastPlayed', // 'title' | 'composer' | 'status' | 'practice' | 'lastPlayed'
+    sortDir: 'desc',      // 'asc' | 'desc'
     baseUrl: '',
     dailyLogsByDate: [],
     lastPlayedByScore: {},
@@ -128,11 +130,39 @@ export function libraryApp() {
       if (this.composerFilter) {
         results = results.filter((score) => score.composer === this.composerFilter)
       }
+      const dir = this.sortDir === 'asc' ? 1 : -1
+      const STATUS_RANK = { dechiffrage: 0, perfectionnement: 1, repertoire: 2 }
       return results.toSorted((a, b) => {
-        const aPlayed = this.lastPlayedByScore[this.getScoreUrl(a)] || ''
-        const bPlayed = this.lastPlayedByScore[this.getScoreUrl(b)] || ''
-        return bPlayed.localeCompare(aPlayed)
+        const va = this.sortKey(a), vb = this.sortKey(b)
+        if (this.sortBy === 'status') return ((STATUS_RANK[va] ?? -1) - (STATUS_RANK[vb] ?? -1)) * dir
+        if (typeof va === 'number') return (va - vb) * dir
+        return (va || '').localeCompare(vb || '', 'fr') * dir
       })
+    },
+
+    sortKey(score) {
+      switch (this.sortBy) {
+        case 'title':      return score.title
+        case 'composer':   return score.composer
+        case 'status':     return this.getStatusFor(score)
+        case 'practice':   return this.getPracticeTimeFor(score)
+        default:           return this.lastPlayedByScore[this.getScoreUrl(score)] || ''
+      }
+    },
+
+    toggleSort(column) {
+      if (this.sortBy === column) {
+        this.sortDir = this.sortDir === 'asc' ? 'desc' : 'asc'
+      } else {
+        this.sortBy = column
+        // Sensible default direction per column: text ascending, numeric/dates descending
+        this.sortDir = (column === 'title' || column === 'composer') ? 'asc' : 'desc'
+      }
+    },
+
+    sortArrow(column) {
+      if (this.sortBy !== column) return ''
+      return this.sortDir === 'asc' ? ' ▲' : ' ▼'
     },
 
     get statusOptions() {
