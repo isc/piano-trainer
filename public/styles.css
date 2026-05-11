@@ -222,16 +222,22 @@ button { transition: background-color var(--pt-transition-fast), border-color va
 .pt-modebar__spacer { flex: 1 1 auto !important; min-width: var(--pt-space-3); }
 
 /* Normalize control heights so segmented / BPM / hands / action button
-   share a baseline. Keeps the toolbar visually a single horizontal band. */
+   share a baseline. Keeps the toolbar visually a single horizontal band.
+   Inner items are explicitly sized so Pico's button paddings don't make
+   them overflow the outer container. */
 .pt-modebar > .pt-segmented,
 .pt-modebar > .pt-hands,
 .pt-modebar > .pt-bpm-field,
 .pt-modebar > .pt-action-button { height: 34px; align-items: center; box-sizing: border-box; }
-.pt-modebar > .pt-action-button { display: inline-flex; }
+.pt-modebar > .pt-action-button { display: inline-flex; padding-block: 0; }
+.pt-modebar .pt-segmented button { height: 28px; padding-block: 0; line-height: 28px; }
+.pt-modebar .pt-hands__option { height: 28px; padding-block: 0; line-height: 28px; }
+.pt-modebar .pt-bpm-field input[type="number"] { height: 28px; padding-block: 0; line-height: 28px; }
 /* The reinforce badge stays inline-block (no flex) so the screen-reader
    text stays a single line — Capybara matches "Renforcer N mesure" without
-   newlines splitting it across flex items. Height handled via line-height. */
-.pt-modebar > .pt-reinforce-badge { padding-block: 7px; line-height: 18px; box-sizing: border-box; }
+   newlines splitting it across flex items. Sized via line-height to match
+   the 34px shared by the other modebar controls. */
+.pt-modebar > .pt-reinforce-badge { height: 34px; padding-block: 0; line-height: 32px; box-sizing: border-box; }
 
 .pt-segmented {
   display: inline-flex;
@@ -680,15 +686,25 @@ table tbody td:nth-child(2) a:hover { color: var(--pt-accent); }
 .pt-filter-pill__count { opacity: 0.7; font-size: 0.78rem; }
 .pt-filters select {
   margin: 0;
-  padding: 5px 10px;
-  border-radius: var(--pt-radius-pill);
-  background: var(--pt-bg-elevated);
-  border: 1px solid var(--pt-border);
+  padding: 5px 28px 5px 12px;
+  border-radius: var(--pt-radius-md);
+  background-color: var(--pt-surface-2);
+  border: 1px solid var(--pt-border-strong);
   font-size: 0.85rem;
+  color: var(--pt-text);
   height: auto;
   width: auto;
-  min-width: 160px;
+  min-width: 180px;
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8' fill='none' stroke='%235b6270' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'><polyline points='1 1.5 6 6.5 11 1.5'/></svg>");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-size: 10px 7px;
 }
+.pt-filters select:hover { background-color: var(--pt-bg-elevated); }
+.pt-filters select:focus { outline: 2px solid color-mix(in srgb, var(--pt-accent) 30%, transparent); outline-offset: 1px; }
 
 /* Journal sidebar */
 .pt-journal__day {
