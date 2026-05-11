@@ -5,6 +5,7 @@ import {
   sourceMeasuresToResetOnEntry,
   svgNoteheadFor,
 } from './noteExtraction.js'
+import { getStickyOffset } from './utils.js'
 
 let osmdInstance = null
 let allNotes = []
@@ -416,16 +417,12 @@ function jumpToMeasure(measureIndex) {
   }
 }
 
-// Keep in sync with `img[id^="cursorImg"] { scroll-margin-top }` in styles.css.
-// Topbar (48px) + modebar (~44px) + small breathing room.
-const SCROLL_TOP_MARGIN = 100
-
 function scrollToMeasure(measureIndex) {
   const rect = measureClickRectangles[measureIndex]
   if (!rect) return
 
   const bbox = rect.getBoundingClientRect()
-  const targetY = window.scrollY + bbox.top - SCROLL_TOP_MARGIN
+  const targetY = window.scrollY + bbox.top - getStickyOffset()
   window.scrollTo({ top: Math.max(0, targetY), behavior: 'smooth' })
 }
 

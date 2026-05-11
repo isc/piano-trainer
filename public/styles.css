@@ -1028,8 +1028,11 @@ svg g.vf-notehead.missed-note path { fill: var(--pt-note-missed); }
 /* Measure numbers — lighter to distinguish from fingerings */
 #score svg g.measure-number text { fill: #999999; }
 
-/* Cursor scroll-margin (in sync with SCROLL_TOP_MARGIN in musicxml.js) */
-img[id^="cursorImg"] { scroll-margin-top: 100px; }
+/* Cursor scroll-margin: kept in sync with the JS scroll offset via the
+   --pt-sticky-offset CSS variable, which utils.js applyStickyOffset()
+   recomputes when sticky bars change visibility. The fallback covers the
+   no-script / pre-init case. */
+img[id^="cursorImg"] { scroll-margin-top: var(--pt-sticky-offset, 100px); }
 
 /* Cassette bar (compact bottom strip on score.html) */
 .pt-cassette-bar {

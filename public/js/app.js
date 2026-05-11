@@ -3,7 +3,7 @@ import { initMusicXML } from './musicxml.js'
 import { initFingeringEditor } from './fingeringEditor.js'
 import { initCassettes } from './cassettes.js'
 import { initPracticeTracker } from './practiceTracker.js'
-import { formatDuration, formatDate } from './utils.js'
+import { formatDuration, formatDate, applyStickyOffset } from './utils.js'
 import { initStorage } from './storage.js'
 import { loadMxlAsXml } from './mxlLoader.js'
 import { injectFingerings } from './fingeringInjector.js'
@@ -79,6 +79,20 @@ export function midiApp() {
 
     async init() {
       playback.setOnPlaybackEnd(() => { this.isPlaying = false })
+
+      // Sticky-bar offset feeds the cursor's scroll-margin-top (CSS) and
+      // scrollToMeasure() (JS). Update on init, on resize, and whenever the
+      // mode-context band toggles visibility (which happens via currentMode).
+      // Don't $watch osmdInstance directly — Alpine deep-compares via
+      // JSON.stringify, and OSMD has circular references (note ↔ voiceEntry).
+      // afterScoreLoad() calls applyStickyOffset() explicitly instead.
+      applyStickyOffset()
+      window.addEventListener('resize', applyStickyOffset)
+      // $nextTick (not queueMicrotask) — the context band toggles via x-show,
+      // and Alpine flips its `display` style on the next tick. A microtask
+      // fires too early and we measure 0 for the band that's about to appear.
+      this.$watch('currentMode', () => this.$nextTick(applyStickyOffset))
+      this.$watch('reinforcementMode', () => this.$nextTick(applyStickyOffset))
 
       await this.loadCassettesList()
 
@@ -288,6 +302,9 @@ export function midiApp() {
       musicxml.renderScore()
       document.getElementById('score').dataset.renderComplete = Date.now()
       this.strictBpm = Math.round(getBPM(this.osmdInstance))
+      // Modebar / context band become visible only after the score loads, so
+      // recompute the sticky offset now (cf. note in init()).
+      applyStickyOffset()
       await this.requestWakeLock()
     },
 

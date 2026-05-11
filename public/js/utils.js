@@ -2,6 +2,35 @@ export function isTestEnv() {
   return document.cookie.includes('test-env')
 }
 
+// Pixel offset for the currently-visible sticky bars (topbar + modebar +
+// optional mode-context band) plus a small breathing margin. Single source
+// of truth used by:
+//  - musicxml.js scrollToMeasure() (free / training jumps)
+//  - the CSS variable --pt-sticky-offset (cursor scroll-margin-top, picked
+//    up by scrollIntoView({ block: 'start' }) in playback.js)
+// Recomputed on each call rather than cached, since the context band shows
+// and hides with the active practice mode and resize observers add ceremony
+// for very little gain.
+const STICKY_BREATHING_PX = 16
+
+export function getStickyOffset() {
+  let offset = STICKY_BREATHING_PX
+  // querySelectorAll because there are multiple .pt-context bands (one per
+  // mode), each toggled via x-show; only the active one has display != none.
+  for (const el of document.querySelectorAll('.pt-topbar, .pt-modebar, .pt-context')) {
+    if (getComputedStyle(el).display === 'none') continue
+    offset += el.getBoundingClientRect().height
+  }
+  return offset
+}
+
+// Push the current sticky offset into a CSS variable so style rules
+// (cursor scroll-margin-top, etc.) stay in sync with JS scroll calls.
+export function applyStickyOffset() {
+  const px = getStickyOffset()
+  document.documentElement.style.setProperty('--pt-sticky-offset', `${px}px`)
+}
+
 export function formatDuration(ms) {
   const totalSeconds = Math.floor(ms / 1000)
   const totalMinutes = Math.floor(totalSeconds / 60)
