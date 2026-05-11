@@ -502,8 +502,11 @@ export function midiApp() {
     // Built as a string (not <template x-for>) because Alpine's templates
     // render in HTML namespace and won't show up inside an <svg>.
     // Returns '' when there aren't enough points to plot.
-    playthroughChartSvg() {
-      const all = this.scoreHistory.flatMap((d) => d.fullPlaythroughs)
+    // Accepts an optional playthroughs array; defaults to flattening
+    // scoreHistory (used by the history modal). The result modal passes
+    // previousPlaythroughs directly so it doesn't need scoreHistory loaded.
+    playthroughChartSvg(playthroughs) {
+      const all = playthroughs ?? this.scoreHistory.flatMap((d) => d.fullPlaythroughs)
       if (all.length < 2) return ''
 
       const sorted = [...all].sort((a, b) => new Date(a.startedAt) - new Date(b.startedAt))

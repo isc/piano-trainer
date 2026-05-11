@@ -187,7 +187,7 @@
           <button aria-label="Close" rel="prev" @click="closeResultModal()"></button>
         </header>
 
-        <!-- Free / Training: playthrough rankings -->
+        <!-- Free / Training: playthrough rankings + evolution chart -->
         <template x-if="resultMode === 'free' || resultMode === 'training'">
           <div>
             <p x-show="currentPlaythroughDuration && previousPlaythroughs.length === 0" class="pt-modal-stat pt-modal-stat--accent">
@@ -206,6 +206,12 @@
                 </template>
               </tbody>
             </table>
+            <template x-if="playthroughChartSvg(previousPlaythroughs)">
+              <div class="pt-modal-section">
+                <h4>Évolution du temps de jeu</h4>
+                <div x-html="playthroughChartSvg(previousPlaythroughs)"></div>
+              </div>
+            </template>
             <p x-show="resultMode === 'training'" style="color: var(--pt-text-muted); margin-top: var(--pt-space-3); font-size: 0.9rem;">
               Vous avez complété toutes les mesures du morceau.
             </p>
