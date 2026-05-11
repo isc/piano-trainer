@@ -3,7 +3,7 @@ import { initMusicXML } from './musicxml.js'
 import { initFingeringEditor } from './fingeringEditor.js'
 import { initCassettes } from './cassettes.js'
 import { initPracticeTracker } from './practiceTracker.js'
-import { formatDuration, formatDate } from './utils.js'
+import { formatDuration, formatDate, applyStickyOffset } from './utils.js'
 import { initStorage } from './storage.js'
 import { loadMxlAsXml } from './mxlLoader.js'
 import { injectFingerings } from './fingeringInjector.js'
@@ -37,33 +37,35 @@ export function midiApp() {
     isStrictPlaying: false,
     strictBpm: 120,
     strictResult: null,
-    showStrictResultModal: false,
     cassettes: [],
     selectedCassette: '',
     cassetteApiAvailable: false,
     trainingMode: false,
 
-    // Practice tracking (only for scores loaded via URL, not uploads)
+    // scoreUrl is set only for scores loaded from the library, not for
+    // local file uploads — the practice tracker keys on it.
     scoreUrl: null,
+    scoreTitle: null,
+    scoreComposer: null,
 
-    // Hand selection (both active by default)
     rightHandActive: true,
     leftHandActive: true,
 
-    // UI states
-    errorMessage: null,
-    trainingComplete: false,
-    showScoreCompleteModal: false,
-    currentPlaythroughDuration: null,
-    previousPlaythroughs: [],
     showHistoryModal: false,
     scoreHistory: [],
+    historyTotalMs: 0,
+    historyHotMeasures: [],
     measuresToReinforce: [],
     reinforcementMode: false,
-    showReinforcementCompleteModal: false,
     showMidiHelpModal: false,
+    settingsMenuOpen: false,
 
-    // Fingering annotation
+    // Single result modal for end-of-playthrough (free/training), end-of-
+    // strict run, and end-of-reinforcement. Body switches on resultMode.
+    showResultModal: false,
+    resultMode: null,
+    previousPlaythroughs: [],
+
     fingeringEnabled: false,
     showFingeringModal: false,
     selectedNoteKey: null,
@@ -73,12 +75,25 @@ export function midiApp() {
     async init() {
       playback.setOnPlaybackEnd(() => { this.isPlaying = false })
 
-      await this.loadCassettesList()
+      // The sticky-bar offset feeds both scrollToMeasure (JS) and
+      // scroll-margin-top (CSS, via --pt-sticky-offset). Recompute on
+      // resize and when the mode-context band toggles visibility.
+      applyStickyOffset()
+      window.addEventListener('resize', applyStickyOffset)
+      // $nextTick (not queueMicrotask) — Alpine flips x-show display on
+      // the next tick, so we'd otherwise measure 0 for the band that's
+      // about to appear. osmdInstance is updated via afterScoreLoad()
+      // directly because $watch would deep-compare via JSON.stringify and
+      // OSMD has circular references (note ↔ voiceEntry).
+      this.$watch('currentMode', () => this.$nextTick(applyStickyOffset))
+      this.$watch('reinforcementMode', () => this.$nextTick(applyStickyOffset))
 
-      await storage.init()
+      // loadCassettesList hits a backend endpoint, storage.init opens
+      // IndexedDB — independent and OK to run in parallel. practiceTracker
+      // shares the storage instance so its init just hits the same cache.
+      await Promise.all([this.loadCassettesList(), storage.init()])
       await practiceTracker.init()
 
-      // Auto-connect to MIDI device silently
       await midi.connectMIDI({ silent: true, autoSelectFirst: true })
       this.syncMidiState()
 
@@ -118,14 +133,8 @@ export function midiApp() {
           // Refresh reinforcement suggestions from the just-completed session
           await this.refreshReinforcementSuggestions()
         },
-        onNoteError: (expected, played) => {
-          this.errorMessage = `❌ Erreur: attendu ${expected}, joué ${played}`
-          setTimeout(() => {
-            this.errorMessage = ''
-          }, 2000)
-        },
         onTrainingComplete: async () => {
-          this.showTrainingComplete()
+          this.openResultModal('training')
           await practiceTracker.endSession()
           // Start new session for next playthrough
           const metadata = musicxml.getScoreMetadata()
@@ -148,7 +157,7 @@ export function midiApp() {
           this.trainingMode = false
           musicxml.setTrainingMode(false)
           await practiceTracker.endSession()
-          this.showReinforcementCompleteModal = true
+          this.openResultModal('reinforcement')
 
           // Start new free session so subsequent play is tracked
           const metadata = musicxml.getScoreMetadata()
@@ -167,17 +176,10 @@ export function midiApp() {
         },
       })
 
-      // Check URL parameter for score to load (after callbacks are set)
-      const urlParams = new URLSearchParams(window.location.search)
-      const scoreUrl = urlParams.get('url')
-      if (scoreUrl) {
-        await this.loadScoreFromURL(scoreUrl)
-      }
+      const scoreUrl = new URLSearchParams(window.location.search).get('url')
+      if (scoreUrl) await this.loadScoreFromURL(scoreUrl)
 
-      // Save session when leaving the page
-      window.addEventListener('beforeunload', () => {
-        practiceTracker.endSession()
-      })
+      window.addEventListener('beforeunload', () => practiceTracker.endSession())
     },
 
     syncMidiState() {
@@ -237,6 +239,7 @@ export function midiApp() {
       this.scoreUrl = null
       await musicxml.loadMusicXML(event)
       await this.afterScoreLoad()
+      this.captureScoreMetadata()
     },
 
     async loadScoreFromURL(url) {
@@ -244,12 +247,23 @@ export function midiApp() {
       this.fingeringEnabled = true
 
       await this.renderScoreWithFingerings()
+      this.captureScoreMetadata()
 
       const metadata = musicxml.getScoreMetadata()
       practiceTracker.startSession(url, metadata.title, metadata.composer, 'free', metadata.totalMeasures)
 
       // Load reinforcement suggestions from last completed playthrough
       await this.refreshReinforcementSuggestions()
+    },
+
+    captureScoreMetadata() {
+      if (!this.osmdInstance) return
+      const metadata = musicxml.getScoreMetadata()
+      this.scoreTitle = metadata.title || null
+      this.scoreComposer = metadata.composer || null
+      if (metadata.title) {
+        document.title = `${metadata.title}${metadata.composer ? ' — ' + metadata.composer : ''} · Piano Trainer`
+      }
     },
 
     async renderScoreWithFingerings() {
@@ -269,6 +283,9 @@ export function midiApp() {
       musicxml.renderScore()
       document.getElementById('score').dataset.renderComplete = Date.now()
       this.strictBpm = Math.round(getBPM(this.osmdInstance))
+      // Modebar / context band become visible only after the score loads, so
+      // recompute the sticky offset now (cf. note in init()).
+      applyStickyOffset()
       await this.requestWakeLock()
     },
 
@@ -311,9 +328,39 @@ export function midiApp() {
         onComplete: (result) => {
           this.isStrictPlaying = false
           this.strictResult = result
-          if (!result.aborted) this.showStrictResultModal = true
+          if (!result.aborted) this.openResultModal('strict')
         },
       })
+    },
+
+    // Reinforcement is a flavor of training, so currentMode reports
+    // 'training' for it — the segmented control stays on the training tab.
+    get currentMode() {
+      if (this.isStrictPlaying) return 'strict'
+      if (this.trainingMode) return 'training'
+      return 'free'
+    },
+
+    setMode(name) {
+      if (this.currentMode === name && name !== 'free') return
+      if (name === 'free') {
+        if (this.isStrictPlaying) this.toggleStrictPlaythrough()
+        if (this.trainingMode) this.toggleTrainingMode()
+        return
+      }
+      if (name === 'training') {
+        if (this.isStrictPlaying) this.toggleStrictPlaythrough()
+        if (!this.trainingMode) this.toggleTrainingMode()
+        return
+      }
+      if (name === 'strict') {
+        if (this.trainingMode) {
+          this.trainingMode = false
+          musicxml.setTrainingMode(false)
+        }
+        if (!this.isStrictPlaying) this.toggleStrictPlaythrough()
+        return
+      }
     },
 
     strictAccuracyPercent() {
@@ -329,34 +376,49 @@ export function midiApp() {
 
     async toggleTrainingMode() {
       this.trainingMode = !this.trainingMode
-      this.trainingComplete = false
 
       const mode = this.trainingMode ? 'training' : 'free'
       await practiceTracker.toggleMode(mode)
       musicxml.setTrainingMode(this.trainingMode)
     },
 
-    showTrainingComplete() {
-      this.trainingComplete = true
-    },
-
     showScoreComplete(allPlaythroughs) {
-      // Find the most recent playthrough (the one just completed)
-      const sorted = [...allPlaythroughs].sort((a, b) => new Date(b.startedAt) - new Date(a.startedAt))
-      const mostRecent = sorted[0] || null
-
-      this.currentPlaythroughDuration = mostRecent?.durationMs || null
-
-      // Sort all playthroughs by duration (fastest first), marking the current one
+      const mostRecent = [...allPlaythroughs].sort((a, b) => new Date(b.startedAt) - new Date(a.startedAt))[0]
+      // Ranked fastest-first, current playthrough flagged so the modal
+      // can highlight it.
       this.previousPlaythroughs = allPlaythroughs
         .map((pt) => ({ ...pt, isCurrent: pt === mostRecent }))
         .sort((a, b) => a.durationMs - b.durationMs)
-
-      this.showScoreCompleteModal = true
+      this.openResultModal('free')
     },
 
-    closeScoreCompleteModal() {
-      this.showScoreCompleteModal = false
+    get currentPlaythroughDuration() {
+      return this.previousPlaythroughs.find((p) => p.isCurrent)?.durationMs ?? null
+    },
+
+    // Flat list of every completed playthrough across days. Used by the
+    // history modal as the chart's data source.
+    get historyPlaythroughs() {
+      return this.scoreHistory.flatMap((d) => d.fullPlaythroughs)
+    },
+
+    openResultModal(mode) {
+      this.resultMode = mode
+      this.showResultModal = true
+    },
+
+    closeResultModal() {
+      this.showResultModal = false
+      this.resultMode = null
+    },
+
+    resultTitle() {
+      switch (this.resultMode) {
+        case 'strict':         return '⏱ Playthrough strict terminé'
+        case 'training':       return '🎉 Félicitations — Entraînement terminé'
+        case 'reinforcement':  return '🎯 Renforcement terminé'
+        default:               return '🎉 Partition terminée'
+      }
     },
 
     async refreshReinforcementSuggestions() {
@@ -388,7 +450,34 @@ export function midiApp() {
     async openScoreHistory() {
       if (!this.scoreUrl) return
       this.scoreHistory = await practiceTracker.getScoreHistory(this.scoreUrl)
+      this.historyTotalMs = this.scoreHistory.reduce((sum, d) => sum + (d.totalPracticeTimeMs || 0), 0)
+      this.historyHotMeasures = await this.computeHotMeasures()
       this.showHistoryModal = true
+    },
+
+    // Top measures with the highest error rate, surfaced inside the
+    // history modal so practiced measures with persistent trouble are
+    // visible without diving into the data.
+    async computeHotMeasures() {
+      const agg = await storage.getAggregate(this.scoreUrl)
+      if (!agg || !agg.measures) return []
+      const entries = Object.entries(agg.measures)
+        .map(([idx, m]) => ({
+          index: Number(idx),
+          attempts: m.totalAttempts || 0,
+          errorRate: m.errorRate || 0,
+        }))
+        .filter((m) => m.attempts >= 2 && m.errorRate > 0)
+        .sort((a, b) => b.errorRate - a.errorRate)
+      return entries.slice(0, 5)
+    },
+
+    toggleSettingsMenu() {
+      this.settingsMenuOpen = !this.settingsMenuOpen
+    },
+
+    closeSettingsMenu() {
+      this.settingsMenuOpen = false
     },
 
     formatDate,
@@ -401,13 +490,12 @@ export function midiApp() {
       return `${playthroughs.length}× en entier (${formatter.format(durations)})`
     },
 
-    // Builds the playthrough-duration evolution chart as an SVG string.
     // Built as a string (not <template x-for>) because Alpine's templates
-    // render in HTML namespace and won't show up inside an <svg>.
-    // Returns '' when there aren't enough points to plot.
-    playthroughChartSvg() {
-      const all = this.scoreHistory.flatMap((d) => d.fullPlaythroughs)
-      if (all.length < 2) return ''
+    // render in HTML namespace and won't show up inside <svg>. Returns ''
+    // when fewer than 2 points — the calling x-if then skips the section.
+    playthroughChartSvg(playthroughs) {
+      if (playthroughs.length < 2) return ''
+      const all = playthroughs
 
       const sorted = [...all].sort((a, b) => new Date(a.startedAt) - new Date(b.startedAt))
       const durs = sorted.map((p) => p.durationMs)

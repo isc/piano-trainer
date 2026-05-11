@@ -5,6 +5,7 @@ import {
   sourceMeasuresToResetOnEntry,
   svgNoteheadFor,
 } from './noteExtraction.js'
+import { getStickyOffset } from './utils.js'
 
 let osmdInstance = null
 let allNotes = []
@@ -326,6 +327,39 @@ function getBoundingBoxesForNotes(noteElements) {
     .filter(Boolean)
 }
 
+// Walk up from each element to the nearest matching ancestor, deduping.
+// Used to find the unique vf-measure groups (one per staff) that contain
+// a measure's notes.
+function uniqueAncestors(elements, selector) {
+  const seen = new Set()
+  for (const el of elements) {
+    const ancestor = el.closest(selector)
+    if (ancestor) seen.add(ancestor)
+  }
+  return [...seen]
+}
+
+// Bounding boxes of the 5 horizontal staff lines (per staff) inside each
+// vf-measure that contains the given notes. VexFlow renders these as plain
+// <path> elements with zero height (horizontal segments). We use them to
+// stretch the measure highlight up to the top staff line / down to the
+// bottom one, *without* picking up tempo markings, clefs, key signatures
+// etc. that also live inside vf-measure but render above the staff.
+function getStaffLineBoxes(noteElements) {
+  const measureGroups = uniqueAncestors(noteElements, 'g.vf-measure')
+  const boxes = []
+  for (const m of measureGroups) {
+    for (const child of m.children) {
+      if (child.tagName !== 'path') continue
+      try {
+        const box = child.getBBox()
+        if (box.height === 0 && box.width > 0) boxes.push(box)
+      } catch { /* getBBox may throw on detached elements */ }
+    }
+  }
+  return boxes
+}
+
 function calculateCombinedBounds(boxes) {
   return {
     minX: Math.min(...boxes.map((b) => b.x)),
@@ -335,13 +369,21 @@ function calculateCombinedBounds(boxes) {
   }
 }
 
+// Vertical breathing room above/below the staff so the repeat-count
+// circles (drawn ~40px above the topmost note) sit clearly outside the
+// rect, and so ledger-line notes don't sit flush against the rect edge.
+const MEASURE_V_PADDING = 12
+
 function createMeasureRectangle(svg, bounds, measureIndex) {
   const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect')
   rect.classList.add('measure-click-area')
+  // Horizontal padding is intentionally asymmetric (PADDING left, PADDING/2
+  // right): bar lines sit immediately after the last note, so a wide right
+  // padding would visually cross into the next measure.
   rect.setAttribute('x', bounds.minX - MEASURE_CLICK_PADDING)
-  rect.setAttribute('y', bounds.minY - MEASURE_CLICK_PADDING)
+  rect.setAttribute('y', bounds.minY - MEASURE_V_PADDING)
   rect.setAttribute('width', bounds.maxX - bounds.minX + MEASURE_CLICK_PADDING * 1.5)
-  rect.setAttribute('height', bounds.maxY - bounds.minY + MEASURE_CLICK_PADDING * 1.5)
+  rect.setAttribute('height', bounds.maxY - bounds.minY + MEASURE_V_PADDING * 2)
   rect.dataset.measureIndex = measureIndex
 
   return rect
@@ -375,13 +417,21 @@ function setupMeasureClickHandlers() {
     if (!measureData?.notes?.length) return
 
     const noteElements = measureData.notes.map((n) => svgNote(n.note))
-    const boxes = getBoundingBoxesForNotes(noteElements)
-    if (boxes.length === 0) return
+    const noteBoxes = getBoundingBoxesForNotes(noteElements)
+    if (noteBoxes.length === 0) return
 
     const svg = noteElements[0].ownerSVGElement
     if (!svg) return
 
-    const bounds = calculateCombinedBounds(boxes)
+    // Horizontal bounds come from the noteheads (so the rect hugs the
+    // notes). Vertical bounds are the union of the noteheads (catches
+    // low ledger-line notes below the bass staff) and the actual staff
+    // lines (so the top of the rect reaches the top staff line even
+    // when no note sits up there).
+    const hBounds = calculateCombinedBounds(noteBoxes)
+    const staffBoxes = getStaffLineBoxes(noteElements)
+    const vBounds = calculateCombinedBounds([...noteBoxes, ...staffBoxes])
+    const bounds = { minX: hBounds.minX, maxX: hBounds.maxX, minY: vBounds.minY, maxY: vBounds.maxY }
     const rect = createMeasureRectangle(svg, bounds, measureIndex)
 
     if (!rectsBySvg.has(svg)) rectsBySvg.set(svg, [])
@@ -416,15 +466,12 @@ function jumpToMeasure(measureIndex) {
   }
 }
 
-// Keep in sync with scroll-margin-top in styles.css
-const SCROLL_TOP_MARGIN = 80
-
 function scrollToMeasure(measureIndex) {
   const rect = measureClickRectangles[measureIndex]
   if (!rect) return
 
   const bbox = rect.getBoundingClientRect()
-  const targetY = window.scrollY + bbox.top - SCROLL_TOP_MARGIN
+  const targetY = window.scrollY + bbox.top - getStickyOffset()
   window.scrollTo({ top: Math.max(0, targetY), behavior: 'smooth' })
 }
 

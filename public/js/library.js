@@ -1,9 +1,13 @@
 import { initMidi } from './midi.js'
 import { initPracticeTracker } from './practiceTracker.js'
 import { initStorage } from './storage.js'
-import { formatDuration, formatDate } from './utils.js'
+import { formatDuration, formatDate, formatRelativeDate, statusLabel } from './utils.js'
 
 const MIN_MATCH = 5
+const STATUS_ORDER = ['dechiffrage', 'perfectionnement', 'repertoire']
+const STATUS_RANK = Object.fromEntries(STATUS_ORDER.map((s, i) => [s, i]))
+const STALE_DAYS = 7
+const STALE_MS = STALE_DAYS * 24 * 60 * 60 * 1000
 
 export function libraryApp() {
   const midi = initMidi()
@@ -18,11 +22,29 @@ export function libraryApp() {
   return {
     scores: [],
     searchQuery: '',
+    statusFilter: '',
+    composerFilter: '',
+    focusFilter: '',     // '' | 'reinforce' | 'near-mastery' | 'stale'
+    sortBy: 'lastPlayed', // 'title' | 'composer' | 'status' | 'practice' | 'lastPlayed'
+    sortDir: 'desc',      // 'asc' | 'desc'
     baseUrl: '',
     dailyLogsByDate: [],
     lastPlayedByScore: {},
+    aggregatesByScore: {},
 
     async init() {
+      // Restore filters from URL params so /index.html?status=…&composer=…
+      // is bookmarkable. replaceState (not push) on changes keeps the back
+      // button useful.
+      const params = new URLSearchParams(window.location.search)
+      this.statusFilter = params.get('status') || ''
+      this.composerFilter = params.get('composer') || ''
+      this.focusFilter = params.get('focus') || ''
+      this.searchQuery = params.get('q') || ''
+      for (const key of ['statusFilter', 'composerFilter', 'focusFilter', 'searchQuery']) {
+        this.$watch(key, () => this.syncUrl())
+      }
+
       midi.setCallbacks({
         onNotePlayed: (_, midiNote) => this.handleSearchNote(midiNote),
       })
@@ -52,7 +74,13 @@ export function libraryApp() {
         }
       }
 
-      // Set scores only after lastPlayedByScore is ready, so the table renders sorted
+      // Aggregates power the status filter, status pills, and practice-focus banner.
+      const aggregates = await storage.getAllAggregates()
+      for (const agg of aggregates) {
+        if (!agg || (agg.practiceDays || []).length === 0) continue
+        this.aggregatesByScore[agg.scoreId] = agg
+      }
+
       this.scores = data.scores
 
       await this.reloadDailyLogs()
@@ -105,26 +133,133 @@ export function libraryApp() {
     get filteredScores() {
       let results = this.scores
       if (this.searchQuery) {
-        const words = this.searchQuery.toLowerCase().trim().split(/\s+/).filter((w) => w)
+        const regexes = this.searchQuery.toLowerCase().trim().split(/\s+/).filter(Boolean).map((w) => new RegExp(`\\b${w}`))
         results = results.filter((score) => {
-          const searchableText = `${score.title} ${score.composer}`.toLowerCase()
-          return words.every((word) => new RegExp(`\\b${word}`).test(searchableText))
+          const text = `${score.title} ${score.composer}`.toLowerCase()
+          return regexes.every((r) => r.test(text))
         })
       }
-      // Sort by most recently played first
+      if (this.statusFilter)   results = results.filter((s) => this.getStatusFor(s) === this.statusFilter)
+      if (this.composerFilter) results = results.filter((s) => s.composer === this.composerFilter)
+      if (this.focusFilter)    results = results.filter((s) => this.matchesFocus(s, this.focusFilter))
+      const dir = this.sortDir === 'asc' ? 1 : -1
       return results.toSorted((a, b) => {
-        const aPlayed = this.lastPlayedByScore[this.getScoreUrl(a)] || ''
-        const bPlayed = this.lastPlayedByScore[this.getScoreUrl(b)] || ''
-        return bPlayed.localeCompare(aPlayed)
+        const va = this.sortKey(a), vb = this.sortKey(b)
+        if (this.sortBy === 'status') return ((STATUS_RANK[va] ?? -1) - (STATUS_RANK[vb] ?? -1)) * dir
+        if (typeof va === 'number') return (va - vb) * dir
+        return (va || '').localeCompare(vb || '', 'fr') * dir
       })
     },
 
-    getScoreUrl(score) {
-      return this.baseUrl + score.file
+    sortKey(score) {
+      switch (this.sortBy) {
+        case 'title':      return score.title
+        case 'composer':   return score.composer
+        case 'status':     return this.getStatusFor(score)
+        case 'practice':   return this.getPracticeTimeFor(score)
+        default:           return this.lastPlayedByScore[this.getScoreUrl(score)] || ''
+      }
+    },
+
+    toggleSort(column) {
+      if (this.sortBy === column) {
+        this.sortDir = this.sortDir === 'asc' ? 'desc' : 'asc'
+        return
+      }
+      this.sortBy = column
+      // Text columns sort A→Z by default; numeric/date columns biggest/most-recent first.
+      this.sortDir = (column === 'title' || column === 'composer') ? 'asc' : 'desc'
+    },
+
+    sortArrow(column) {
+      if (this.sortBy !== column) return ''
+      return this.sortDir === 'asc' ? ' ▲' : ' ▼'
+    },
+
+    // Clicking the same value clears the filter — natural toggle for pills.
+    setStatusFilter(status)     { this.statusFilter   = (this.statusFilter   === status)   ? '' : status },
+    setComposerFilter(composer) { this.composerFilter = (this.composerFilter === composer) ? '' : composer },
+    setFocusFilter(focus)       { this.focusFilter    = (this.focusFilter    === focus)    ? '' : focus },
+
+    syncUrl() {
+      const params = new URLSearchParams()
+      if (this.statusFilter)   params.set('status', this.statusFilter)
+      if (this.composerFilter) params.set('composer', this.composerFilter)
+      if (this.focusFilter)    params.set('focus', this.focusFilter)
+      if (this.searchQuery)    params.set('q', this.searchQuery)
+      const qs = params.toString()
+      const url = qs ? `?${qs}` : window.location.pathname
+      window.history.replaceState(null, '', url)
+    },
+
+    get statusOptions() {
+      const counts = { dechiffrage: 0, perfectionnement: 0, repertoire: 0 }
+      for (const score of this.scores) {
+        const status = this.getStatusFor(score)
+        if (status && counts[status] !== undefined) counts[status]++
+      }
+      return STATUS_ORDER.map((value) => ({ value, label: statusLabel(value), count: counts[value] }))
+    },
+
+    get composerOptions() {
+      const set = new Set(this.scores.map((s) => s.composer).filter(Boolean))
+      return [...set].sort((a, b) => a.localeCompare(b, 'fr'))
+    },
+
+    // Each focus chip filters the table to an actionable subset — the user
+    // can immediately see which pieces match, unlike a passive count banner.
+    matchesFocus(score, focus) {
+      const agg = this.aggregateFor(score)
+      if (!agg) return false
+      const measures = Object.values(agg.measures || {})
+      if (focus === 'reinforce') {
+        return measures.some((m) => (m.totalAttempts || 0) >= 2 && (m.errorRate || 0) > 0.4)
+      }
+      if (focus === 'near-mastery') {
+        if (agg.status !== 'perfectionnement' || measures.length === 0) return false
+        const clean = measures.filter((m) => (m.cleanAttempts || 0) >= 3).length
+        return clean / measures.length >= 0.8
+      }
+      if (focus === 'stale') {
+        return !!agg.lastPlayedAt && Date.now() - new Date(agg.lastPlayedAt).getTime() > STALE_MS
+      }
+      return false
+    },
+
+    get focusOptions() {
+      const counts = { reinforce: 0, 'near-mastery': 0, stale: 0 }
+      for (const score of this.scores) {
+        for (const k of Object.keys(counts)) {
+          if (this.matchesFocus(score, k)) counts[k]++
+        }
+      }
+      return [
+        { value: 'reinforce',    label: '🎯 À renforcer',          count: counts.reinforce },
+        { value: 'near-mastery', label: '⭐ Proches du répertoire', count: counts['near-mastery'] },
+        { value: 'stale',        label: `💤 Pas joué depuis ${STALE_DAYS} j`, count: counts.stale },
+      ].filter((opt) => opt.count > 0)
+    },
+
+    getScoreUrl(score)         { return this.baseUrl + score.file },
+    aggregateFor(score)        { return this.aggregatesByScore[this.getScoreUrl(score)] },
+    getStatusFor(score)        { return this.aggregateFor(score)?.status || null },
+    getPracticeTimeFor(score)  { return this.aggregateFor(score)?.totalPracticeTimeMs || 0 },
+
+    // Returns '' (not "0×") for never-completed scores, so Alpine x-show
+    // can hide the sub-line entirely instead of leaving an empty row.
+    getPracticeSubline(score) {
+      const agg = this.aggregateFor(score)
+      const last = agg?.lastCompletedAt || agg?.lastPlayedAt
+      const times = agg?.timesCompleted || 0
+      const parts = []
+      if (times > 0) parts.push(`${times}× joué`)
+      if (last) parts.push(formatRelativeDate(last))
+      return parts.join(' · ')
     },
 
     formatDuration,
     formatDate,
+    statusLabel,
 
     getTotalPracticeTimeForDate(dateEntry) {
       return dateEntry.log.reduce((sum, entry) => sum + entry.totalPracticeTimeMs, 0)
@@ -148,7 +283,6 @@ export function libraryApp() {
             `${result.importedFingerings} doigté(s) importé(s)`
           )
 
-          // Reload daily logs after import
           await this.reloadDailyLogs()
         }
       } catch (error) {
@@ -184,7 +318,7 @@ export function libraryApp() {
     },
 
     async reloadDailyLogs() {
-      const DAYS_TO_SHOW = 8 // Today + 7 previous days
+      const DAYS_TO_SHOW = 8
       const logPromises = []
       for (let i = 0; i < DAYS_TO_SHOW; i++) {
         const date = new Date()

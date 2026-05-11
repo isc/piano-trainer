@@ -1,40 +1,63 @@
 require_relative 'test_helper'
 
-class ComposerAndStatusPagesTest < CapybaraTestBase
-  def test_composer_and_status_page_navigation
+class LibraryFiltersTest < CapybaraTestBase
+  def setup
     page.driver.set_cookie('test-env', 'true')
     visit '/index.html'
     inject_aggregates
+    visit '/index.html'
+  end
 
-    # Navigate to Chopin's page from the library
+  def test_clicking_composer_in_table_filters_library
+    assert_selector 'tbody tr', minimum: 4
+
+    # Click "Chopin" on a row → activates composer filter, narrows the list to Chopin's pieces
     click_link 'Chopin', match: :first
+    assert_current_path %r{\?.*composer=Chopin}
 
-    assert_text 'Chopin'
-    assert_link 'Déchiffrage', href: /status\.html\?status=dechiffrage/
-    assert_link 'Perfectionnement', href: /status\.html\?status=perfectionnement/
-    assert_link 'Répertoire', href: /status\.html\?status=repertoire/
-
-    # Navigate to the répertoire status page
-    click_link 'Répertoire'
-
-    assert_text 'Répertoire'
-    assert_link 'Waltz in A Minor'
-    assert_no_text 'Nocturne Op. 9 No. 1'
-    assert_no_text 'Prelude Op. 28 No. 4 in E Minor'
-    # Composer links back to composer page
-    assert_link 'Chopin', href: /composer\.html\?composer=Chopin/
-
-    # Go back and navigate to the déchiffrage status page
-    page.go_back
-    click_link 'Déchiffrage', match: :first
-
-    assert_text 'Déchiffrage'
     rows = all('tbody tr')
-    titles = rows.map { |r| r.find('td:first-child').text }
-    assert_equal 'Nocturne No. 20 in C Minor', titles.first
-    assert_equal 'Prelude Op. 28 No. 4 in E Minor', titles.last
-    assert_no_text 'Waltz in A Minor'
-    assert_no_text 'Nocturne Op. 9 No. 1'
+    refute_empty rows
+    rows.each do |row|
+      assert_match(/Chopin/, row.find('td:nth-child(2)').text)
+    end
+  end
+
+  def test_clicking_status_pill_filters_library
+    assert_selector 'tbody tr', minimum: 4
+
+    click_link 'Répertoire', match: :first
+    assert_current_path %r{\?.*status=repertoire}
+
+    titles = all('tbody tr td:first-child').map(&:text)
+    assert_includes titles, 'Waltz in A Minor'
+    refute_includes titles, 'Nocturne Op. 9 No. 1'
+    refute_includes titles, 'Prelude Op. 28 No. 4 in E Minor'
+  end
+
+  def test_status_filter_pills_at_top_filter_library
+    # Filter pill at top of page (the visible count is appended, e.g. "Déchiffrage 2")
+    find('button.pt-filter-pill[data-status="dechiffrage"]').click
+    assert_current_path %r{\?.*status=dechiffrage}
+
+    titles = all('tbody tr td:first-child').map(&:text)
+    assert_includes titles, 'Nocturne No. 20 in C Minor'
+    assert_includes titles, 'Prelude Op. 28 No. 4 in E Minor'
+    refute_includes titles, 'Waltz in A Minor'
+  end
+
+  def test_filters_persist_via_url_params
+    visit '/index.html?status=repertoire&composer=Chopin'
+
+    titles = all('tbody tr td:first-child').map(&:text)
+    assert_equal ['Waltz in A Minor'], titles
+  end
+
+  def test_clicking_active_filter_clears_it
+    click_link 'Chopin', match: :first
+    assert_current_path %r{\?.*composer=Chopin}
+
+    click_link 'Chopin', match: :first
+    refute_match(/composer=/, page.current_url)
   end
 
   private
