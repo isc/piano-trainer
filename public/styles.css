@@ -597,7 +597,8 @@ table tbody td:nth-child(2) a:hover { color: var(--pt-accent); }
 .pt-row__title a:hover { color: var(--pt-accent); text-decoration: none; }
 .pt-row__composer { color: var(--pt-text-muted); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .pt-row__composer a { color: inherit; text-decoration: underline dotted; text-underline-offset: 3px; }
-.pt-row__time { font-size: 0.85rem; color: var(--pt-text-muted); font-variant-numeric: tabular-nums; }
+.pt-row__time { font-size: 0.85rem; color: var(--pt-text-muted); font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
+.pt-row__time small { display: block; color: var(--pt-text-subtle); font-size: 0.75rem; margin-top: 2px; }
 
 /* Progress bar */
 .pt-progress {
@@ -712,6 +713,43 @@ table tbody td:nth-child(2) a:hover { color: var(--pt-accent); }
 }
 .pt-filters select:hover { background-color: var(--pt-bg-elevated); }
 .pt-filters select:focus { outline: 2px solid color-mix(in srgb, var(--pt-accent) 30%, transparent); outline-offset: 1px; }
+
+/* Focus chips — actionable subset filters (reinforce / near-mastery / stale).
+   Visually distinct from status filter pills: subtle background, no "selected
+   = solid color" treatment, more like secondary toggles. */
+.pt-focus { display: flex; gap: var(--pt-space-2); align-items: center; flex-wrap: wrap; }
+.pt-focus__label { font-size: 0.82rem; color: var(--pt-text-muted); margin-right: 2px; }
+.pt-focus__chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 5px 12px;
+  background: var(--pt-bg-elevated);
+  border: 1px dashed var(--pt-border-strong);
+  border-radius: var(--pt-radius-md);
+  color: var(--pt-text);
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  margin: 0;
+  width: auto;
+  height: auto;
+  line-height: 1.2;
+}
+.pt-focus__chip:hover { background: var(--pt-surface-2); border-color: var(--pt-mode-reinforcement); }
+.pt-focus__chip[aria-pressed="true"] {
+  background: var(--pt-mode-reinforcement-bg);
+  border: 1px solid var(--pt-mode-reinforcement);
+  color: var(--pt-mode-reinforcement);
+}
+.pt-focus__count {
+  background: var(--pt-surface-2);
+  padding: 1px 7px;
+  border-radius: var(--pt-radius-pill);
+  font-size: 0.78rem;
+  font-weight: 500;
+}
+.pt-focus__chip[aria-pressed="true"] .pt-focus__count {
+  background: color-mix(in srgb, var(--pt-mode-reinforcement) 18%, var(--pt-bg-elevated));
+}
 
 /* Journal sidebar */
 .pt-journal__day {

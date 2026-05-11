@@ -55,12 +55,20 @@
         </select>
       </div>
 
-      <template x-if="practiceFocus.summary">
-        <div class="pt-banner">
-          <span class="pt-banner__icon">📌</span>
-          <div class="pt-banner__body" x-html="practiceFocus.summary"></div>
-        </div>
-      </template>
+      <div class="pt-focus" x-show="focusOptions.length > 0">
+        <span class="pt-focus__label">À travailler :</span>
+        <template x-for="opt in focusOptions" :key="opt.value">
+          <button
+            class="pt-focus__chip"
+            :data-focus="opt.value"
+            :aria-pressed="focusFilter === opt.value"
+            @click="setFocusFilter(opt.value)"
+          >
+            <span x-text="opt.label"></span>
+            <span class="pt-focus__count" x-text="opt.count"></span>
+          </button>
+        </template>
+      </div>
 
       <div class="pt-library">
         <!-- Sidebar: practice journal + data management -->
@@ -130,11 +138,12 @@
                     <a :href="'score.html?url=' + encodeURIComponent(getScoreUrl(score))" x-text="score.title"></a>
                   </td>
                   <td>
-                    <a :href="'composer.html?composer=' + encodeURIComponent(score.composer)" x-text="score.composer"></a>
+                    <a href="#" @click.prevent="setComposerFilter(score.composer)" x-text="score.composer"></a>
                   </td>
                   <td>
                     <template x-if="getStatusFor(score)">
-                      <a :href="'status.html?status=' + encodeURIComponent(getStatusFor(score))"
+                      <a href="#"
+                         @click.prevent="setStatusFilter(getStatusFor(score))"
                          class="pt-pill is-link"
                          :class="'pt-pill--' + getStatusFor(score)"
                          x-text="statusLabel(getStatusFor(score))"></a>
@@ -142,7 +151,10 @@
                   </td>
                   <td class="pt-row__time">
                     <template x-if="getPracticeTimeFor(score)">
-                      <span x-text="formatDuration(getPracticeTimeFor(score))"></span>
+                      <div>
+                        <span x-text="formatDuration(getPracticeTimeFor(score))"></span>
+                        <small x-show="getPracticeSubline(score)" x-text="getPracticeSubline(score)"></small>
+                      </div>
                     </template>
                   </td>
                 </tr>

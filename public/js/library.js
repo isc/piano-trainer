@@ -1,7 +1,7 @@
 import { initMidi } from './midi.js'
 import { initPracticeTracker } from './practiceTracker.js'
 import { initStorage } from './storage.js'
-import { formatDuration, formatDate, statusLabel } from './utils.js'
+import { formatDuration, formatDate, formatRelativeDate, statusLabel } from './utils.js'
 
 const MIN_MATCH = 5
 const STATUS_ORDER = ['dechiffrage', 'perfectionnement', 'repertoire']
@@ -22,6 +22,7 @@ export function libraryApp() {
     searchQuery: '',
     statusFilter: '',
     composerFilter: '',
+    focusFilter: '',     // '' | 'reinforce' | 'near-mastery' | 'stale'
     sortBy: 'lastPlayed', // 'title' | 'composer' | 'status' | 'practice' | 'lastPlayed'
     sortDir: 'desc',      // 'asc' | 'desc'
     baseUrl: '',
@@ -30,6 +31,22 @@ export function libraryApp() {
     aggregatesByScore: {},
 
     async init() {
+      // Restore filters from URL so /index.html?status=repertoire&composer=Chopin
+      // is bookmarkable and links from elsewhere can drop the user into a
+      // pre-filtered library view.
+      const params = new URLSearchParams(window.location.search)
+      this.statusFilter = params.get('status') || ''
+      this.composerFilter = params.get('composer') || ''
+      this.focusFilter = params.get('focus') || ''
+      this.searchQuery = params.get('q') || ''
+
+      // Push filter changes back into the URL. Using replaceState (not
+      // pushState) so we don't pollute the back button on every click.
+      this.$watch('statusFilter', () => this.syncUrl())
+      this.$watch('composerFilter', () => this.syncUrl())
+      this.$watch('focusFilter', () => this.syncUrl())
+      this.$watch('searchQuery', () => this.syncUrl())
+
       midi.setCallbacks({
         onNotePlayed: (_, midiNote) => this.handleSearchNote(midiNote),
       })
@@ -130,6 +147,9 @@ export function libraryApp() {
       if (this.composerFilter) {
         results = results.filter((score) => score.composer === this.composerFilter)
       }
+      if (this.focusFilter) {
+        results = results.filter((score) => this.matchesFocus(score, this.focusFilter))
+      }
       const dir = this.sortDir === 'asc' ? 1 : -1
       const STATUS_RANK = { dechiffrage: 0, perfectionnement: 1, repertoire: 2 }
       return results.toSorted((a, b) => {
@@ -165,6 +185,30 @@ export function libraryApp() {
       return this.sortDir === 'asc' ? ' ▲' : ' ▼'
     },
 
+    setStatusFilter(status) {
+      // Toggle off if already active, so clicking the same pill twice clears.
+      this.statusFilter = (this.statusFilter === status) ? '' : status
+    },
+
+    setComposerFilter(composer) {
+      this.composerFilter = (this.composerFilter === composer) ? '' : composer
+    },
+
+    setFocusFilter(focus) {
+      this.focusFilter = (this.focusFilter === focus) ? '' : focus
+    },
+
+    syncUrl() {
+      const params = new URLSearchParams()
+      if (this.statusFilter)   params.set('status', this.statusFilter)
+      if (this.composerFilter) params.set('composer', this.composerFilter)
+      if (this.focusFilter)    params.set('focus', this.focusFilter)
+      if (this.searchQuery)    params.set('q', this.searchQuery)
+      const qs = params.toString()
+      const url = qs ? `?${qs}` : window.location.pathname
+      window.history.replaceState(null, '', url)
+    },
+
     get statusOptions() {
       const counts = { dechiffrage: 0, perfectionnement: 0, repertoire: 0 }
       for (const score of this.scores) {
@@ -179,41 +223,41 @@ export function libraryApp() {
       return [...set].sort((a, b) => a.localeCompare(b, 'fr'))
     },
 
-    // Practice focus: surfaces 3 useful signals at the top of the library
-    // so the user immediately knows what to work on next:
-    //  - scores with measures still flagged for reinforcement
-    //  - scores in 'perfectionnement' close to mastery (≥80% clean)
-    //  - scores not practiced in the last STALE_DAYS days
-    get practiceFocus() {
-      const now = Date.now()
-      const stale = STALE_DAYS * 24 * 60 * 60 * 1000
-      let toReinforce = 0
-      let nearMastery = 0
-      let staleCount = 0
-
-      for (const agg of Object.values(this.aggregatesByScore)) {
-        const measures = agg.measures || {}
-        const measureList = Object.values(measures)
-
-        if (measureList.some((m) => (m.totalAttempts || 0) >= 2 && (m.errorRate || 0) > 0.4)) {
-          toReinforce++
-        }
-        if (agg.status === 'perfectionnement' && measureList.length > 0) {
-          const clean = measureList.filter((m) => (m.cleanAttempts || 0) >= 3).length
-          if (clean / measureList.length >= 0.8) nearMastery++
-        }
-        if (agg.lastPlayedAt) {
-          const last = new Date(agg.lastPlayedAt).getTime()
-          if (now - last > stale) staleCount++
-        }
+    // Focus filters surface actionable subsets of the library. Each is a
+    // clickable chip that filters the table — unlike a passive summary
+    // banner, the user can immediately see *which* pieces match.
+    matchesFocus(score, focus) {
+      const agg = this.aggregatesByScore[this.getScoreUrl(score)]
+      if (!agg) return false
+      const measures = Object.values(agg.measures || {})
+      if (focus === 'reinforce') {
+        return measures.some((m) => (m.totalAttempts || 0) >= 2 && (m.errorRate || 0) > 0.4)
       }
+      if (focus === 'near-mastery') {
+        if (agg.status !== 'perfectionnement' || measures.length === 0) return false
+        const clean = measures.filter((m) => (m.cleanAttempts || 0) >= 3).length
+        return clean / measures.length >= 0.8
+      }
+      if (focus === 'stale') {
+        if (!agg.lastPlayedAt) return false
+        const ageMs = Date.now() - new Date(agg.lastPlayedAt).getTime()
+        return ageMs > STALE_DAYS * 24 * 60 * 60 * 1000
+      }
+      return false
+    },
 
-      const parts = []
-      if (toReinforce > 0)  parts.push(`<strong>${toReinforce}</strong> morceau${toReinforce > 1 ? 'x' : ''} avec des mesures à renforcer`)
-      if (nearMastery > 0)  parts.push(`<strong>${nearMastery}</strong> proche${nearMastery > 1 ? 's' : ''} du répertoire`)
-      if (staleCount > 0)   parts.push(`<strong>${staleCount}</strong> non pratiqué${staleCount > 1 ? 's' : ''} depuis ${STALE_DAYS} jours`)
-
-      return { summary: parts.length > 0 ? parts.join(' · ') : null }
+    get focusOptions() {
+      const counts = { reinforce: 0, 'near-mastery': 0, stale: 0 }
+      for (const score of this.scores) {
+        if (this.matchesFocus(score, 'reinforce'))    counts.reinforce++
+        if (this.matchesFocus(score, 'near-mastery')) counts['near-mastery']++
+        if (this.matchesFocus(score, 'stale'))        counts.stale++
+      }
+      return [
+        { value: 'reinforce',    label: '🎯 À renforcer',          count: counts.reinforce },
+        { value: 'near-mastery', label: '⭐ Proches du répertoire', count: counts['near-mastery'] },
+        { value: 'stale',        label: `💤 Pas joué depuis ${STALE_DAYS} j`, count: counts.stale },
+      ].filter((opt) => opt.count > 0)
     },
 
     getScoreUrl(score) {
@@ -226,6 +270,27 @@ export function libraryApp() {
 
     getPracticeTimeFor(score) {
       return this.aggregatesByScore[this.getScoreUrl(score)]?.totalPracticeTimeMs || 0
+    },
+
+    getTimesCompletedFor(score) {
+      return this.aggregatesByScore[this.getScoreUrl(score)]?.timesCompleted || 0
+    },
+
+    getLastPlayedFor(score) {
+      const agg = this.aggregatesByScore[this.getScoreUrl(score)]
+      return agg?.lastCompletedAt || agg?.lastPlayedAt || ''
+    },
+
+    // Sub-line under the practice duration: "3× · il y a 5j" / "il y a 2 mois".
+    // Built here (not in HTML) so we can return '' and have Alpine hide the
+    // wrapper via x-show, avoiding empty lines on never-practiced rows.
+    getPracticeSubline(score) {
+      const times = this.getTimesCompletedFor(score)
+      const last = this.getLastPlayedFor(score)
+      const parts = []
+      if (times > 0) parts.push(`${times}× joué`)
+      if (last) parts.push(formatRelativeDate(last))
+      return parts.join(' · ')
     },
 
     formatDuration,
