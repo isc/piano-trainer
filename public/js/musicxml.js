@@ -339,10 +339,14 @@ function calculateCombinedBounds(boxes) {
 function createMeasureRectangle(svg, bounds, measureIndex) {
   const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect')
   rect.classList.add('measure-click-area')
+  // Symmetric padding on all four sides — the previous *1.5 produced a
+  // rect that hung 15px past the leftmost note but only 7.5px past the
+  // rightmost one, which read visually as "off-center" once the highlight
+  // got a more saturated violet color.
   rect.setAttribute('x', bounds.minX - MEASURE_CLICK_PADDING)
   rect.setAttribute('y', bounds.minY - MEASURE_CLICK_PADDING)
-  rect.setAttribute('width', bounds.maxX - bounds.minX + MEASURE_CLICK_PADDING * 1.5)
-  rect.setAttribute('height', bounds.maxY - bounds.minY + MEASURE_CLICK_PADDING * 1.5)
+  rect.setAttribute('width', bounds.maxX - bounds.minX + MEASURE_CLICK_PADDING * 2)
+  rect.setAttribute('height', bounds.maxY - bounds.minY + MEASURE_CLICK_PADDING * 2)
   rect.dataset.measureIndex = measureIndex
 
   return rect

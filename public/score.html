@@ -141,13 +141,15 @@
     </div>
 
     <main class="container">
-      <!-- Onboarding: shown when no score is loaded -->
+      <!-- Onboarding: shown when no score is loaded. The "Bibliothèque"
+           link in the topbar handles catalog access, so this card focuses
+           only on the case the topbar doesn't cover: importing a local
+           MusicXML file. -->
       <div class="pt-onboarding" x-show="!osmdInstance">
-        <h2>Charger une partition</h2>
-        <p>Choisissez un morceau dans la bibliothèque ou importez votre propre fichier MusicXML.</p>
+        <h2>Charger un fichier MusicXML</h2>
+        <p>Glissez votre fichier ici ou cliquez pour le sélectionner.</p>
         <div class="pt-onboarding__cta">
-          <a href="index.html">📚 Ouvrir la bibliothèque</a>
-          <label for="musicxml-upload">📄 Charger un fichier MusicXML
+          <label for="musicxml-upload">📄 Choisir un fichier
             <input type="file" accept=".xml,.musicxml,.mxl" @change="loadMusicXML($event)" id="musicxml-upload" />
           </label>
         </div>
