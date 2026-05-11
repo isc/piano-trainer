@@ -369,6 +369,11 @@ function calculateCombinedBounds(boxes) {
   }
 }
 
+// Vertical breathing room above/below the staff so the repeat-count
+// circles (drawn ~40px above the topmost note) sit clearly outside the
+// rect, and so ledger-line notes don't sit flush against the rect edge.
+const MEASURE_V_PADDING = 12
+
 function createMeasureRectangle(svg, bounds, measureIndex) {
   const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect')
   rect.classList.add('measure-click-area')
@@ -376,9 +381,9 @@ function createMeasureRectangle(svg, bounds, measureIndex) {
   // right): bar lines sit immediately after the last note, so a wide right
   // padding would visually cross into the next measure.
   rect.setAttribute('x', bounds.minX - MEASURE_CLICK_PADDING)
-  rect.setAttribute('y', bounds.minY)
+  rect.setAttribute('y', bounds.minY - MEASURE_V_PADDING)
   rect.setAttribute('width', bounds.maxX - bounds.minX + MEASURE_CLICK_PADDING * 1.5)
-  rect.setAttribute('height', bounds.maxY - bounds.minY)
+  rect.setAttribute('height', bounds.maxY - bounds.minY + MEASURE_V_PADDING * 2)
   rect.dataset.measureIndex = measureIndex
 
   return rect
