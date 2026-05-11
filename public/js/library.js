@@ -45,6 +45,17 @@ export function libraryApp() {
         this.$watch(key, () => this.syncUrl())
       }
 
+      // The sticky chrome's height feeds the sidebar's `top` and the
+      // sticky table thead's `top` via --pt-library-chrome-h. The chrome
+      // shrinks when focus chips aren't visible, so re-measure on resize.
+      // $nextTick ensures Alpine has rendered the DOM before we measure.
+      this.$nextTick(() => {
+        const chrome = document.querySelector('.pt-library-chrome')
+        if (!chrome) return
+        this.measureChrome()
+        new ResizeObserver(() => this.measureChrome()).observe(chrome)
+      })
+
       midi.setCallbacks({
         onNotePlayed: (_, midiNote) => this.handleSearchNote(midiNote),
       })
@@ -180,6 +191,13 @@ export function libraryApp() {
     setStatusFilter(status)     { this.statusFilter   = (this.statusFilter   === status)   ? '' : status },
     setComposerFilter(composer) { this.composerFilter = (this.composerFilter === composer) ? '' : composer },
     setFocusFilter(focus)       { this.focusFilter    = (this.focusFilter    === focus)    ? '' : focus },
+
+    measureChrome() {
+      const chrome = document.querySelector('.pt-library-chrome')
+      if (!chrome) return
+      const h = chrome.getBoundingClientRect().height
+      document.documentElement.style.setProperty('--pt-library-chrome-h', `${h}px`)
+    },
 
     syncUrl() {
       const params = new URLSearchParams()

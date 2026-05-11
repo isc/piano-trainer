@@ -555,21 +555,25 @@ button.pt-topbar__pill:hover { background: var(--pt-surface-2); border-color: va
 .pt-card__row { display: flex; align-items: center; justify-content: space-between; gap: var(--pt-space-2); flex-wrap: wrap; }
 .pt-card__progress-label { display: flex; justify-content: space-between; font-size: 0.78rem; color: var(--pt-text-muted); }
 
-/* Table layout (used by index, composer, status — restyled from Pico defaults) */
+/* Table layout (used by index, composer, status — restyled from Pico defaults).
+   `overflow: hidden` would clip the rounded corners but breaks sticky thead;
+   we use overflow: clip on the wrapper (.pt-library__main) instead, and the
+   first/last rows get their own corner radii. */
 table {
   background: var(--pt-bg-elevated);
   border: 1px solid var(--pt-border);
   border-radius: var(--pt-radius-lg);
-  overflow: hidden;
   border-collapse: separate;
   border-spacing: 0;
   font-size: 0.92rem;
   --pico-spacing: 0;
 }
-table thead {
-  background: var(--pt-surface-2);
-}
+table thead th:first-child { border-top-left-radius: var(--pt-radius-lg); }
+table thead th:last-child  { border-top-right-radius: var(--pt-radius-lg); }
+table tbody tr:last-child td:first-child { border-bottom-left-radius: var(--pt-radius-lg); }
+table tbody tr:last-child td:last-child  { border-bottom-right-radius: var(--pt-radius-lg); }
 table thead th {
+  background: var(--pt-surface-2);
   padding: var(--pt-space-2) var(--pt-space-4);
   font-size: 0.78rem;
   font-weight: 600;
@@ -635,14 +639,46 @@ table tbody td:nth-child(2) a:hover { color: var(--pt-accent); }
    Library page layout
    ========================================================================== */
 
+/* Library top chrome (header + filters + focus) sticks to the viewport
+   top so filtering and search stay reachable while the table scrolls.
+   --pt-library-chrome-h is a generous upper bound for the chrome's height
+   (header ~50 + filters ~38 + focus ~38 + padding/breathing) and is used
+   to position the sidebar and the sticky table header below it. */
+:root { --pt-library-chrome-h: 168px; }
+
+.pt-library-chrome {
+  position: sticky;
+  top: 0;
+  z-index: var(--pt-z-sticky);
+  background: var(--pt-bg);
+  padding-block: var(--pt-space-4);
+  margin-block: calc(-1 * var(--pt-space-4)) var(--pt-space-2);
+  display: flex;
+  flex-direction: column;
+  gap: var(--pt-space-3);
+  box-shadow: 0 6px 8px -8px rgba(15, 18, 30, 0.18);
+}
+
 .pt-library {
   display: grid;
   grid-template-columns: 280px 1fr;
   gap: var(--pt-space-6);
   align-items: start;
 }
-.pt-library__sidebar { display: flex; flex-direction: column; gap: var(--pt-space-4); position: sticky; top: var(--pt-space-4); max-height: calc(100vh - 32px); overflow-y: auto; }
+.pt-library__sidebar {
+  display: flex; flex-direction: column; gap: var(--pt-space-4);
+  position: sticky;
+  top: var(--pt-library-chrome-h);
+  max-height: calc(100vh - var(--pt-library-chrome-h) - var(--pt-space-3));
+  overflow-y: auto;
+}
 .pt-library__main { display: flex; flex-direction: column; gap: var(--pt-space-4); min-width: 0; }
+
+/* Table header sticks below the chrome so column labels stay visible
+   while rows scroll. The rounded-card look is preserved by hiding the
+   table's overflow at the wrapper level (it's already inside .pt-library__main). */
+.pt-library__main table thead { position: sticky; top: var(--pt-library-chrome-h); z-index: calc(var(--pt-z-sticky) - 1); }
+.pt-library__main table thead th { background: var(--pt-surface-2); }
 
 .pt-page-header {
   display: flex;
@@ -807,6 +843,10 @@ table tbody td:nth-child(2) a:hover { color: var(--pt-accent); }
 @media (max-width: 800px) {
   .pt-library { grid-template-columns: 1fr; }
   .pt-library__sidebar { position: static; max-height: none; }
+  /* At narrow widths the chrome wraps to 3+ rows and stealing that much
+     viewport for sticky chrome is more disruptive than helpful. */
+  .pt-library-chrome { position: static; box-shadow: none; }
+  .pt-library__main table thead { position: static; }
 }
 
 /* =============================================================================
