@@ -956,6 +956,17 @@ dialog > article > footer button { margin: 0; }
 .pt-modal-section { margin-top: var(--pt-space-4); }
 .pt-modal-section h4 { color: var(--pt-text-muted); font-size: 0.85rem; letter-spacing: 0.01em; margin-bottom: var(--pt-space-2); font-weight: 600; }
 
+.pt-modal-note { color: var(--pt-text-muted); margin-top: var(--pt-space-3); font-size: 0.9rem; }
+.pt-modal-note--inline { margin-left: var(--pt-space-2); margin-top: 0; }
+
+.pt-strict-breakdown { list-style: none; padding: 0; margin: var(--pt-space-3) 0; color: var(--pt-text-muted); font-size: 0.9rem; }
+
+.pt-hot-measures { list-style: none; padding: 0; margin: 0; }
+.pt-hot-measures li { display: flex; justify-content: space-between; padding: 4px 0; font-size: 0.88rem; border-bottom: 1px solid var(--pt-border); }
+.pt-hot-measures li small { color: var(--pt-text-muted); }
+
+.pt-context__end { margin-left: auto; }
+
 .pt-history-day {
   padding: var(--pt-space-2) 0;
   border-bottom: 1px solid var(--pt-border);

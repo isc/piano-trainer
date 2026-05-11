@@ -5,7 +5,9 @@ import { formatDuration, formatDate, formatRelativeDate, statusLabel } from './u
 
 const MIN_MATCH = 5
 const STATUS_ORDER = ['dechiffrage', 'perfectionnement', 'repertoire']
+const STATUS_RANK = Object.fromEntries(STATUS_ORDER.map((s, i) => [s, i]))
 const STALE_DAYS = 7
+const STALE_MS = STALE_DAYS * 24 * 60 * 60 * 1000
 
 export function libraryApp() {
   const midi = initMidi()
@@ -31,21 +33,17 @@ export function libraryApp() {
     aggregatesByScore: {},
 
     async init() {
-      // Restore filters from URL so /index.html?status=repertoire&composer=Chopin
-      // is bookmarkable and links from elsewhere can drop the user into a
-      // pre-filtered library view.
+      // Restore filters from URL params so /index.html?status=…&composer=…
+      // is bookmarkable. replaceState (not push) on changes keeps the back
+      // button useful.
       const params = new URLSearchParams(window.location.search)
       this.statusFilter = params.get('status') || ''
       this.composerFilter = params.get('composer') || ''
       this.focusFilter = params.get('focus') || ''
       this.searchQuery = params.get('q') || ''
-
-      // Push filter changes back into the URL. Using replaceState (not
-      // pushState) so we don't pollute the back button on every click.
-      this.$watch('statusFilter', () => this.syncUrl())
-      this.$watch('composerFilter', () => this.syncUrl())
-      this.$watch('focusFilter', () => this.syncUrl())
-      this.$watch('searchQuery', () => this.syncUrl())
+      for (const key of ['statusFilter', 'composerFilter', 'focusFilter', 'searchQuery']) {
+        this.$watch(key, () => this.syncUrl())
+      }
 
       midi.setCallbacks({
         onNotePlayed: (_, midiNote) => this.handleSearchNote(midiNote),
@@ -135,23 +133,16 @@ export function libraryApp() {
     get filteredScores() {
       let results = this.scores
       if (this.searchQuery) {
-        const words = this.searchQuery.toLowerCase().trim().split(/\s+/).filter((w) => w)
+        const regexes = this.searchQuery.toLowerCase().trim().split(/\s+/).filter(Boolean).map((w) => new RegExp(`\\b${w}`))
         results = results.filter((score) => {
-          const searchableText = `${score.title} ${score.composer}`.toLowerCase()
-          return words.every((word) => new RegExp(`\\b${word}`).test(searchableText))
+          const text = `${score.title} ${score.composer}`.toLowerCase()
+          return regexes.every((r) => r.test(text))
         })
       }
-      if (this.statusFilter) {
-        results = results.filter((score) => this.getStatusFor(score) === this.statusFilter)
-      }
-      if (this.composerFilter) {
-        results = results.filter((score) => score.composer === this.composerFilter)
-      }
-      if (this.focusFilter) {
-        results = results.filter((score) => this.matchesFocus(score, this.focusFilter))
-      }
+      if (this.statusFilter)   results = results.filter((s) => this.getStatusFor(s) === this.statusFilter)
+      if (this.composerFilter) results = results.filter((s) => s.composer === this.composerFilter)
+      if (this.focusFilter)    results = results.filter((s) => this.matchesFocus(s, this.focusFilter))
       const dir = this.sortDir === 'asc' ? 1 : -1
-      const STATUS_RANK = { dechiffrage: 0, perfectionnement: 1, repertoire: 2 }
       return results.toSorted((a, b) => {
         const va = this.sortKey(a), vb = this.sortKey(b)
         if (this.sortBy === 'status') return ((STATUS_RANK[va] ?? -1) - (STATUS_RANK[vb] ?? -1)) * dir
@@ -173,11 +164,11 @@ export function libraryApp() {
     toggleSort(column) {
       if (this.sortBy === column) {
         this.sortDir = this.sortDir === 'asc' ? 'desc' : 'asc'
-      } else {
-        this.sortBy = column
-        // Sensible default direction per column: text ascending, numeric/dates descending
-        this.sortDir = (column === 'title' || column === 'composer') ? 'asc' : 'desc'
+        return
       }
+      this.sortBy = column
+      // Text columns sort A→Z by default; numeric/date columns biggest/most-recent first.
+      this.sortDir = (column === 'title' || column === 'composer') ? 'asc' : 'desc'
     },
 
     sortArrow(column) {
@@ -185,18 +176,10 @@ export function libraryApp() {
       return this.sortDir === 'asc' ? ' ▲' : ' ▼'
     },
 
-    setStatusFilter(status) {
-      // Toggle off if already active, so clicking the same pill twice clears.
-      this.statusFilter = (this.statusFilter === status) ? '' : status
-    },
-
-    setComposerFilter(composer) {
-      this.composerFilter = (this.composerFilter === composer) ? '' : composer
-    },
-
-    setFocusFilter(focus) {
-      this.focusFilter = (this.focusFilter === focus) ? '' : focus
-    },
+    // Clicking the same value clears the filter — natural toggle for pills.
+    setStatusFilter(status)     { this.statusFilter   = (this.statusFilter   === status)   ? '' : status },
+    setComposerFilter(composer) { this.composerFilter = (this.composerFilter === composer) ? '' : composer },
+    setFocusFilter(focus)       { this.focusFilter    = (this.focusFilter    === focus)    ? '' : focus },
 
     syncUrl() {
       const params = new URLSearchParams()
@@ -223,11 +206,10 @@ export function libraryApp() {
       return [...set].sort((a, b) => a.localeCompare(b, 'fr'))
     },
 
-    // Focus filters surface actionable subsets of the library. Each is a
-    // clickable chip that filters the table — unlike a passive summary
-    // banner, the user can immediately see *which* pieces match.
+    // Each focus chip filters the table to an actionable subset — the user
+    // can immediately see which pieces match, unlike a passive count banner.
     matchesFocus(score, focus) {
-      const agg = this.aggregatesByScore[this.getScoreUrl(score)]
+      const agg = this.aggregateFor(score)
       if (!agg) return false
       const measures = Object.values(agg.measures || {})
       if (focus === 'reinforce') {
@@ -239,9 +221,7 @@ export function libraryApp() {
         return clean / measures.length >= 0.8
       }
       if (focus === 'stale') {
-        if (!agg.lastPlayedAt) return false
-        const ageMs = Date.now() - new Date(agg.lastPlayedAt).getTime()
-        return ageMs > STALE_DAYS * 24 * 60 * 60 * 1000
+        return !!agg.lastPlayedAt && Date.now() - new Date(agg.lastPlayedAt).getTime() > STALE_MS
       }
       return false
     },
@@ -249,9 +229,9 @@ export function libraryApp() {
     get focusOptions() {
       const counts = { reinforce: 0, 'near-mastery': 0, stale: 0 }
       for (const score of this.scores) {
-        if (this.matchesFocus(score, 'reinforce'))    counts.reinforce++
-        if (this.matchesFocus(score, 'near-mastery')) counts['near-mastery']++
-        if (this.matchesFocus(score, 'stale'))        counts.stale++
+        for (const k of Object.keys(counts)) {
+          if (this.matchesFocus(score, k)) counts[k]++
+        }
       }
       return [
         { value: 'reinforce',    label: '🎯 À renforcer',          count: counts.reinforce },
@@ -260,33 +240,17 @@ export function libraryApp() {
       ].filter((opt) => opt.count > 0)
     },
 
-    getScoreUrl(score) {
-      return this.baseUrl + score.file
-    },
+    getScoreUrl(score)         { return this.baseUrl + score.file },
+    aggregateFor(score)        { return this.aggregatesByScore[this.getScoreUrl(score)] },
+    getStatusFor(score)        { return this.aggregateFor(score)?.status || null },
+    getPracticeTimeFor(score)  { return this.aggregateFor(score)?.totalPracticeTimeMs || 0 },
 
-    getStatusFor(score) {
-      return this.aggregatesByScore[this.getScoreUrl(score)]?.status || null
-    },
-
-    getPracticeTimeFor(score) {
-      return this.aggregatesByScore[this.getScoreUrl(score)]?.totalPracticeTimeMs || 0
-    },
-
-    getTimesCompletedFor(score) {
-      return this.aggregatesByScore[this.getScoreUrl(score)]?.timesCompleted || 0
-    },
-
-    getLastPlayedFor(score) {
-      const agg = this.aggregatesByScore[this.getScoreUrl(score)]
-      return agg?.lastCompletedAt || agg?.lastPlayedAt || ''
-    },
-
-    // Sub-line under the practice duration: "3× · il y a 5j" / "il y a 2 mois".
-    // Built here (not in HTML) so we can return '' and have Alpine hide the
-    // wrapper via x-show, avoiding empty lines on never-practiced rows.
+    // Returns '' (not "0×") for never-completed scores, so Alpine x-show
+    // can hide the sub-line entirely instead of leaving an empty row.
     getPracticeSubline(score) {
-      const times = this.getTimesCompletedFor(score)
-      const last = this.getLastPlayedFor(score)
+      const agg = this.aggregateFor(score)
+      const last = agg?.lastCompletedAt || agg?.lastPlayedAt
+      const times = agg?.timesCompleted || 0
       const parts = []
       if (times > 0) parts.push(`${times}× joué`)
       if (last) parts.push(formatRelativeDate(last))

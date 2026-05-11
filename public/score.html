@@ -123,9 +123,8 @@
       <span x-show="!isStrictPlaying">BPM réglé sur <strong x-text="strictBpm"></strong>. Lancez la lecture pour démarrer.</span>
       <button
         x-show="isStrictPlaying"
-        class="pt-action-button"
+        class="pt-action-button pt-context__end"
         @click="setMode('free')"
-        style="margin-left: auto;"
       >⏹ Stop strict</button>
     </div>
 
@@ -212,7 +211,7 @@
                 <div x-html="playthroughChartSvg(previousPlaythroughs)"></div>
               </div>
             </template>
-            <p x-show="resultMode === 'training'" style="color: var(--pt-text-muted); margin-top: var(--pt-space-3); font-size: 0.9rem;">
+            <p x-show="resultMode === 'training'" class="pt-modal-note">
               Vous avez complété toutes les mesures du morceau.
             </p>
           </div>
@@ -225,7 +224,7 @@
               <strong x-text="strictAccuracyPercent() + '%'"></strong>
               <span>de notes dans le tempo (<span x-text="strictResult?.hit ?? 0"></span> sur <span x-text="strictResult?.total ?? 0"></span>)</span>
             </p>
-            <ul style="list-style: none; padding: 0; margin: var(--pt-space-3) 0; color: var(--pt-text-muted); font-size: 0.9rem;">
+            <ul class="pt-strict-breakdown">
               <li x-show="strictOffTempoTotal() > 0">
                 ⚠️ <span x-text="strictOffTempoTotal()"></span> hors tempo
                 (<span x-text="strictResult?.offTempoEarly ?? 0"></span> trop tôt,
@@ -243,7 +242,7 @@
 
         <!-- Reinforcement: brief acknowledgement -->
         <template x-if="resultMode === 'reinforcement'">
-          <p style="color: var(--pt-text-muted);">Toutes les mesures ont été renforcées avec succès.</p>
+          <p class="pt-modal-note">Toutes les mesures ont été renforcées avec succès.</p>
         </template>
 
         <footer>
@@ -262,7 +261,7 @@
         <header>
           <p>
             <strong>📜 Historique de pratique</strong>
-            <small x-show="historyTotalMs > 0" style="color: var(--pt-text-muted); margin-left: var(--pt-space-2);">
+            <small x-show="historyTotalMs > 0" class="pt-modal-note pt-modal-note--inline">
               Total : <span x-text="formatDuration(historyTotalMs)"></span>
             </small>
           </p>
@@ -270,24 +269,24 @@
         </header>
 
         <template x-if="scoreHistory.length === 0">
-          <p style="color: var(--pt-text-muted);">Aucun historique pour cette partition.</p>
+          <p class="pt-modal-note">Aucun historique pour cette partition.</p>
         </template>
 
-        <template x-if="playthroughChartSvg()">
+        <template x-if="playthroughChartSvg(historyPlaythroughs)">
           <div class="pt-modal-section">
             <h4>Évolution du temps de jeu</h4>
-            <div x-html="playthroughChartSvg()"></div>
+            <div x-html="playthroughChartSvg(historyPlaythroughs)"></div>
           </div>
         </template>
 
         <template x-if="historyHotMeasures.length > 0">
           <div class="pt-modal-section">
             <h4>Mesures à travailler</h4>
-            <ul style="list-style: none; padding: 0; margin: 0;">
+            <ul class="pt-hot-measures">
               <template x-for="m in historyHotMeasures" :key="m.index">
-                <li style="display: flex; justify-content: space-between; padding: 4px 0; font-size: 0.88rem; border-bottom: 1px solid var(--pt-border);">
+                <li>
                   <span>Mesure <strong x-text="m.index + 1"></strong></span>
-                  <small style="color: var(--pt-text-muted);">
+                  <small>
                     <span x-text="Math.round(m.errorRate * 100)"></span>% d'erreur · <span x-text="m.attempts"></span> tentatives
                   </small>
                 </li>

@@ -42,16 +42,15 @@ export function midiApp() {
     cassetteApiAvailable: false,
     trainingMode: false,
 
-    // Practice tracking (only for scores loaded via URL, not uploads)
+    // scoreUrl is set only for scores loaded from the library, not for
+    // local file uploads — the practice tracker keys on it.
     scoreUrl: null,
     scoreTitle: null,
     scoreComposer: null,
 
-    // Hand selection (both active by default)
     rightHandActive: true,
     leftHandActive: true,
 
-    // UI states
     showHistoryModal: false,
     scoreHistory: [],
     historyTotalMs: 0,
@@ -61,15 +60,12 @@ export function midiApp() {
     showMidiHelpModal: false,
     settingsMenuOpen: false,
 
-    // Unified result modal (replaces showScoreCompleteModal,
-    // showStrictResultModal, showReinforcementCompleteModal,
-    // and the inline trainingComplete banner).
+    // Single result modal for end-of-playthrough (free/training), end-of-
+    // strict run, and end-of-reinforcement. Body switches on resultMode.
     showResultModal: false,
-    resultMode: null, // 'free' | 'training' | 'strict' | 'reinforcement'
-    currentPlaythroughDuration: null,
+    resultMode: null,
     previousPlaythroughs: [],
 
-    // Fingering annotation
     fingeringEnabled: false,
     showFingeringModal: false,
     selectedNoteKey: null,
@@ -79,26 +75,25 @@ export function midiApp() {
     async init() {
       playback.setOnPlaybackEnd(() => { this.isPlaying = false })
 
-      // Sticky-bar offset feeds the cursor's scroll-margin-top (CSS) and
-      // scrollToMeasure() (JS). Update on init, on resize, and whenever the
-      // mode-context band toggles visibility (which happens via currentMode).
-      // Don't $watch osmdInstance directly — Alpine deep-compares via
-      // JSON.stringify, and OSMD has circular references (note ↔ voiceEntry).
-      // afterScoreLoad() calls applyStickyOffset() explicitly instead.
+      // The sticky-bar offset feeds both scrollToMeasure (JS) and
+      // scroll-margin-top (CSS, via --pt-sticky-offset). Recompute on
+      // resize and when the mode-context band toggles visibility.
       applyStickyOffset()
       window.addEventListener('resize', applyStickyOffset)
-      // $nextTick (not queueMicrotask) — the context band toggles via x-show,
-      // and Alpine flips its `display` style on the next tick. A microtask
-      // fires too early and we measure 0 for the band that's about to appear.
+      // $nextTick (not queueMicrotask) — Alpine flips x-show display on
+      // the next tick, so we'd otherwise measure 0 for the band that's
+      // about to appear. osmdInstance is updated via afterScoreLoad()
+      // directly because $watch would deep-compare via JSON.stringify and
+      // OSMD has circular references (note ↔ voiceEntry).
       this.$watch('currentMode', () => this.$nextTick(applyStickyOffset))
       this.$watch('reinforcementMode', () => this.$nextTick(applyStickyOffset))
 
-      await this.loadCassettesList()
-
-      await storage.init()
+      // loadCassettesList hits a backend endpoint, storage.init opens
+      // IndexedDB — independent and OK to run in parallel. practiceTracker
+      // shares the storage instance so its init just hits the same cache.
+      await Promise.all([this.loadCassettesList(), storage.init()])
       await practiceTracker.init()
 
-      // Auto-connect to MIDI device silently
       await midi.connectMIDI({ silent: true, autoSelectFirst: true })
       this.syncMidiState()
 
@@ -181,17 +176,10 @@ export function midiApp() {
         },
       })
 
-      // Check URL parameter for score to load (after callbacks are set)
-      const urlParams = new URLSearchParams(window.location.search)
-      const scoreUrl = urlParams.get('url')
-      if (scoreUrl) {
-        await this.loadScoreFromURL(scoreUrl)
-      }
+      const scoreUrl = new URLSearchParams(window.location.search).get('url')
+      if (scoreUrl) await this.loadScoreFromURL(scoreUrl)
 
-      // Save session when leaving the page
-      window.addEventListener('beforeunload', () => {
-        practiceTracker.endSession()
-      })
+      window.addEventListener('beforeunload', () => practiceTracker.endSession())
     },
 
     syncMidiState() {
@@ -345,17 +333,14 @@ export function midiApp() {
       })
     },
 
-    // Returns the active practice mode for the segmented control and
-    // contextual band. Reinforcement is a *flavor* of training, not a
-    // separate radio option, so the segmented stays on 'training' for it.
+    // Reinforcement is a flavor of training, so currentMode reports
+    // 'training' for it — the segmented control stays on the training tab.
     get currentMode() {
       if (this.isStrictPlaying) return 'strict'
       if (this.trainingMode) return 'training'
       return 'free'
     },
 
-    // Centralized mode switcher used by the segmented control. Stops any
-    // active mode before activating the next one.
     setMode(name) {
       if (this.currentMode === name && name !== 'free') return
       if (name === 'free') {
@@ -398,17 +383,23 @@ export function midiApp() {
     },
 
     showScoreComplete(allPlaythroughs) {
-      const sorted = [...allPlaythroughs].sort((a, b) => new Date(b.startedAt) - new Date(a.startedAt))
-      const mostRecent = sorted[0] || null
-
-      this.currentPlaythroughDuration = mostRecent?.durationMs || null
-
-      // Sort all playthroughs by duration (fastest first), marking the current one
+      const mostRecent = [...allPlaythroughs].sort((a, b) => new Date(b.startedAt) - new Date(a.startedAt))[0]
+      // Ranked fastest-first, current playthrough flagged so the modal
+      // can highlight it.
       this.previousPlaythroughs = allPlaythroughs
         .map((pt) => ({ ...pt, isCurrent: pt === mostRecent }))
         .sort((a, b) => a.durationMs - b.durationMs)
-
       this.openResultModal('free')
+    },
+
+    get currentPlaythroughDuration() {
+      return this.previousPlaythroughs.find((p) => p.isCurrent)?.durationMs ?? null
+    },
+
+    // Flat list of every completed playthrough across days. Used by the
+    // history modal as the chart's data source.
+    get historyPlaythroughs() {
+      return this.scoreHistory.flatMap((d) => d.fullPlaythroughs)
     },
 
     openResultModal(mode) {
@@ -418,6 +409,7 @@ export function midiApp() {
 
     closeResultModal() {
       this.showResultModal = false
+      this.resultMode = null
     },
 
     resultTitle() {
@@ -498,16 +490,12 @@ export function midiApp() {
       return `${playthroughs.length}× en entier (${formatter.format(durations)})`
     },
 
-    // Builds the playthrough-duration evolution chart as an SVG string.
     // Built as a string (not <template x-for>) because Alpine's templates
-    // render in HTML namespace and won't show up inside an <svg>.
-    // Returns '' when there aren't enough points to plot.
-    // Accepts an optional playthroughs array; defaults to flattening
-    // scoreHistory (used by the history modal). The result modal passes
-    // previousPlaythroughs directly so it doesn't need scoreHistory loaded.
+    // render in HTML namespace and won't show up inside <svg>. Returns ''
+    // when fewer than 2 points — the calling x-if then skips the section.
     playthroughChartSvg(playthroughs) {
-      const all = playthroughs ?? this.scoreHistory.flatMap((d) => d.fullPlaythroughs)
-      if (all.length < 2) return ''
+      if (playthroughs.length < 2) return ''
+      const all = playthroughs
 
       const sorted = [...all].sort((a, b) => new Date(a.startedAt) - new Date(b.startedAt))
       const durs = sorted.map((p) => p.durationMs)
