@@ -555,21 +555,25 @@ button.pt-topbar__pill:hover { background: var(--pt-surface-2); border-color: va
 .pt-card__row { display: flex; align-items: center; justify-content: space-between; gap: var(--pt-space-2); flex-wrap: wrap; }
 .pt-card__progress-label { display: flex; justify-content: space-between; font-size: 0.78rem; color: var(--pt-text-muted); }
 
-/* Table layout (used by index, composer, status — restyled from Pico defaults) */
+/* Table layout (restyled from Pico defaults). `overflow: hidden` on the
+   table would clip rounded corners cleanly but it also breaks sticky
+   thead, so the corner radii are applied directly to the four corner
+   cells instead. */
 table {
   background: var(--pt-bg-elevated);
   border: 1px solid var(--pt-border);
   border-radius: var(--pt-radius-lg);
-  overflow: hidden;
   border-collapse: separate;
   border-spacing: 0;
   font-size: 0.92rem;
   --pico-spacing: 0;
 }
-table thead {
-  background: var(--pt-surface-2);
-}
+table thead th:first-child { border-top-left-radius: var(--pt-radius-lg); }
+table thead th:last-child  { border-top-right-radius: var(--pt-radius-lg); }
+table tbody tr:last-child td:first-child { border-bottom-left-radius: var(--pt-radius-lg); }
+table tbody tr:last-child td:last-child  { border-bottom-right-radius: var(--pt-radius-lg); }
 table thead th {
+  background: var(--pt-surface-2);
   padding: var(--pt-space-2) var(--pt-space-4);
   font-size: 0.78rem;
   font-weight: 600;
@@ -635,14 +639,38 @@ table tbody td:nth-child(2) a:hover { color: var(--pt-accent); }
    Library page layout
    ========================================================================== */
 
+/* Library uses an app-shell layout: the page fills the viewport and never
+   scrolls itself; only the sidebar and the table list scroll, each within
+   their own column. The chrome (header + filters + focus) is laid out
+   above the grid as a flex item, so it doesn't need sticky positioning. */
+.pt-library-page { height: 100dvh; max-width: none; padding-inline: var(--pt-space-4); display: flex; flex-direction: column; overflow: hidden; }
+
+.pt-library-chrome {
+  flex: 0 0 auto;
+  padding-block: var(--pt-space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--pt-space-3);
+}
+
 .pt-library {
+  flex: 1 1 auto;
+  min-height: 0;
   display: grid;
   grid-template-columns: 280px 1fr;
   gap: var(--pt-space-6);
-  align-items: start;
+  align-items: stretch;
+  padding-bottom: var(--pt-space-4);
 }
-.pt-library__sidebar { display: flex; flex-direction: column; gap: var(--pt-space-4); position: sticky; top: var(--pt-space-4); max-height: calc(100vh - 32px); overflow-y: auto; }
-.pt-library__main { display: flex; flex-direction: column; gap: var(--pt-space-4); min-width: 0; }
+.pt-library__sidebar {
+  display: flex; flex-direction: column; gap: var(--pt-space-4);
+  overflow-y: auto;
+  min-height: 0;
+}
+.pt-library__main { display: flex; flex-direction: column; min-width: 0; overflow-y: auto; min-height: 0; }
+
+.pt-library__main table thead { position: sticky; top: 0; z-index: 1; }
+.pt-library__main table thead th { background: var(--pt-surface-2); }
 
 .pt-page-header {
   display: flex;
@@ -805,8 +833,13 @@ table tbody td:nth-child(2) a:hover { color: var(--pt-accent); }
 .pt-data-mgmt__body button { width: 100%; margin: 0; }
 
 @media (max-width: 800px) {
+  /* At narrow widths the chrome wraps to 3+ rows and the app-shell layout
+     would leave the table with very little vertical room. Fall back to a
+     normal scrolling document. */
+  .pt-library-page { height: auto; overflow: visible; }
   .pt-library { grid-template-columns: 1fr; }
-  .pt-library__sidebar { position: static; max-height: none; }
+  .pt-library__sidebar, .pt-library__main { overflow-y: visible; min-height: 0; }
+  .pt-library__main table thead { position: static; }
 }
 
 /* =============================================================================

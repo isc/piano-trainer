@@ -13,61 +13,63 @@
     <script defer src="vendor/alpinejs.3.14.9.min.js"></script>
   </head>
   <body>
-    <main class="container pt-page">
-      <div class="pt-page-header">
-        <h1>Bibliothèque</h1>
-        <div class="pt-page-header__actions">
-          <div class="pt-page-header__search">
-            <input
-              type="search"
-              x-model="searchQuery"
-              placeholder="Rechercher une partition…"
-              aria-label="Rechercher une partition"
-            />
+    <main class="container pt-library-page">
+      <div class="pt-library-chrome">
+        <div class="pt-page-header">
+          <h1>Bibliothèque</h1>
+          <div class="pt-page-header__actions">
+            <div class="pt-page-header__search">
+              <input
+                type="search"
+                x-model="searchQuery"
+                placeholder="Rechercher une partition…"
+                aria-label="Rechercher une partition"
+              />
+            </div>
+            <a href="score.html" role="button" class="secondary">📄 Charger une partition</a>
           </div>
-          <a href="score.html" role="button" class="secondary">📄 Charger une partition</a>
         </div>
-      </div>
 
-      <div class="pt-filters" x-show="scores.length > 0">
-        <button
-          class="pt-filter-pill"
-          :aria-pressed="!statusFilter"
-          @click="statusFilter = ''"
-        >Tous <span class="pt-filter-pill__count" x-text="scores.length"></span></button>
-        <template x-for="opt in statusOptions" :key="opt.value">
+        <div class="pt-filters" x-show="scores.length > 0">
           <button
             class="pt-filter-pill"
-            :data-status="opt.value"
-            :aria-pressed="statusFilter === opt.value"
-            @click="statusFilter = (statusFilter === opt.value ? '' : opt.value)"
-            x-show="opt.count > 0"
-          >
-            <span x-text="opt.label"></span>
-            <span class="pt-filter-pill__count" x-text="opt.count"></span>
-          </button>
-        </template>
-        <select x-model="composerFilter" aria-label="Filtrer par compositeur" x-show="composerOptions.length > 1">
-          <option value="">Tous compositeurs</option>
-          <template x-for="c in composerOptions" :key="c">
-            <option :value="c" x-text="c"></option>
+            :aria-pressed="!statusFilter"
+            @click="statusFilter = ''"
+          >Tous <span class="pt-filter-pill__count" x-text="scores.length"></span></button>
+          <template x-for="opt in statusOptions" :key="opt.value">
+            <button
+              class="pt-filter-pill"
+              :data-status="opt.value"
+              :aria-pressed="statusFilter === opt.value"
+              @click="statusFilter = (statusFilter === opt.value ? '' : opt.value)"
+              x-show="opt.count > 0"
+            >
+              <span x-text="opt.label"></span>
+              <span class="pt-filter-pill__count" x-text="opt.count"></span>
+            </button>
           </template>
-        </select>
-      </div>
+          <select x-model="composerFilter" aria-label="Filtrer par compositeur" x-show="composerOptions.length > 1">
+            <option value="">Tous compositeurs</option>
+            <template x-for="c in composerOptions" :key="c">
+              <option :value="c" x-text="c"></option>
+            </template>
+          </select>
+        </div>
 
-      <div class="pt-focus" x-show="focusOptions.length > 0">
-        <span class="pt-focus__label">À travailler :</span>
-        <template x-for="opt in focusOptions" :key="opt.value">
-          <button
-            class="pt-focus__chip"
-            :data-focus="opt.value"
-            :aria-pressed="focusFilter === opt.value"
-            @click="setFocusFilter(opt.value)"
-          >
-            <span x-text="opt.label"></span>
-            <span class="pt-focus__count" x-text="opt.count"></span>
-          </button>
-        </template>
+        <div class="pt-focus" x-show="focusOptions.length > 0">
+          <span class="pt-focus__label">À travailler :</span>
+          <template x-for="opt in focusOptions" :key="opt.value">
+            <button
+              class="pt-focus__chip"
+              :data-focus="opt.value"
+              :aria-pressed="focusFilter === opt.value"
+              @click="setFocusFilter(opt.value)"
+            >
+              <span x-text="opt.label"></span>
+              <span class="pt-focus__count" x-text="opt.count"></span>
+            </button>
+          </template>
+        </div>
       </div>
 
       <div class="pt-library">
