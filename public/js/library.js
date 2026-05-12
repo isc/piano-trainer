@@ -9,6 +9,16 @@ const STATUS_RANK = Object.fromEntries(STATUS_ORDER.map((s, i) => [s, i]))
 const STALE_DAYS = 7
 const STALE_MS = STALE_DAYS * 24 * 60 * 60 * 1000
 
+function trackChromeHeight() {
+  const chrome = document.querySelector('.pt-library-chrome')
+  if (!chrome) return
+  const apply = () => {
+    document.documentElement.style.setProperty('--pt-library-chrome-h', `${chrome.getBoundingClientRect().height}px`)
+  }
+  apply()
+  new ResizeObserver(apply).observe(chrome)
+}
+
 export function libraryApp() {
   const midi = initMidi()
   const storage = initStorage()
@@ -45,16 +55,12 @@ export function libraryApp() {
         this.$watch(key, () => this.syncUrl())
       }
 
-      // The sticky chrome's height feeds the sidebar's `top` and the
-      // sticky table thead's `top` via --pt-library-chrome-h. The chrome
-      // shrinks when focus chips aren't visible, so re-measure on resize.
-      // $nextTick ensures Alpine has rendered the DOM before we measure.
-      this.$nextTick(() => {
-        const chrome = document.querySelector('.pt-library-chrome')
-        if (!chrome) return
-        this.measureChrome()
-        new ResizeObserver(() => this.measureChrome()).observe(chrome)
-      })
+      // Sticky chrome height feeds the sidebar's `top` and the table
+      // thead's `top` via --pt-library-chrome-h. ResizeObserver catches
+      // every reason the chrome can grow/shrink (focus chips appearing,
+      // filters wrapping at narrow widths, window resize) without us
+      // having to enumerate triggers via $watch.
+      this.$nextTick(() => trackChromeHeight())
 
       midi.setCallbacks({
         onNotePlayed: (_, midiNote) => this.handleSearchNote(midiNote),
@@ -191,13 +197,6 @@ export function libraryApp() {
     setStatusFilter(status)     { this.statusFilter   = (this.statusFilter   === status)   ? '' : status },
     setComposerFilter(composer) { this.composerFilter = (this.composerFilter === composer) ? '' : composer },
     setFocusFilter(focus)       { this.focusFilter    = (this.focusFilter    === focus)    ? '' : focus },
-
-    measureChrome() {
-      const chrome = document.querySelector('.pt-library-chrome')
-      if (!chrome) return
-      const h = chrome.getBoundingClientRect().height
-      document.documentElement.style.setProperty('--pt-library-chrome-h', `${h}px`)
-    },
 
     syncUrl() {
       const params = new URLSearchParams()

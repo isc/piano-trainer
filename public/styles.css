@@ -555,10 +555,10 @@ button.pt-topbar__pill:hover { background: var(--pt-surface-2); border-color: va
 .pt-card__row { display: flex; align-items: center; justify-content: space-between; gap: var(--pt-space-2); flex-wrap: wrap; }
 .pt-card__progress-label { display: flex; justify-content: space-between; font-size: 0.78rem; color: var(--pt-text-muted); }
 
-/* Table layout (used by index, composer, status — restyled from Pico defaults).
-   `overflow: hidden` would clip the rounded corners but breaks sticky thead;
-   we use overflow: clip on the wrapper (.pt-library__main) instead, and the
-   first/last rows get their own corner radii. */
+/* Table layout (restyled from Pico defaults). `overflow: hidden` on the
+   table would clip rounded corners cleanly but it also breaks sticky
+   thead, so the corner radii are applied directly to the four corner
+   cells instead. */
 table {
   background: var(--pt-bg-elevated);
   border: 1px solid var(--pt-border);
@@ -674,9 +674,6 @@ table tbody td:nth-child(2) a:hover { color: var(--pt-accent); }
 }
 .pt-library__main { display: flex; flex-direction: column; gap: var(--pt-space-4); min-width: 0; }
 
-/* Table header sticks below the chrome so column labels stay visible
-   while rows scroll. The rounded-card look is preserved by hiding the
-   table's overflow at the wrapper level (it's already inside .pt-library__main). */
 .pt-library__main table thead { position: sticky; top: var(--pt-library-chrome-h); z-index: calc(var(--pt-z-sticky) - 1); }
 .pt-library__main table thead th { background: var(--pt-surface-2); }
 
