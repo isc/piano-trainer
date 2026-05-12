@@ -9,16 +9,6 @@ const STATUS_RANK = Object.fromEntries(STATUS_ORDER.map((s, i) => [s, i]))
 const STALE_DAYS = 7
 const STALE_MS = STALE_DAYS * 24 * 60 * 60 * 1000
 
-function trackChromeHeight() {
-  const chrome = document.querySelector('.pt-library-chrome')
-  if (!chrome) return
-  const apply = () => {
-    document.documentElement.style.setProperty('--pt-library-chrome-h', `${chrome.getBoundingClientRect().height}px`)
-  }
-  apply()
-  new ResizeObserver(apply).observe(chrome)
-}
-
 export function libraryApp() {
   const midi = initMidi()
   const storage = initStorage()
@@ -54,13 +44,6 @@ export function libraryApp() {
       for (const key of ['statusFilter', 'composerFilter', 'focusFilter', 'searchQuery']) {
         this.$watch(key, () => this.syncUrl())
       }
-
-      // Sticky chrome height feeds the sidebar's `top` and the table
-      // thead's `top` via --pt-library-chrome-h. ResizeObserver catches
-      // every reason the chrome can grow/shrink (focus chips appearing,
-      // filters wrapping at narrow widths, window resize) without us
-      // having to enumerate triggers via $watch.
-      this.$nextTick(() => trackChromeHeight())
 
       midi.setCallbacks({
         onNotePlayed: (_, midiNote) => this.handleSearchNote(midiNote),

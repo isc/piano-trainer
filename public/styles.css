@@ -639,42 +639,37 @@ table tbody td:nth-child(2) a:hover { color: var(--pt-accent); }
    Library page layout
    ========================================================================== */
 
-/* Library top chrome (header + filters + focus) sticks to the viewport
-   top so filtering and search stay reachable while the table scrolls.
-   --pt-library-chrome-h is a generous upper bound for the chrome's height
-   (header ~50 + filters ~38 + focus ~38 + padding/breathing) and is used
-   to position the sidebar and the sticky table header below it. */
-:root { --pt-library-chrome-h: 168px; }
+/* Library uses an app-shell layout: the page fills the viewport and never
+   scrolls itself; only the sidebar and the table list scroll, each within
+   their own column. The chrome (header + filters + focus) is laid out
+   above the grid as a flex item, so it doesn't need sticky positioning. */
+.pt-library-page { height: 100dvh; max-width: none; padding-inline: var(--pt-space-4); display: flex; flex-direction: column; overflow: hidden; }
 
 .pt-library-chrome {
-  position: sticky;
-  top: 0;
-  z-index: var(--pt-z-sticky);
-  background: var(--pt-bg);
+  flex: 0 0 auto;
   padding-block: var(--pt-space-4);
-  margin-block: calc(-1 * var(--pt-space-4)) var(--pt-space-2);
   display: flex;
   flex-direction: column;
   gap: var(--pt-space-3);
-  box-shadow: 0 6px 8px -8px rgba(15, 18, 30, 0.18);
 }
 
 .pt-library {
+  flex: 1 1 auto;
+  min-height: 0;
   display: grid;
   grid-template-columns: 280px 1fr;
   gap: var(--pt-space-6);
-  align-items: start;
+  align-items: stretch;
+  padding-bottom: var(--pt-space-4);
 }
 .pt-library__sidebar {
   display: flex; flex-direction: column; gap: var(--pt-space-4);
-  position: sticky;
-  top: var(--pt-library-chrome-h);
-  max-height: calc(100vh - var(--pt-library-chrome-h) - var(--pt-space-3));
   overflow-y: auto;
+  min-height: 0;
 }
-.pt-library__main { display: flex; flex-direction: column; gap: var(--pt-space-4); min-width: 0; }
+.pt-library__main { display: flex; flex-direction: column; min-width: 0; overflow-y: auto; min-height: 0; }
 
-.pt-library__main table thead { position: sticky; top: var(--pt-library-chrome-h); z-index: calc(var(--pt-z-sticky) - 1); }
+.pt-library__main table thead { position: sticky; top: 0; z-index: 1; }
 .pt-library__main table thead th { background: var(--pt-surface-2); }
 
 .pt-page-header {
@@ -838,11 +833,12 @@ table tbody td:nth-child(2) a:hover { color: var(--pt-accent); }
 .pt-data-mgmt__body button { width: 100%; margin: 0; }
 
 @media (max-width: 800px) {
+  /* At narrow widths the chrome wraps to 3+ rows and the app-shell layout
+     would leave the table with very little vertical room. Fall back to a
+     normal scrolling document. */
+  .pt-library-page { height: auto; overflow: visible; }
   .pt-library { grid-template-columns: 1fr; }
-  .pt-library__sidebar { position: static; max-height: none; }
-  /* At narrow widths the chrome wraps to 3+ rows and stealing that much
-     viewport for sticky chrome is more disruptive than helpful. */
-  .pt-library-chrome { position: static; box-shadow: none; }
+  .pt-library__sidebar, .pt-library__main { overflow-y: visible; min-height: 0; }
   .pt-library__main table thead { position: static; }
 }
 
