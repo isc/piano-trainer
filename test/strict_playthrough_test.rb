@@ -10,10 +10,11 @@ class StrictPlaythroughTest < CapybaraTestBase
     load_score('chord.xml', 1)
 
     click_on '⏱ Mode strict'
-    assert_text '⏹ Stop strict'
+    click_on '▶ Démarrer'
+    assert_text '⏸ Pause'
 
-    click_on '⏹ Stop strict'
-    assert_text '⏱ Mode strict'
+    click_on '⏸ Pause'
+    assert_text '▶ Démarrer'
     # Aborted runs do not surface the result modal
     assert_no_text 'Playthrough strict terminé'
   end
@@ -22,8 +23,9 @@ class StrictPlaythroughTest < CapybaraTestBase
     load_score('chord.xml', 1)
 
     # BPM=120 → 2s count-in, ±150ms strict window, ±450ms off-tempo.
-    fill_in 'Tempo en BPM', with: '120'
     click_on '⏱ Mode strict'
+    fill_in 'Tempo en BPM', with: '120'
+    click_on '▶ Démarrer'
 
     # Sync on the engine opening the timing window (cursor arrival at T=2s).
     assert_selector 'svg g.vf-notehead.expected-note', wait: 4
@@ -40,9 +42,9 @@ class StrictPlaythroughTest < CapybaraTestBase
 
   def test_no_input_marks_all_notes_missed
     load_score('chord.xml', 1)
-    fill_in 'Tempo en BPM', with: '120'
-
     click_on '⏱ Mode strict'
+    fill_in 'Tempo en BPM', with: '120'
+    click_on '▶ Démarrer'
 
     # Count-in 2s + off-tempo window 450ms + 300ms tail. Headroom = 4s.
     assert_text 'Playthrough strict terminé', wait: 4
@@ -56,8 +58,9 @@ class StrictPlaythroughTest < CapybaraTestBase
   # results until the cursor walks into them.
   def test_repeat_clears_whole_section_at_boundary_not_per_measure
     load_score('repeat-endings.xml', 4)
-    fill_in 'Tempo en BPM', with: '120'
     click_on '⏱ Mode strict'
+    fill_in 'Tempo en BPM', with: '120'
+    click_on '▶ Démarrer'
 
     # First pass: play m1 (C4), m2 (D4), m3 (E4) correctly. Each is a whole
     # note → 2s/measure at BPM=120. Land ~T=2,4,6.

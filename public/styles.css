@@ -251,6 +251,7 @@ button.pt-topbar__pill:hover { background: var(--pt-surface-2); border-color: va
 .pt-modebar > .pt-segmented,
 .pt-modebar > .pt-hands,
 .pt-modebar > .pt-bpm-field,
+.pt-modebar > .pt-strict-controls,
 .pt-modebar > .pt-action-button { height: 34px; align-items: center; box-sizing: border-box; }
 .pt-modebar > .pt-action-button { display: inline-flex; padding-block: 0; }
 .pt-modebar .pt-segmented button { height: 28px; padding-block: 0; line-height: 28px; }
@@ -373,6 +374,31 @@ button.pt-topbar__pill:hover { background: var(--pt-surface-2); border-color: va
 }
 .pt-action-button:hover { background: var(--pt-surface-2); }
 .pt-action-button.is-active { background: var(--pt-accent-soft); color: var(--pt-accent); border-color: color-mix(in srgb, var(--pt-accent) 20%, transparent); }
+
+/* Strict-mode cluster: pause/play + BPM, sit right after the segmented
+   control. Adopts the strict mode color so the link is visually obvious. */
+.pt-strict-controls {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--pt-space-2);
+}
+.pt-strict-play {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 34px;
+  padding: 0 14px;
+  border-radius: var(--pt-radius-md);
+  border: 1px solid color-mix(in srgb, var(--pt-mode-strict) 30%, transparent);
+  background: var(--pt-mode-strict-bg);
+  color: var(--pt-mode-strict);
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.pt-strict-play:hover { background: color-mix(in srgb, var(--pt-mode-strict-bg) 80%, var(--pt-mode-strict) 10%); }
+.pt-strict-play.is-playing { background: var(--pt-mode-strict); color: var(--pt-text-inverse); border-color: var(--pt-mode-strict); }
 
 /* =============================================================================
    Mode-context band (under modebar, varies per mode)
@@ -1082,6 +1108,7 @@ svg g.vf-notehead.missed-note path { fill: var(--pt-note-missed); }
 }
 .measure-click-area:hover { fill: rgba(124, 58, 237, 0.06); }
 .measure-click-area.selected { fill: rgba(124, 58, 237, 0.14); }
+.measure-click-area.strict-start { fill: color-mix(in srgb, var(--pt-mode-strict) 14%, transparent); stroke: var(--pt-mode-strict); stroke-width: 2; }
 
 .repeat-indicator {
   stroke: var(--pt-mode-training);

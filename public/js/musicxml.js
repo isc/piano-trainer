@@ -47,6 +47,9 @@ let callbacks = {
   onWrongNote: null,
   onPlaythroughRestart: null,
   onReinforcementComplete: null,
+  // Return true from this callback to bypass the default jumpToMeasure
+  // (strict mode uses it to set its start point instead).
+  onMeasureClicked: null,
 }
 
 // Hand selection: by default both hands are active
@@ -94,6 +97,11 @@ export function initMusicXML() {
       }
     },
     jumpToMeasure: (measureIndex) => jumpToMeasure(measureIndex),
+    markStrictStartMeasure: (measureIndex) => {
+      measureClickRectangles.forEach((rect) => rect.classList.remove('strict-start'))
+      if (measureIndex == null) return
+      measureClickRectangles[measureIndex]?.classList.add('strict-start')
+    },
     setCurrentMeasureIndex: (index) => {
       currentMeasureIndex = index
     },
@@ -406,7 +414,9 @@ function setupMeasureClickHandlers() {
         if (!rect) return
 
         const measureIndex = parseInt(rect.dataset.measureIndex, 10)
-        if (!isNaN(measureIndex)) jumpToMeasure(measureIndex)
+        if (isNaN(measureIndex)) return
+        if (callbacks.onMeasureClicked?.(measureIndex)) return
+        jumpToMeasure(measureIndex)
       })
     }
   }
