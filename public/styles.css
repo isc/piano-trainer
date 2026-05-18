@@ -375,30 +375,50 @@ button.pt-topbar__pill:hover { background: var(--pt-surface-2); border-color: va
 .pt-action-button:hover { background: var(--pt-surface-2); }
 .pt-action-button.is-active { background: var(--pt-accent-soft); color: var(--pt-accent); border-color: color-mix(in srgb, var(--pt-accent) 20%, transparent); }
 
-/* Strict-mode cluster: pause/play + BPM, sit right after the segmented
-   control. Adopts the strict mode color so the link is visually obvious. */
+/* Strict-mode cluster: pause/play + BPM live in a single strict-tinted
+   panel so they read as an extension of the "Mode strict" tab. Inner
+   items share the same color/typography and are separated by a divider,
+   not by independent boxes that would look unrelated. */
 .pt-strict-controls {
   display: inline-flex;
   align-items: center;
-  gap: var(--pt-space-2);
+  height: 34px;
+  background: var(--pt-mode-strict-bg);
+  border: 1px solid color-mix(in srgb, var(--pt-mode-strict) 30%, transparent);
+  border-radius: var(--pt-radius-md);
+  overflow: hidden;
+  color: var(--pt-mode-strict);
 }
-.pt-strict-play {
+.pt-strict-controls > * + * { border-left: 1px solid color-mix(in srgb, var(--pt-mode-strict) 20%, transparent); }
+.pt-strict-controls > * {
   display: inline-flex;
   align-items: center;
+  align-self: stretch;
+  margin: 0;
+}
+.pt-strict-play {
   gap: 6px;
-  height: 34px;
   padding: 0 14px;
-  border-radius: var(--pt-radius-md);
-  border: 1px solid color-mix(in srgb, var(--pt-mode-strict) 30%, transparent);
-  background: var(--pt-mode-strict-bg);
+  border: none;
+  background: transparent;
   color: var(--pt-mode-strict);
   font-size: 0.88rem;
   font-weight: 600;
   cursor: pointer;
   white-space: nowrap;
+  width: auto;
 }
-.pt-strict-play:hover { background: color-mix(in srgb, var(--pt-mode-strict-bg) 80%, var(--pt-mode-strict) 10%); }
-.pt-strict-play.is-playing { background: var(--pt-mode-strict); color: var(--pt-text-inverse); border-color: var(--pt-mode-strict); }
+.pt-strict-play:hover { background: color-mix(in srgb, var(--pt-mode-strict-bg) 70%, var(--pt-mode-strict) 12%); }
+.pt-strict-play.is-playing { background: var(--pt-mode-strict); color: var(--pt-text-inverse); }
+.pt-strict-controls .pt-bpm-field {
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  padding: 0 10px;
+  color: inherit;
+}
+.pt-strict-controls .pt-bpm-field input[type="number"] { color: var(--pt-mode-strict); height: 28px; line-height: 28px; }
+.pt-strict-controls .pt-bpm-field__suffix { color: color-mix(in srgb, var(--pt-mode-strict) 75%, transparent); }
 
 /* =============================================================================
    Mode-context band (under modebar, varies per mode)
