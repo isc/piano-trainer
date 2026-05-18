@@ -91,6 +91,11 @@ export function midiApp() {
       // OSMD has circular references (note ↔ voiceEntry).
       this.$watch('currentMode', () => this.$nextTick(applyStickyOffset))
       this.$watch('reinforcementMode', () => this.$nextTick(applyStickyOffset))
+      this.$watch('strictBpm', (v) => {
+        if (this.scoreUrl && Number.isFinite(v) && v > 0) {
+          localStorage.setItem(`pt:strictBpm:${this.scoreUrl}`, String(v))
+        }
+      })
 
       // loadCassettesList hits a backend endpoint, storage.init opens
       // IndexedDB — independent and OK to run in parallel. practiceTracker
@@ -293,7 +298,8 @@ export function midiApp() {
       await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)))
       musicxml.renderScore()
       document.getElementById('score').dataset.renderComplete = Date.now()
-      this.strictBpm = Math.round(getBPM(this.osmdInstance))
+      const savedBpm = this.scoreUrl ? Number(localStorage.getItem(`pt:strictBpm:${this.scoreUrl}`)) : NaN
+      this.strictBpm = Number.isFinite(savedBpm) && savedBpm > 0 ? savedBpm : Math.round(getBPM(this.osmdInstance))
       // Modebar / context band become visible only after the score loads, so
       // recompute the sticky offset now (cf. note in init()).
       applyStickyOffset()
