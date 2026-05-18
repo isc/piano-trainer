@@ -257,11 +257,14 @@
         </template>
 
         <footer>
-          <button class="secondary" x-show="!!scoreUrl" @click="closeResultModal(); openScoreHistory()">📜 Historique</button>
-          <button x-show="resultMode !== 'reinforcement' && measuresToReinforce.length > 0" @click="closeResultModal(); startReinforcementMode()">
-            🎯 Renforcer <span x-text="measuresToReinforce.length"></span> mesure<span x-show="measuresToReinforce.length > 1">s</span>
-          </button>
-          <button @click="closeResultModal()">Fermer</button>
+          <button class="pt-action-button" x-show="!!scoreUrl" @click="closeResultModal(); openScoreHistory()">📜 Historique</button>
+          <button class="pt-action-button" @click="closeResultModal()">Fermer</button>
+          <button
+            class="pt-action-button is-primary"
+            x-show="resultMode !== 'reinforcement' && measuresToReinforce.length > 0"
+            @click="closeResultModal(); startReinforcementMode()"
+            x-text="'🎯 Renforcer ' + measuresToReinforce.length + ' mesure' + (measuresToReinforce.length > 1 ? 's' : '')"
+          ></button>
         </footer>
       </article>
     </dialog>
@@ -355,10 +358,10 @@
           <template x-for="finger in [1, 2, 3, 4, 5]" :key="finger">
             <button @click="appendFinger(finger)" x-text="finger"></button>
           </template>
-          <button @click="removeFingering()" class="secondary outline">×</button>
+          <button class="pt-action-button" @click="removeFingering()">×</button>
         </div>
         <footer>
-          <button @click="validateFingering()">✓ Valider</button>
+          <button class="pt-action-button is-primary" @click="validateFingering()">✓ Valider</button>
         </footer>
       </article>
     </dialog>
@@ -415,7 +418,7 @@
         </template>
 
         <footer>
-          <button @click="showMidiHelpModal = false; connectMIDI()">Réessayer la connexion</button>
+          <button class="pt-action-button is-primary" @click="showMidiHelpModal = false; connectMIDI()">Réessayer la connexion</button>
         </footer>
       </article>
     </dialog>

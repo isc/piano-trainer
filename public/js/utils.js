@@ -6,9 +6,9 @@ export function isTestEnv() {
 // optional mode-context band), used both by scrollToMeasure() and by the
 // CSS scroll-margin-top via the --pt-sticky-offset variable.
 // Headroom kept above the auto-scrolled measure. Has to cover the fingering
-// numerals that hover above the top staff line — otherwise the modebar
-// clips them right where the eyes look first.
-const STICKY_BREATHING_PX = 40
+// numerals that hover above the top staff line (~20px) plus a few pixels
+// breathing — otherwise the modebar clips them right where the eyes look.
+const STICKY_BREATHING_PX = 28
 
 export function getStickyOffset() {
   let offset = STICKY_BREATHING_PX

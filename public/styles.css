@@ -367,6 +367,8 @@ button.pt-topbar__pill:hover { background: var(--pt-surface-2); border-color: va
   border: 1px solid var(--pt-border);
   border-radius: var(--pt-radius-md);
   padding: 6px 14px;
+  margin: 0;
+  width: auto;
   color: var(--pt-text);
   font-size: 0.88rem;
   font-weight: 500;
@@ -374,6 +376,12 @@ button.pt-topbar__pill:hover { background: var(--pt-surface-2); border-color: va
 }
 .pt-action-button:hover { background: var(--pt-surface-2); }
 .pt-action-button.is-active { background: var(--pt-accent-soft); color: var(--pt-accent); border-color: color-mix(in srgb, var(--pt-accent) 20%, transparent); }
+.pt-action-button.is-primary {
+  background: var(--pt-accent);
+  color: var(--pt-text-inverse);
+  border-color: var(--pt-accent);
+}
+.pt-action-button.is-primary:hover { background: var(--pt-accent-strong); border-color: var(--pt-accent-strong); }
 
 /* Strict-mode cluster: pause/play + BPM live in a single strict-tinted
    panel so they read as an extension of the "Mode strict" tab. Inner
