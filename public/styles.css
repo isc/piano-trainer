@@ -1017,15 +1017,29 @@ dialog > article > footer button { margin: 0; }
 .pt-modal-stat--strict strong { color: var(--pt-mode-strict); }
 
 /* Playthrough ranking table (inside result modal). Stays a <table>
-   to keep practice_tracking tests' `table tbody tr` selector working. */
+   to keep practice_tracking tests' `table tbody tr` selector working.
+   Use :first-of-type rather than :first-child because Alpine's
+   <template x-for> sits inside <tbody> as the actual first child, which
+   makes :first-child match nothing on the data rows. */
 .pt-playthrough-table { width: 100%; border: none; background: transparent; border-radius: 0; }
 .pt-playthrough-table tbody td { padding: 6px 8px; font-size: 0.9rem; border-top: 1px solid var(--pt-border); }
-.pt-playthrough-table tbody tr:first-child td { border-top: none; }
+.pt-playthrough-table tbody tr:first-of-type td { border-top: none; }
 .pt-playthrough-table tbody tr:hover { background: transparent; }
 .pt-playthrough-table tbody tr.is-current { background: var(--pt-accent-soft); }
-.pt-playthrough-table tbody tr.is-current td { border-color: transparent; }
 .pt-playthrough-table tbody tr.is-current td:first-child strong { color: var(--pt-accent); }
 .pt-playthrough-table tbody td small { color: var(--pt-text-muted); }
+
+/* Side-by-side layout for the playthrough list + evolution chart inside
+   the result modal. Falls back to a stack at narrow widths. */
+.pt-result-dialog article { max-width: 960px; }
+.pt-result-cols { display: flex; gap: var(--pt-space-6); align-items: flex-start; }
+.pt-result-cols > .pt-playthrough-table { flex: 0 0 auto; width: auto; }
+.pt-result-cols > .pt-modal-section { flex: 1 1 0; min-width: 0; margin-top: 0; }
+.pt-result-cols > .pt-modal-section svg { width: 100%; height: auto; }
+@media (max-width: 700px) {
+  .pt-result-cols { flex-direction: column; }
+  .pt-result-cols > .pt-modal-section { margin-top: var(--pt-space-4); }
+}
 
 .pt-playthrough-list { list-style: none; padding: 0; margin: 0; }
 .pt-playthrough-list li {
