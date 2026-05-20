@@ -118,6 +118,7 @@ function start({
   tolerance = DEFAULT_TOLERANCE_MS,
   offTempoWindow = DEFAULT_OFFTEMPO_WINDOW_MS,
   countInBeats,
+  startMeasureIndex = 0,
   onComplete,
   onProgress,
 }) {
@@ -133,6 +134,16 @@ function start({
   isRunning = true
 
   const sourceMeasures = osmdInstance.Sheet.SourceMeasures
+  // Skip cursor positions covered by measures before the start point so OSMD's
+  // cursor lands on the slice's first note before we start scheduling advances.
+  const cursorSkipSteps = startMeasureIndex > 0
+    ? buildCursorTimeline(
+        allNotes.slice(0, startMeasureIndex),
+        buildCumStartTimes(allNotes.slice(0, startMeasureIndex), sourceMeasures),
+        bpm,
+      ).length
+    : 0
+  allNotes = allNotes.slice(startMeasureIndex)
   const cumStartTimes = buildCumStartTimes(allNotes, sourceMeasures)
   const beatMs = 60_000 / bpm
   const resolvedCountInBeats = countInBeats ?? quarterBeatsInFirstMeasure(sourceMeasures)
@@ -195,7 +206,7 @@ function start({
   }
 
   if (osmdInstance.cursor) {
-    timeouts.push(...scheduleCursorAdvances(osmdInstance.cursor, cursorTimes, { scrollBlock: 'center' }))
+    timeouts.push(...scheduleCursorAdvances(osmdInstance.cursor, cursorTimes, { scrollBlock: 'center', skipSteps: cursorSkipSteps }))
   }
 
   // Schedule repeat-reset class wipes BEFORE the per-event window-open loop:

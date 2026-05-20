@@ -251,6 +251,7 @@ button.pt-topbar__pill:hover { background: var(--pt-surface-2); border-color: va
 .pt-modebar > .pt-segmented,
 .pt-modebar > .pt-hands,
 .pt-modebar > .pt-bpm-field,
+.pt-modebar > .pt-strict-controls,
 .pt-modebar > .pt-action-button { height: 34px; align-items: center; box-sizing: border-box; }
 .pt-modebar > .pt-action-button { display: inline-flex; padding-block: 0; }
 .pt-modebar .pt-segmented button { height: 28px; padding-block: 0; line-height: 28px; }
@@ -366,6 +367,8 @@ button.pt-topbar__pill:hover { background: var(--pt-surface-2); border-color: va
   border: 1px solid var(--pt-border);
   border-radius: var(--pt-radius-md);
   padding: 6px 14px;
+  margin: 0;
+  width: auto;
   color: var(--pt-text);
   font-size: 0.88rem;
   font-weight: 500;
@@ -373,6 +376,57 @@ button.pt-topbar__pill:hover { background: var(--pt-surface-2); border-color: va
 }
 .pt-action-button:hover { background: var(--pt-surface-2); }
 .pt-action-button.is-active { background: var(--pt-accent-soft); color: var(--pt-accent); border-color: color-mix(in srgb, var(--pt-accent) 20%, transparent); }
+.pt-action-button.is-primary {
+  background: var(--pt-accent);
+  color: var(--pt-text-inverse);
+  border-color: var(--pt-accent);
+}
+.pt-action-button.is-primary:hover { background: var(--pt-accent-strong); border-color: var(--pt-accent-strong); }
+
+/* Strict-mode cluster: pause/play + BPM live in a single strict-tinted
+   panel so they read as an extension of the "Mode strict" tab. Inner
+   items share the same color/typography and are separated by a divider,
+   not by independent boxes that would look unrelated. */
+.pt-strict-controls {
+  display: inline-flex;
+  align-items: center;
+  height: 34px;
+  background: var(--pt-mode-strict-bg);
+  border: 1px solid color-mix(in srgb, var(--pt-mode-strict) 30%, transparent);
+  border-radius: var(--pt-radius-md);
+  overflow: hidden;
+  color: var(--pt-mode-strict);
+}
+.pt-strict-controls > * + * { border-left: 1px solid color-mix(in srgb, var(--pt-mode-strict) 20%, transparent); }
+.pt-strict-controls > * {
+  display: inline-flex;
+  align-items: center;
+  align-self: stretch;
+  margin: 0;
+}
+.pt-strict-play {
+  gap: 6px;
+  padding: 0 14px;
+  border: none;
+  background: transparent;
+  color: var(--pt-mode-strict);
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  width: auto;
+}
+.pt-strict-play:hover { background: color-mix(in srgb, var(--pt-mode-strict-bg) 70%, var(--pt-mode-strict) 12%); }
+.pt-strict-play.is-playing { background: var(--pt-mode-strict); color: var(--pt-text-inverse); }
+.pt-strict-controls .pt-bpm-field {
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  padding: 0 10px;
+  color: inherit;
+}
+.pt-strict-controls .pt-bpm-field input[type="number"] { color: var(--pt-mode-strict); height: 28px; line-height: 28px; }
+.pt-strict-controls .pt-bpm-field__suffix { color: color-mix(in srgb, var(--pt-mode-strict) 75%, transparent); }
 
 /* =============================================================================
    Mode-context band (under modebar, varies per mode)
@@ -963,15 +1017,29 @@ dialog > article > footer button { margin: 0; }
 .pt-modal-stat--strict strong { color: var(--pt-mode-strict); }
 
 /* Playthrough ranking table (inside result modal). Stays a <table>
-   to keep practice_tracking tests' `table tbody tr` selector working. */
+   to keep practice_tracking tests' `table tbody tr` selector working.
+   Use :first-of-type rather than :first-child because Alpine's
+   <template x-for> sits inside <tbody> as the actual first child, which
+   makes :first-child match nothing on the data rows. */
 .pt-playthrough-table { width: 100%; border: none; background: transparent; border-radius: 0; }
 .pt-playthrough-table tbody td { padding: 6px 8px; font-size: 0.9rem; border-top: 1px solid var(--pt-border); }
-.pt-playthrough-table tbody tr:first-child td { border-top: none; }
+.pt-playthrough-table tbody tr:first-of-type td { border-top: none; }
 .pt-playthrough-table tbody tr:hover { background: transparent; }
 .pt-playthrough-table tbody tr.is-current { background: var(--pt-accent-soft); }
-.pt-playthrough-table tbody tr.is-current td { border-color: transparent; }
 .pt-playthrough-table tbody tr.is-current td:first-child strong { color: var(--pt-accent); }
 .pt-playthrough-table tbody td small { color: var(--pt-text-muted); }
+
+/* Side-by-side layout for the playthrough list + evolution chart inside
+   the result modal. Falls back to a stack at narrow widths. */
+.pt-result-dialog article { max-width: 960px; }
+.pt-result-cols { display: flex; gap: var(--pt-space-6); align-items: flex-start; }
+.pt-result-cols > .pt-playthrough-table { flex: 0 0 auto; width: auto; }
+.pt-result-cols > .pt-modal-section { flex: 1 1 0; min-width: 0; margin-top: 0; }
+.pt-result-cols > .pt-modal-section svg { width: 100%; height: auto; }
+@media (max-width: 700px) {
+  .pt-result-cols { flex-direction: column; }
+  .pt-result-cols > .pt-modal-section { margin-top: var(--pt-space-4); }
+}
 
 .pt-playthrough-list { list-style: none; padding: 0; margin: 0; }
 .pt-playthrough-list li {
@@ -1082,6 +1150,7 @@ svg g.vf-notehead.missed-note path { fill: var(--pt-note-missed); }
 }
 .measure-click-area:hover { fill: rgba(124, 58, 237, 0.06); }
 .measure-click-area.selected { fill: rgba(124, 58, 237, 0.14); }
+.measure-click-area.strict-start { fill: color-mix(in srgb, var(--pt-mode-strict) 14%, transparent); stroke: var(--pt-mode-strict); stroke-width: 2; }
 
 .repeat-indicator {
   stroke: var(--pt-mode-training);

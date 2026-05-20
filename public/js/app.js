@@ -35,6 +35,10 @@ export function midiApp() {
     replayEnded: false,
     isPlaying: false,
     isStrictPlaying: false,
+    // Strict mode is now decoupled from playback: selecting the tab arms
+    // strict mode, the ▶/⏸ control next to it starts/stops the engine.
+    strictSelected: false,
+    strictStartMeasure: 0,
     strictBpm: 120,
     strictResult: null,
     cassettes: [],
@@ -87,6 +91,11 @@ export function midiApp() {
       // OSMD has circular references (note ↔ voiceEntry).
       this.$watch('currentMode', () => this.$nextTick(applyStickyOffset))
       this.$watch('reinforcementMode', () => this.$nextTick(applyStickyOffset))
+      this.$watch('strictBpm', (v) => {
+        if (this.scoreUrl && Number.isFinite(v) && v > 0) {
+          localStorage.setItem(`pt:strictBpm:${this.scoreUrl}`, String(v))
+        }
+      })
 
       // loadCassettesList hits a backend endpoint, storage.init opens
       // IndexedDB — independent and OK to run in parallel. practiceTracker
@@ -162,6 +171,13 @@ export function midiApp() {
           // Start new free session so subsequent play is tracked
           const metadata = musicxml.getScoreMetadata()
           practiceTracker.startSession(this.scoreUrl, metadata.title, metadata.composer, 'free', metadata.totalMeasures)
+        },
+        onMeasureClicked: (measureIndex) => {
+          if (!this.strictSelected) return false
+          if (this.isStrictPlaying) strictPlaythrough.stop()
+          this.strictStartMeasure = measureIndex
+          musicxml.markStrictStartMeasure(measureIndex)
+          return true
         },
       })
 
@@ -282,7 +298,8 @@ export function midiApp() {
       await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)))
       musicxml.renderScore()
       document.getElementById('score').dataset.renderComplete = Date.now()
-      this.strictBpm = Math.round(getBPM(this.osmdInstance))
+      const savedBpm = this.scoreUrl ? Number(localStorage.getItem(`pt:strictBpm:${this.scoreUrl}`)) : NaN
+      this.strictBpm = Number.isFinite(savedBpm) && savedBpm > 0 ? savedBpm : Math.round(getBPM(this.osmdInstance))
       // Modebar / context band become visible only after the score loads, so
       // recompute the sticky offset now (cf. note in init()).
       applyStickyOffset()
@@ -306,17 +323,13 @@ export function midiApp() {
     },
 
     toggleStrictPlaythrough() {
-      if (strictPlaythrough.isPlaying) {
+      if (this.isStrictPlaying) {
         strictPlaythrough.stop()
         return
       }
 
       if (this.isPlaying) playback.stop()
       this.isPlaying = false
-      if (this.trainingMode) {
-        this.trainingMode = false
-        musicxml.setTrainingMode(false)
-      }
 
       strictPlaythrough.setActiveHands({ right: this.rightHandActive, left: this.leftHandActive })
       this.isStrictPlaying = true
@@ -325,10 +338,17 @@ export function midiApp() {
         bpm: this.strictBpm,
         allNotes: musicxml.getAllNotes(),
         osmdInstance: musicxml.getOsmdInstance(),
+        startMeasureIndex: this.strictStartMeasure,
         onComplete: (result) => {
           this.isStrictPlaying = false
           this.strictResult = result
-          if (!result.aborted) this.openResultModal('strict')
+          if (!result.aborted) {
+            // A clean finish resets the start point so the next ▶ replays
+            // from the top; aborted runs keep it for retry from the same spot.
+            this.strictStartMeasure = 0
+            musicxml.markStrictStartMeasure(null)
+            this.openResultModal('strict')
+          }
         },
       })
     },
@@ -336,31 +356,23 @@ export function midiApp() {
     // Reinforcement is a flavor of training, so currentMode reports
     // 'training' for it — the segmented control stays on the training tab.
     get currentMode() {
-      if (this.isStrictPlaying) return 'strict'
+      if (this.strictSelected) return 'strict'
       if (this.trainingMode) return 'training'
       return 'free'
     },
 
     setMode(name) {
-      if (this.currentMode === name && name !== 'free') return
-      if (name === 'free') {
-        if (this.isStrictPlaying) this.toggleStrictPlaythrough()
-        if (this.trainingMode) this.toggleTrainingMode()
-        return
+      if (this.currentMode === name) return
+      if (this.isStrictPlaying) strictPlaythrough.stop()
+      if (this.strictSelected) {
+        this.strictSelected = false
+        this.strictStartMeasure = 0
+        musicxml.markStrictStartMeasure(null)
       }
-      if (name === 'training') {
-        if (this.isStrictPlaying) this.toggleStrictPlaythrough()
-        if (!this.trainingMode) this.toggleTrainingMode()
-        return
-      }
-      if (name === 'strict') {
-        if (this.trainingMode) {
-          this.trainingMode = false
-          musicxml.setTrainingMode(false)
-        }
-        if (!this.isStrictPlaying) this.toggleStrictPlaythrough()
-        return
-      }
+      if (this.trainingMode) this.toggleTrainingMode()
+
+      if (name === 'training') this.toggleTrainingMode()
+      else if (name === 'strict') this.strictSelected = true
     },
 
     strictAccuracyPercent() {

@@ -73,21 +73,34 @@
         >⏱ Mode strict</button>
       </div>
 
-      <!-- BPM (always visible alongside the strict option, since strict reads it) -->
-      <label class="pt-bpm-field">
-        <span class="pt-sr-only">Tempo en BPM</span>
-        <input
-          id="strict-bpm"
-          type="number"
-          min="20"
-          max="300"
-          step="1"
-          x-model.number="strictBpm"
-          :disabled="isStrictPlaying"
-          aria-label="Tempo en BPM"
-        />
-        <span class="pt-bpm-field__suffix">BPM</span>
-      </label>
+      <!-- Strict-mode controls: pause/play + BPM. Only shown when strict is
+           the selected mode; tied visually to the segmented control so users
+           know these belong to strict. -->
+      <template x-if="currentMode === 'strict'">
+        <div class="pt-strict-controls">
+          <button
+            class="pt-strict-play"
+            :class="{ 'is-playing': isStrictPlaying }"
+            @click="toggleStrictPlaythrough"
+            :aria-label="isStrictPlaying ? 'Pause' : 'Démarrer'"
+            x-text="isStrictPlaying ? '⏸ Pause' : (strictStartMeasure > 0 ? '▶ Reprendre mesure ' + (strictStartMeasure + 1) : '▶ Démarrer')"
+          ></button>
+          <label class="pt-bpm-field">
+            <span class="pt-sr-only">Tempo en BPM</span>
+            <input
+              id="strict-bpm"
+              type="number"
+              min="20"
+              max="300"
+              step="1"
+              x-model.number="strictBpm"
+              :disabled="isStrictPlaying"
+              aria-label="Tempo en BPM"
+            />
+            <span class="pt-bpm-field__suffix">BPM</span>
+          </label>
+        </div>
+      </template>
 
       <div class="pt-hands">
         <label class="pt-hands__option">
@@ -117,15 +130,13 @@
       ></button>
     </nav>
 
-    <!-- Mode-context band: shows mode-specific live state -->
-    <div class="pt-context pt-context--strict" x-show="currentMode === 'strict' && !!osmdInstance">
-      <strong x-text="isStrictPlaying ? '⏱ Strict en cours…' : '⏱ Mode strict prêt'"></strong>
-      <span x-show="!isStrictPlaying">BPM réglé sur <strong x-text="strictBpm"></strong>. Lancez la lecture pour démarrer.</span>
-      <button
-        x-show="isStrictPlaying"
-        class="pt-action-button pt-context__end"
-        @click="setMode('free')"
-      >⏹ Stop strict</button>
+    <!-- Mode-context band: shows mode-specific hints. Strict-mode controls
+         now live in the sticky modebar; the band only carries a passive
+         hint about clicking measures to set a start point. -->
+    <div class="pt-context pt-context--strict" x-show="currentMode === 'strict' && !isStrictPlaying && !!osmdInstance">
+      <strong>⏱ Mode strict</strong>
+      <span x-show="strictStartMeasure === 0">Cliquez sur une mesure pour démarrer la lecture à partir de ce point.</span>
+      <span x-show="strictStartMeasure > 0">Départ à la mesure <strong x-text="strictStartMeasure + 1"></strong>.</span>
     </div>
 
     <div class="pt-context pt-context--training" x-show="currentMode === 'training' && !reinforcementMode && !!osmdInstance">
@@ -179,7 +190,7 @@
     </main>
 
     <!-- Unified result modal: replaces 4 legacy dialogs/banners -->
-    <dialog :open="showResultModal">
+    <dialog class="pt-result-dialog" :open="showResultModal">
       <article>
         <header>
           <p><strong x-text="resultTitle()"></strong></p>
@@ -192,25 +203,27 @@
             <p x-show="currentPlaythroughDuration && previousPlaythroughs.length === 0" class="pt-modal-stat pt-modal-stat--accent">
               Temps : <strong x-text="formatDuration(currentPlaythroughDuration)"></strong>
             </p>
-            <table class="pt-playthrough-table" x-show="previousPlaythroughs.length > 0">
-              <tbody>
-                <template x-for="(pt, idx) in previousPlaythroughs" :key="idx">
-                  <tr :class="{ 'is-current': pt.isCurrent }">
-                    <td>
-                      <strong x-show="pt.isCurrent" x-text="formatDuration(pt.durationMs)"></strong>
-                      <span x-show="!pt.isCurrent" x-text="formatDuration(pt.durationMs)"></span>
-                    </td>
-                    <td><small x-text="pt.isCurrent ? 'maintenant' : formatDate(pt.startedAt)"></small></td>
-                  </tr>
-                </template>
-              </tbody>
-            </table>
-            <template x-if="playthroughChartSvg(previousPlaythroughs)">
-              <div class="pt-modal-section">
-                <h4>Évolution du temps de jeu</h4>
-                <div x-html="playthroughChartSvg(previousPlaythroughs)"></div>
-              </div>
-            </template>
+            <div class="pt-result-cols">
+              <table class="pt-playthrough-table" x-show="previousPlaythroughs.length > 0">
+                <tbody>
+                  <template x-for="(pt, idx) in previousPlaythroughs" :key="idx">
+                    <tr :class="{ 'is-current': pt.isCurrent }">
+                      <td>
+                        <strong x-show="pt.isCurrent" x-text="formatDuration(pt.durationMs)"></strong>
+                        <span x-show="!pt.isCurrent" x-text="formatDuration(pt.durationMs)"></span>
+                      </td>
+                      <td><small x-text="pt.isCurrent ? 'maintenant' : formatDate(pt.startedAt)"></small></td>
+                    </tr>
+                  </template>
+                </tbody>
+              </table>
+              <template x-if="playthroughChartSvg(previousPlaythroughs)">
+                <div class="pt-modal-section">
+                  <h4>Évolution du temps de jeu</h4>
+                  <div x-html="playthroughChartSvg(previousPlaythroughs)"></div>
+                </div>
+              </template>
+            </div>
             <p x-show="resultMode === 'training'" class="pt-modal-note">
               Vous avez complété toutes les mesures du morceau.
             </p>
@@ -246,11 +259,14 @@
         </template>
 
         <footer>
-          <button class="secondary" x-show="!!scoreUrl" @click="closeResultModal(); openScoreHistory()">📜 Historique</button>
-          <button x-show="resultMode !== 'reinforcement' && measuresToReinforce.length > 0" @click="closeResultModal(); startReinforcementMode()">
-            🎯 Renforcer <span x-text="measuresToReinforce.length"></span> mesure<span x-show="measuresToReinforce.length > 1">s</span>
-          </button>
-          <button @click="closeResultModal()">Fermer</button>
+          <button class="pt-action-button" x-show="!!scoreUrl" @click="closeResultModal(); openScoreHistory()">📜 Historique</button>
+          <button class="pt-action-button" @click="closeResultModal()">Fermer</button>
+          <button
+            class="pt-action-button is-primary"
+            x-show="resultMode !== 'reinforcement' && measuresToReinforce.length > 0"
+            @click="closeResultModal(); startReinforcementMode()"
+            x-text="'🎯 Renforcer ' + measuresToReinforce.length + ' mesure' + (measuresToReinforce.length > 1 ? 's' : '')"
+          ></button>
         </footer>
       </article>
     </dialog>
@@ -344,10 +360,10 @@
           <template x-for="finger in [1, 2, 3, 4, 5]" :key="finger">
             <button @click="appendFinger(finger)" x-text="finger"></button>
           </template>
-          <button @click="removeFingering()" class="secondary outline">×</button>
+          <button class="pt-action-button" @click="removeFingering()">×</button>
         </div>
         <footer>
-          <button @click="validateFingering()">✓ Valider</button>
+          <button class="pt-action-button is-primary" @click="validateFingering()">✓ Valider</button>
         </footer>
       </article>
     </dialog>
@@ -404,7 +420,7 @@
         </template>
 
         <footer>
-          <button @click="showMidiHelpModal = false; connectMIDI()">Réessayer la connexion</button>
+          <button class="pt-action-button is-primary" @click="showMidiHelpModal = false; connectMIDI()">Réessayer la connexion</button>
         </footer>
       </article>
     </dialog>

@@ -152,8 +152,9 @@ function expandOrnamentTimings(notes) {
 // Schedule cursor.next() advances on the given timeline. Returns the timeout
 // IDs so the caller can register them with its own teardown list. The cursor
 // starts visible at the first position; subsequent ticks advance it.
-export function scheduleCursorAdvances(cursor, cursorTimes, { scrollBlock = 'start' } = {}) {
+export function scheduleCursorAdvances(cursor, cursorTimes, { scrollBlock = 'start', skipSteps = 0 } = {}) {
   cursor.reset()
+  for (let i = 0; i < skipSteps; i++) cursor.next()
   cursor.show()
   syncCursorStyle(cursor)
   let lastCursorTop = null
