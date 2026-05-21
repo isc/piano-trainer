@@ -187,16 +187,16 @@ describe('practiceTracker', () => {
       expect(stats.status).toBe('dechiffrage')
     })
 
-    it('progresses to repertoire after mastery on 3+ days', async () => {
-      const days = ['2026-01-01', '2026-01-02', '2026-01-03']
+    it('progresses to repertoire once every measure has 10+ clean attempts, 3+ days, and 10+ completions', async () => {
+      // 10 sessions × 1 clean attempt/measure = 10 cleanAttempts per measure
+      // 10 markScoreCompleted = 10 timesCompleted
+      // First 3 sessions land on distinct days to satisfy practiceDays >= 3
+      const days = ['2026-01-01', '2026-01-02', '2026-01-03', ...Array(7).fill('2026-01-04')]
 
       for (const day of days) {
         tracker.startSession('/scores/test.xml', 'Test', 'Composer', 'free')
 
-        // Both measures: 2 clean attempts per session → 6 total after 3 sessions
         for (const m of [0, 1]) {
-          tracker.startMeasureAttempt(m)
-          tracker.endMeasureAttempt(true)
           tracker.startMeasureAttempt(m)
           tracker.endMeasureAttempt(true)
         }
@@ -204,11 +204,9 @@ describe('practiceTracker', () => {
         tracker.markScoreCompleted()
         const session = await tracker.endSession()
 
-        // Override startedAt to simulate different days
         session.startedAt = `${day}T10:00:00.000Z`
         await storage.saveSession(session)
 
-        // Manually patch practiceDays in the aggregate
         const agg = await storage.getAggregate('/scores/test.xml')
         if (agg && !agg.practiceDays.includes(day)) {
           agg.practiceDays.push(day)
@@ -220,11 +218,11 @@ describe('practiceTracker', () => {
       expect(stats.status).toBe('repertoire')
     })
 
-    it('stays perfectionnement with mastery but only 1 day of practice', async () => {
+    it('stays perfectionnement when only one session has played the piece (mastery alone is not enough)', async () => {
       tracker.startSession('/scores/test.xml', 'Test', 'Composer', 'free')
 
       for (const m of [0, 1]) {
-        for (let i = 0; i < 5; i++) {
+        for (let i = 0; i < 10; i++) {
           tracker.startMeasureAttempt(m)
           tracker.endMeasureAttempt(true)
         }

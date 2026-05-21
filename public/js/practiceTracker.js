@@ -245,18 +245,18 @@ export function initPracticeTracker(storageInstance = null) {
     const measureValues = Object.values(aggregate.measures)
     if (measureValues.length === 0) return 'dechiffrage'
 
-    const measuresWithCleanAttempts = measureValues.filter((m) => m.cleanAttempts >= 1).length
     const measuresWithEnoughClean = measureValues.filter((m) => m.cleanAttempts >= 3).length
-    const measuresWithMasteryClean = measureValues.filter((m) => m.cleanAttempts >= 5).length
+    const measuresWithMasteryClean = measureValues.filter((m) => m.cleanAttempts >= 10).length
 
     const totalMeasures = measureValues.length
-    const cleanRatio = measuresWithCleanAttempts / totalMeasures
     const enoughCleanRatio = measuresWithEnoughClean / totalMeasures
     const masteryCleanRatio = measuresWithMasteryClean / totalMeasures
 
-    if (masteryCleanRatio === 1 && (aggregate.practiceDays || []).length >= 3) {
-      return 'repertoire'
-    }
+    const repertoireReady =
+      masteryCleanRatio === 1 &&
+      (aggregate.practiceDays || []).length >= 3 &&
+      (aggregate.timesCompleted || 0) >= 10
+    if (repertoireReady) return 'repertoire'
 
     if (enoughCleanRatio >= 0.5 && aggregate.timesCompleted > 0) {
       return 'perfectionnement'
