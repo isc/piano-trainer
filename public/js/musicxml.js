@@ -476,12 +476,32 @@ function jumpToMeasure(measureIndex) {
   }
 }
 
+// Vertical band scanned above a measure's click rect to catch fingerings,
+// dynamics, tempo markings — anything the measure rect itself doesn't bound.
+// Smaller than a typical system spacing (~150px) so we don't grab elements
+// from the previous system.
+const SYSTEM_TOP_LOOKUP_PX = 80
+
+function findSystemTopAnchor(measureRect, bbox) {
+  const svg = measureRect.ownerSVGElement
+  if (!svg) return bbox.top
+  let topmost = bbox.top
+  for (const ann of svg.querySelectorAll('text')) {
+    const r = ann.getBoundingClientRect()
+    if (r.bottom > bbox.top + 1) continue
+    if (r.top < bbox.top - SYSTEM_TOP_LOOKUP_PX) continue
+    if (r.top < topmost) topmost = r.top
+  }
+  return topmost
+}
+
 function scrollToMeasure(measureIndex) {
   const rect = measureClickRectangles[measureIndex]
   if (!rect) return
 
   const bbox = rect.getBoundingClientRect()
-  const targetY = window.scrollY + bbox.top - getStickyOffset()
+  const anchorTop = findSystemTopAnchor(rect, bbox)
+  const targetY = window.scrollY + anchorTop - getStickyOffset()
   window.scrollTo({ top: Math.max(0, targetY), behavior: 'smooth' })
 }
 
