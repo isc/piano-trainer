@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { PERIODS, getPeriodForComposer, periodLabel } from '../../public/js/musicalPeriods.js'
+import { PERIODS, getPeriodForComposer } from '../../public/js/musicalPeriods.js'
 
 describe('musicalPeriods', () => {
   it('returns the canonical period for each known composer', () => {
@@ -17,12 +17,12 @@ describe('musicalPeriods', () => {
     expect(getPeriodForComposer(undefined)).toBeNull()
   })
 
-  it('matches every period value to a PERIODS entry', () => {
+  it('returns only values that exist in PERIODS', () => {
     // Defensive check so a typo in the map can't silently break the filter UI
     // (the dropdown reads labels from PERIODS).
     const knownValues = new Set(PERIODS.map((p) => p.value))
-    expect(knownValues.has('baroque')).toBe(true)
-    expect(periodLabel('baroque')).toBe('Baroque')
-    expect(periodLabel('unknown')).toBe('unknown')
+    for (const composer of ['J.S. Bach', 'Mozart', 'Chopin', 'Debussy', 'Luo Ni', 'Traditional']) {
+      expect(knownValues.has(getPeriodForComposer(composer))).toBe(true)
+    }
   })
 })

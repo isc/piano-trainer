@@ -37,7 +37,3 @@ export const PERIODS = [
 export function getPeriodForComposer(composer) {
   return COMPOSER_PERIODS[composer] || null
 }
-
-export function periodLabel(value) {
-  return PERIODS.find((p) => p.value === value)?.label || value
-}
