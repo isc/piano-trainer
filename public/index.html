@@ -54,6 +54,12 @@
               <option :value="c" x-text="c"></option>
             </template>
           </select>
+          <select x-model="periodFilter" aria-label="Filtrer par période musicale" x-show="periodOptions.length > 1">
+            <option value="">Toutes périodes</option>
+            <template x-for="p in periodOptions" :key="p.value">
+              <option :value="p.value" x-text="`${p.label} (${p.count})`"></option>
+            </template>
+          </select>
         </div>
 
         <div class="pt-focus" x-show="focusOptions.length > 0">

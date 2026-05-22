@@ -60,6 +60,25 @@ class LibraryFiltersTest < CapybaraTestBase
     refute_match(/composer=/, page.current_url)
   end
 
+  def test_period_filter_narrows_library_to_one_era
+    select 'Romantique', from: 'Filtrer par période musicale', match: :first
+    assert_current_path %r{\?.*period=romantique}
+
+    composers = all('tbody tr td:nth-child(2)').map(&:text).uniq
+    refute_empty composers
+    composers.each do |c|
+      refute_match(/Bach|Mozart|Debussy|Traditional/, c, "Expected only Romantic composers, got #{c}")
+    end
+  end
+
+  def test_period_filter_persists_via_url_param
+    visit '/index.html?period=baroque'
+
+    composers = all('tbody tr td:nth-child(2)').map(&:text).uniq
+    refute_empty composers
+    composers.each { |c| assert_match(/Bach|Pachelbel|Petzold|Handel/, c) }
+  end
+
   private
 
   def inject_aggregates
