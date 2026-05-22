@@ -35,15 +35,6 @@ export function libraryApp() {
     aggregatesByScore: {},
 
     async init() {
-      // Restore filters from URL params so /index.html?status=…&composer=…
-      // is bookmarkable. replaceState (not push) on changes keeps the back
-      // button useful.
-      const params = new URLSearchParams(window.location.search)
-      this.statusFilter = params.get('status') || ''
-      this.composerFilter = params.get('composer') || ''
-      this.periodFilter = params.get('period') || ''
-      this.focusFilter = params.get('focus') || ''
-      this.searchQuery = params.get('q') || ''
       for (const key of ['statusFilter', 'composerFilter', 'periodFilter', 'focusFilter', 'searchQuery']) {
         this.$watch(key, () => this.syncUrl())
       }
@@ -85,6 +76,21 @@ export function libraryApp() {
       }
 
       this.scores = data.scores
+
+      // Restore filters from URL once the scores are in: x-model on the
+      // <select> dropdowns only matches an existing <option>, and those
+      // are rendered by an x-for over periodOptions / composerOptions
+      // which depend on this.scores. Setting the filters before this
+      // makes Alpine bind to a still-empty option list and silently keep
+      // the default "Toutes périodes" / "Tous compositeurs". $nextTick
+      // gives the template x-for a chance to flush before x-model rebinds.
+      await this.$nextTick()
+      const params = new URLSearchParams(window.location.search)
+      this.statusFilter = params.get('status') || ''
+      this.composerFilter = params.get('composer') || ''
+      this.periodFilter = params.get('period') || ''
+      this.focusFilter = params.get('focus') || ''
+      this.searchQuery = params.get('q') || ''
 
       await this.reloadDailyLogs()
     },

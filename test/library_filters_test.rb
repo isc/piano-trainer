@@ -48,8 +48,7 @@ class LibraryFiltersTest < CapybaraTestBase
   def test_filters_persist_via_url_params
     visit '/index.html?status=repertoire&composer=Chopin'
 
-    titles = all('tbody tr td:first-child').map(&:text)
-    assert_equal ['Waltz in A Minor'], titles
+    assert_selector 'tbody tr', count: 1, text: 'Waltz in A Minor'
   end
 
   def test_clicking_active_filter_clears_it
@@ -74,8 +73,13 @@ class LibraryFiltersTest < CapybaraTestBase
   def test_period_filter_persists_via_url_param
     visit '/index.html?period=baroque'
 
+    # Wait for init() to finish wiring URL filters into the table before
+    # snapshotting composers — init now defers filter restoration to a
+    # $nextTick so the select dropdowns can pick up their option.
+    assert_selector 'tbody tr', minimum: 1
+    assert_no_selector 'tbody tr td:nth-child(2)', text: /Mozart|Debussy|Chopin/
+
     composers = all('tbody tr td:nth-child(2)').map(&:text).uniq
-    refute_empty composers
     composers.each { |c| assert_match(/Bach|Pachelbel|Petzold|Handel/, c) }
   end
 
