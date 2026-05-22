@@ -2,6 +2,7 @@ import { initMidi } from './midi.js'
 import { initPracticeTracker } from './practiceTracker.js'
 import { initStorage } from './storage.js'
 import { formatDuration, formatDate, formatRelativeDate, statusLabel } from './utils.js'
+import { PERIODS, getPeriodForComposer } from './musicalPeriods.js'
 
 const MIN_MATCH = 5
 const STATUS_ORDER = ['dechiffrage', 'perfectionnement', 'repertoire']
@@ -24,6 +25,7 @@ export function libraryApp() {
     searchQuery: '',
     statusFilter: '',
     composerFilter: '',
+    periodFilter: '',    // '' | 'baroque' | 'classique' | 'romantique' | 'moderne' | 'contemporain' | 'traditionnel'
     focusFilter: '',     // '' | 'reinforce' | 'near-mastery' | 'stale'
     sortBy: 'lastPlayed', // 'title' | 'composer' | 'status' | 'practice' | 'lastPlayed'
     sortDir: 'desc',      // 'asc' | 'desc'
@@ -39,9 +41,10 @@ export function libraryApp() {
       const params = new URLSearchParams(window.location.search)
       this.statusFilter = params.get('status') || ''
       this.composerFilter = params.get('composer') || ''
+      this.periodFilter = params.get('period') || ''
       this.focusFilter = params.get('focus') || ''
       this.searchQuery = params.get('q') || ''
-      for (const key of ['statusFilter', 'composerFilter', 'focusFilter', 'searchQuery']) {
+      for (const key of ['statusFilter', 'composerFilter', 'periodFilter', 'focusFilter', 'searchQuery']) {
         this.$watch(key, () => this.syncUrl())
       }
 
@@ -141,6 +144,7 @@ export function libraryApp() {
       }
       if (this.statusFilter)   results = results.filter((s) => this.getStatusFor(s) === this.statusFilter)
       if (this.composerFilter) results = results.filter((s) => s.composer === this.composerFilter)
+      if (this.periodFilter)   results = results.filter((s) => getPeriodForComposer(s.composer) === this.periodFilter)
       if (this.focusFilter)    results = results.filter((s) => this.matchesFocus(s, this.focusFilter))
       const dir = this.sortDir === 'asc' ? 1 : -1
       return results.toSorted((a, b) => {
@@ -179,12 +183,14 @@ export function libraryApp() {
     // Clicking the same value clears the filter — natural toggle for pills.
     setStatusFilter(status)     { this.statusFilter   = (this.statusFilter   === status)   ? '' : status },
     setComposerFilter(composer) { this.composerFilter = (this.composerFilter === composer) ? '' : composer },
+    setPeriodFilter(period)     { this.periodFilter   = (this.periodFilter   === period)   ? '' : period },
     setFocusFilter(focus)       { this.focusFilter    = (this.focusFilter    === focus)    ? '' : focus },
 
     syncUrl() {
       const params = new URLSearchParams()
       if (this.statusFilter)   params.set('status', this.statusFilter)
       if (this.composerFilter) params.set('composer', this.composerFilter)
+      if (this.periodFilter)   params.set('period', this.periodFilter)
       if (this.focusFilter)    params.set('focus', this.focusFilter)
       if (this.searchQuery)    params.set('q', this.searchQuery)
       const qs = params.toString()
@@ -204,6 +210,19 @@ export function libraryApp() {
     get composerOptions() {
       const set = new Set(this.scores.map((s) => s.composer).filter(Boolean))
       return [...set].sort((a, b) => a.localeCompare(b, 'fr'))
+    },
+
+    // Surface only periods that actually have scores in the library, so the
+    // dropdown doesn't list dead-end options.
+    get periodOptions() {
+      const counts = {}
+      for (const score of this.scores) {
+        const p = getPeriodForComposer(score.composer)
+        if (p) counts[p] = (counts[p] || 0) + 1
+      }
+      return PERIODS
+        .filter((p) => counts[p.value] > 0)
+        .map((p) => ({ ...p, count: counts[p.value] }))
     },
 
     // Each focus chip filters the table to an actionable subset — the user
