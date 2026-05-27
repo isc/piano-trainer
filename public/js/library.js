@@ -39,6 +39,19 @@ export function libraryApp() {
         this.$watch(key, () => this.syncUrl())
       }
 
+      // "/" focuses the search input (GitHub / YouTube convention). Skip when
+      // the user is already typing somewhere so the slash isn't swallowed.
+      document.addEventListener('keydown', (e) => {
+        if (e.key !== '/' || e.metaKey || e.ctrlKey || e.altKey) return
+        if (e.target instanceof Element &&
+            e.target.matches('input, textarea, select, [contenteditable="true"]')) return
+        const search = document.querySelector('input[type="search"]')
+        if (!search) return
+        e.preventDefault()
+        search.focus()
+        search.select()
+      })
+
       midi.setCallbacks({
         onNotePlayed: (_, midiNote) => this.handleSearchNote(midiNote),
       })
