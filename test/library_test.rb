@@ -77,6 +77,24 @@ class LibraryTest < CapybaraTestBase
     assert_current_path '/score.html'
   end
 
+  def test_slash_shortcut_focuses_search_input
+    assert_selector 'tbody tr', minimum: 1  # wait for init() to finish
+    refute page.evaluate_script("document.activeElement === document.querySelector('input[type=search]')")
+
+    page.execute_script("document.dispatchEvent(new KeyboardEvent('keydown', { key: '/', bubbles: true }))")
+
+    assert page.evaluate_script("document.activeElement === document.querySelector('input[type=search]')"),
+           'Pressing "/" outside an input should focus the search field'
+  end
+
+  def test_slash_inside_input_is_not_hijacked
+    assert_selector 'tbody tr', minimum: 1
+    fill_in 'Rechercher une partition', with: 'Cho'
+    find_field('Rechercher une partition').send_keys('/')
+
+    assert_equal 'Cho/', find_field('Rechercher une partition').value
+  end
+
   def test_back_link_from_score_to_library
     visit '/score.html'
     click_on 'Bibliothèque'
