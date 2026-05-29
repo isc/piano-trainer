@@ -633,18 +633,17 @@ export function midiApp() {
       const { currentMeasureIndex } = musicxml.getTrainingState()
       const playedSourceMeasures = musicxml.getPlayedSourceMeasures()
 
-      const noteStates = new Map()
-      for (const { notes } of musicxml.getAllNotes()) {
-        for (const { fingeringKey, played, active } of notes) {
-          if (played || active) {
-            noteStates.set(fingeringKey, { played, active })
-          }
-        }
-      }
+      // Capture played/active state per playback position (not per fingeringKey):
+      // a repeated measure appears twice in the sequence and both occurrences share
+      // a fingeringKey, so a key-based snapshot would bleed the first pass's "played"
+      // state onto the repeat and make the matcher skip it. The re-extracted sequence
+      // has the same structure, so positional [measureIndex][noteIndex] restores cleanly.
+      const noteStates = musicxml.getAllNotes().map(({ notes }) =>
+        notes.map(({ played, active }) => ({ played, active })))
 
       musicxml.renderScore()
       this.setupFingeringHandlers()
-      fingeringEditor.restoreNoteStates(noteStates)
+      fingeringEditor.restoreNoteStates(noteStates, currentMeasureIndex)
       musicxml.setCurrentMeasureIndex(currentMeasureIndex)
       musicxml.setPlayedSourceMeasures(playedSourceMeasures)
       window.scrollTo(0, scrollY)

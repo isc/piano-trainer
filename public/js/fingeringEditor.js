@@ -1,3 +1,41 @@
+// Restore played/active state captured positionally as savedStates[measureIndex][noteIndex].
+// Restoring by playback position (rather than by fingeringKey) keeps the two occurrences of
+// a repeated measure independent: they share a fingeringKey, so a key-based restore would
+// bleed the first pass's "played" state onto the repeat and make the matcher skip it.
+export function applyPositionalNoteStates(allNotes, savedStates) {
+  for (let i = 0; i < allNotes.length && i < savedStates.length; i++) {
+    const measureStates = savedStates[i]
+    if (!measureStates) continue
+    allNotes[i].notes.forEach((noteData, j) => {
+      if (!measureStates[j]) return
+      noteData.played = measureStates[j].played
+      noteData.active = measureStates[j].active
+    })
+  }
+}
+
+// A source note is rendered once but may appear several times in the playback sequence
+// (repeats). Its single notehead should reflect the current pass: the latest occurrence
+// at or before currentMeasureIndex, else the next upcoming one. Returns Map<fingeringKey, noteData>.
+export function chooseCurrentPassOccurrences(allNotes, currentMeasureIndex) {
+  const chosen = new Map() // fingeringKey -> { index, noteData }
+  allNotes.forEach(({ notes }, i) => {
+    for (const noteData of notes) {
+      const key = noteData.fingeringKey
+      const prev = chosen.get(key)
+      if (!prev) { chosen.set(key, { index: i, noteData }); continue }
+      const iPassed = i <= currentMeasureIndex
+      const prevPassed = prev.index <= currentMeasureIndex
+      if (iPassed && prevPassed) { if (i > prev.index) chosen.set(key, { index: i, noteData }) }
+      else if (iPassed && !prevPassed) chosen.set(key, { index: i, noteData })
+      else if (!iPassed && !prevPassed) { if (i < prev.index) chosen.set(key, { index: i, noteData }) }
+    }
+  })
+  const result = new Map()
+  for (const [key, { noteData }] of chosen) result.set(key, noteData)
+  return result
+}
+
 export function initFingeringEditor({ getOsmdInstance, getAllNotes, getNoteDataByKey, svgNote, svgNotehead }) {
   let onNoteClick = null
   let delegatedHandlerAttached = false
@@ -89,20 +127,15 @@ export function initFingeringEditor({ getOsmdInstance, getAllNotes, getNoteDataB
     })
   }
 
-  // Restore note states from a saved state map (fingeringKey -> { played, active })
-  function restoreNoteStates(noteStates) {
-    for (const { notes } of getAllNotes()) {
-      for (const noteData of notes) {
-        const savedState = noteStates.get(noteData.fingeringKey)
-        if (!savedState) continue
-
-        noteData.played = savedState.played
-        noteData.active = savedState.active
-
-        const notehead = svgNotehead(noteData)
-        notehead?.classList.toggle('played-note', savedState.played)
-        notehead?.classList.toggle('active-note', savedState.active)
-      }
+  // Restore played/active state captured positionally as savedStates[measureIndex][noteIndex],
+  // then update each rendered notehead to reflect the current pass's occurrence.
+  function restoreNoteStates(savedStates, currentMeasureIndex) {
+    const allNotes = getAllNotes()
+    applyPositionalNoteStates(allNotes, savedStates)
+    for (const noteData of chooseCurrentPassOccurrences(allNotes, currentMeasureIndex).values()) {
+      const notehead = svgNotehead(noteData)
+      notehead?.classList.toggle('played-note', noteData.played)
+      notehead?.classList.toggle('active-note', noteData.active)
     }
   }
 
