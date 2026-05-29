@@ -19,12 +19,17 @@ Capybara.register_driver(:cuprite) do |app|
     headless: !ENV['DISABLE_HEADLESS'],
     logger: StringIO.new,
     browser_options: { 'disable-gpu' => nil },
-    save_path: DOWNLOAD_DIR
+    save_path: DOWNLOAD_DIR,
+    # The 10s default occasionally fails to spawn Chrome on cold/slow CI runners
+    # ("Browser did not produce websocket url within 10 seconds"). Give it room.
+    process_timeout: 30
   )
 end
 Capybara.default_driver = :cuprite
-# 2s default is borderline for cold-start OSMD renders on slower CI runners
-Capybara.default_max_wait_time = 5
+# Cold-start OSMD renders are borderline on slower CI runners (the default 2s
+# was already raised to 5s); the heavier OSMD 1.9.9 bundle pushed some renders
+# past 5s, so give selector waits more headroom.
+Capybara.default_max_wait_time = 10
 Capybara.enable_aria_label = true
 
 # Clean up download directory at exit

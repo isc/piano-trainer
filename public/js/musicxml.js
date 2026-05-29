@@ -382,16 +382,31 @@ function calculateCombinedBounds(boxes) {
 // rect, and so ledger-line notes don't sit flush against the rect edge.
 const MEASURE_V_PADDING = 12
 
+// Pure geometry for the measure click rect.
+// Horizontal padding is intentionally asymmetric (PADDING left, PADDING/2
+// right): bar lines sit immediately after the last note, so a wide right
+// padding would visually cross into the next measure.
+// width/height are clamped to >= 0: during a render/resize, getBBox() can
+// briefly return inverted bounds (maxX < minX), which would otherwise produce
+// a negative-size <rect> that the browser rejects with a console error (and
+// intermittently leaves a measure without a click area).
+export function measureClickRectDimensions(bounds) {
+  return {
+    x: bounds.minX - MEASURE_CLICK_PADDING,
+    y: bounds.minY - MEASURE_V_PADDING,
+    width: Math.max(0, bounds.maxX - bounds.minX + MEASURE_CLICK_PADDING * 1.5),
+    height: Math.max(0, bounds.maxY - bounds.minY + MEASURE_V_PADDING * 2),
+  }
+}
+
 function createMeasureRectangle(svg, bounds, measureIndex) {
   const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect')
   rect.classList.add('measure-click-area')
-  // Horizontal padding is intentionally asymmetric (PADDING left, PADDING/2
-  // right): bar lines sit immediately after the last note, so a wide right
-  // padding would visually cross into the next measure.
-  rect.setAttribute('x', bounds.minX - MEASURE_CLICK_PADDING)
-  rect.setAttribute('y', bounds.minY - MEASURE_V_PADDING)
-  rect.setAttribute('width', bounds.maxX - bounds.minX + MEASURE_CLICK_PADDING * 1.5)
-  rect.setAttribute('height', bounds.maxY - bounds.minY + MEASURE_V_PADDING * 2)
+  const { x, y, width, height } = measureClickRectDimensions(bounds)
+  rect.setAttribute('x', x)
+  rect.setAttribute('y', y)
+  rect.setAttribute('width', width)
+  rect.setAttribute('height', height)
   rect.dataset.measureIndex = measureIndex
 
   return rect
