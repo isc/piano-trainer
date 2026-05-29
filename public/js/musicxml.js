@@ -521,6 +521,17 @@ function scrollToMeasure(measureIndex) {
   window.scrollTo({ top: Math.max(0, targetY), behavior: 'smooth' })
 }
 
+// A held key can't be re-struck. A note is covered by a currently-held key when a tie
+// holds that pitch across this timestamp - either the note is itself the tie continuation,
+// or it's a unison with a tie continuation in another voice (e.g. a triplet note on the
+// same pitch as a tied bass note). In both cases the held key validates it without a fresh press.
+export function isHeldByTie(note, notesAtTimestamp, heldMidiNotes) {
+  return (
+    heldMidiNotes.has(note.midiNumber) &&
+    notesAtTimestamp.some((o) => o.isTieContinuation && o.midiNumber === note.midiNumber)
+  )
+}
+
 // Activate a note when pressed (Note ON) - for polyphonic validation
 function activateNote(midiNote) {
   // Track all held notes globally (for tie continuation validation)
@@ -628,7 +639,7 @@ function activateNote(midiNote) {
     (n) => n.timestamp === expectedTimestamp && isNoteActiveForHands(n),
   )
   const allActiveAtTimestamp = notesAtTimestamp.every(
-    (n) => n.played || n.active || (n.isTieContinuation && heldMidiNotes.has(n.midiNumber)),
+    (n) => n.played || n.active || isHeldByTie(n, notesAtTimestamp, heldMidiNotes),
   )
 
   if (allActiveAtTimestamp) {
