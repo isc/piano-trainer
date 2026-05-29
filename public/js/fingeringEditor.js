@@ -14,21 +14,26 @@ export function applyPositionalNoteStates(allNotes, savedStates) {
   }
 }
 
+// Of two occurrences of the same note, which one belongs to the "current pass"? The latest
+// occurrence at or before the cursor; or, if neither has been reached yet, the earliest upcoming.
+function isCurrentPassOccurrence(index, otherIndex, currentMeasureIndex) {
+  const indexReached = index <= currentMeasureIndex
+  const otherReached = otherIndex <= currentMeasureIndex
+  if (indexReached !== otherReached) return indexReached // a reached occurrence beats an upcoming one
+  return indexReached ? index > otherIndex : index < otherIndex
+}
+
 // A source note is rendered once but may appear several times in the playback sequence
-// (repeats). Its single notehead should reflect the current pass: the latest occurrence
-// at or before currentMeasureIndex, else the next upcoming one. Returns Map<fingeringKey, noteData>.
+// (repeats). Its single notehead should reflect the current pass's occurrence.
+// Returns Map<fingeringKey, noteData>.
 export function chooseCurrentPassOccurrences(allNotes, currentMeasureIndex) {
   const chosen = new Map() // fingeringKey -> { index, noteData }
   allNotes.forEach(({ notes }, i) => {
     for (const noteData of notes) {
-      const key = noteData.fingeringKey
-      const prev = chosen.get(key)
-      if (!prev) { chosen.set(key, { index: i, noteData }); continue }
-      const iPassed = i <= currentMeasureIndex
-      const prevPassed = prev.index <= currentMeasureIndex
-      if (iPassed && prevPassed) { if (i > prev.index) chosen.set(key, { index: i, noteData }) }
-      else if (iPassed && !prevPassed) chosen.set(key, { index: i, noteData })
-      else if (!iPassed && !prevPassed) { if (i < prev.index) chosen.set(key, { index: i, noteData }) }
+      const prev = chosen.get(noteData.fingeringKey)
+      if (!prev || isCurrentPassOccurrence(i, prev.index, currentMeasureIndex)) {
+        chosen.set(noteData.fingeringKey, { index: i, noteData })
+      }
     }
   })
   const result = new Map()
