@@ -644,20 +644,55 @@ function activateNote(midiNote) {
 
   if (allActiveAtTimestamp) {
     // All polyphonic notes are held together - validate them all
-    for (const noteData of notesAtTimestamp) {
-      if (noteData.played) continue
-      const notehead = svgNotehead(noteData)
-      // Turn notes without visual noteheads (noteheadIndex = -1) won't have a notehead element
-      notehead?.classList.remove('active-note')
-      notehead?.classList.add('played-note')
-      noteData.played = true
-      noteData.active = false
-    }
-
+    markTimestampGroupPlayed(notesAtTimestamp)
     handleNoteValidated(measureData, notesAtTimestamp[0], notesAtTimestamp.length)
+    // A held tie can fully cover a *later* timestamp (the tied pitch plus its
+    // same-pitch unisons in other voices). No fresh keypress can trigger that
+    // group, so cascade those validations here instead of stalling.
+    cascadeHeldTieValidations()
   }
 
   return true
+}
+
+// Mark every note in a timestamp group as played (validated), updating noteheads.
+function markTimestampGroupPlayed(group) {
+  for (const noteData of group) {
+    if (noteData.played) continue
+    const notehead = svgNotehead(noteData)
+    // Turn notes without visual noteheads (noteheadIndex = -1) have no element
+    notehead?.classList.remove('active-note')
+    notehead?.classList.add('played-note')
+    noteData.played = true
+    noteData.active = false
+  }
+}
+
+// After a timestamp validates, a following timestamp may consist entirely of
+// notes already covered by currently-held ties - the tied pitch plus its
+// same-pitch unisons in other voices (e.g. the final-measure triplet B in unison
+// with a tied B). The key is already down for the tie, so no fresh keypress can
+// trigger that group; the matcher would stall and force a re-strike. Auto-validate
+// any such fully-covered groups, cascading across measure boundaries.
+function cascadeHeldTieValidations() {
+  for (;;) {
+    const measureData = allNotes[currentMeasureIndex]
+    if (!measureData?.notes?.length) return
+
+    const pending = measureData.notes.filter((n) => isNoteActiveForHands(n) && !n.played)
+    if (pending.length === 0) return
+
+    const nextTimestamp = Math.min(...pending.map((n) => n.timestamp))
+    const group = measureData.notes.filter(
+      (n) => isNoteActiveForHands(n) && n.timestamp === nextTimestamp,
+    )
+    // Only auto-advance when every note is already held by a tie - otherwise the
+    // player still owes a fresh keypress for this group.
+    if (!group.every((n) => n.played || isHeldByTie(n, group, heldMidiNotes))) return
+
+    markTimestampGroupPlayed(group)
+    handleNoteValidated(measureData, group[0], group.length)
+  }
 }
 
 // Deactivate a note when released (Note OFF) - for polyphonic validation
