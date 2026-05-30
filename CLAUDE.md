@@ -13,20 +13,25 @@ PR titles and descriptions must be in English.
 
 ## Playwright Browser Testing
 
-To iterate quickly without repeated permission prompts, write JSON to `tmp/eval.json` using the Write tool, then pipe with a constant command:
+Use the **Playwright CLI** (`@playwright/cli`, already a devDependency — binary at
+`node_modules/.bin/playwright-cli`) rather than the MCP `browser_*` tools. Snapshots and
+console logs are written to disk under `.playwright-cli/` instead of being streamed into
+context (~4× fewer tokens), and the browser session persists between Bash commands.
+
+Pass `-s=<session>` to keep a named, persistent session across commands:
 
 ```bash
-cat tmp/eval.json | mcp-cli call playwright/browser_evaluate -
-cat tmp/eval.json | mcp-cli call playwright/browser_navigate -
+playwright-cli -s=pt open http://localhost:4567/   # open + navigate
+playwright-cli -s=pt goto http://localhost:4567/score.html
+playwright-cli -s=pt snapshot                        # writes ref-annotated snapshot to disk
+playwright-cli -s=pt eval "() => document.title" --raw
+playwright-cli -s=pt click e15                       # interact via refs from the snapshot
+playwright-cli -s=pt close
 ```
 
-The bash command stays constant - only the file content changes via Write (no permission needed).
-
-Example JSON:
-```json
-{"function": "() => document.title"}
-{"url": "http://localhost:4567/score.html"}
-```
+`--raw` prints only the result value (no status banner). Run `playwright-cli --help` for the
+full command list. Interactive exploration works the same way — `snapshot` to get element
+refs, then `click`/`fill`/`eval` against them.
 
 ## Code Style
 
