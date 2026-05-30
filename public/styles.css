@@ -444,7 +444,6 @@ button.pt-topbar__pill:hover { background: var(--pt-surface-2); border-color: va
 }
 .pt-context.pt-context--training { background: var(--pt-mode-training-bg); border-bottom-color: color-mix(in srgb, var(--pt-mode-training) 20%, transparent); color: var(--pt-mode-training); }
 .pt-context.pt-context--strict { background: var(--pt-mode-strict-bg); border-bottom-color: color-mix(in srgb, var(--pt-mode-strict) 20%, transparent); color: var(--pt-mode-strict); }
-.pt-context.pt-context--reinforcement { background: var(--pt-mode-reinforcement-bg); border-bottom-color: color-mix(in srgb, var(--pt-mode-reinforcement) 20%, transparent); color: var(--pt-mode-reinforcement); }
 .pt-context label { color: inherit; font-weight: 500; }
 .pt-context input[type="number"] {
   width: 80px;
@@ -650,8 +649,8 @@ table th.pt-th-sort { cursor: pointer; user-select: none; }
 table th.pt-th-sort:hover { color: var(--pt-text); background: var(--pt-border); }
 table th.pt-th-sort[aria-sort="ascending"],
 table th.pt-th-sort[aria-sort="descending"] { color: var(--pt-text); }
-table tbody td a { color: var(--pt-text); font-weight: 500; }
-table tbody td a:hover { color: var(--pt-accent); text-decoration: none; }
+table tbody td a:not(.pt-pill) { color: var(--pt-text); font-weight: 500; }
+table tbody td a:not(.pt-pill):hover { color: var(--pt-accent); text-decoration: none; }
 table tbody td:nth-child(2) a { color: var(--pt-text-muted); font-weight: 400; text-decoration: underline dotted; text-underline-offset: 3px; }
 table tbody td:nth-child(2) a:hover { color: var(--pt-accent); }
 
