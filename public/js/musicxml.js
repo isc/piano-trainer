@@ -202,10 +202,6 @@ async function renderMusicXML(xmlContent) {
       drawPartNames: false,
     })
     osmd.rules.MetronomeMarkYShift = -2.8;
-    // Merge a unison across voices when the two notes differ only in dot count
-    // (e.g. a dotted eighth in unison with an eighth-triplet note, Schumann No.1 m10):
-    // overlap the noteheads and share one augmentation dot, matching MuseScore.
-    osmd.rules.StaggerDottedUnisons = false;
     await osmd.load(xmlContent)
     osmdInstance = osmd
     window.osmdInstance = osmd
