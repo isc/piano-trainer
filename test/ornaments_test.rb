@@ -149,4 +149,25 @@ class OrnamentsTest < CapybaraTestBase
 
     assert_selector 'svg circle.repeat-indicator.filled', count: 1
   end
+
+  def test_turn_with_hidden_realization_is_not_doubled
+    # Beethoven's "Pathetique" encodes its turns as a <turn/> symbol AND the turn's
+    # realized notes written as invisible (print-object="no") notes in a second voice.
+    # The app already expands the <turn/> symbol into playable notes, so the hidden
+    # copy must be ignored. Otherwise the gruppetto is doubled: the player has to play
+    # it twice, and the hidden noteheads only appear (green) on the second pass.
+    attach_file('musicxml-upload', File.expand_path('fixtures/turn-with-hidden-realization.xml', __dir__))
+    assert_selector '#score[data-render-complete]'
+
+    # Regular turn on C5 in C major expands to D5, C5, B4, C5. Play it ONCE, then G5.
+    play_note('D5')
+    play_note('C5')
+    play_note('B4')
+    play_note('C5')
+    play_note('G5')
+
+    # A single pass completes the score: the hidden realization was ignored, not
+    # required a second time.
+    assert_text 'Partition terminée'
+  end
 end
