@@ -327,8 +327,13 @@ function extractNotesFromSourceMeasures(sourceMeasures) {
             const voiceIndex = voiceId - 1
             for (let noteIndex = 0; noteIndex < voiceEntry.notes.length; noteIndex++) {
               const note = voiceEntry.notes[noteIndex]
-              // Skip notes without pitch, rests, or cue notes (editorial guide notes not meant to be played)
-              if (!note.pitch || note.isRest() || note.IsCueNote) continue
+              // Skip notes without pitch, rests, or cue notes (editorial guide notes not meant to be played).
+              // Also skip invisible notes (print-object="no"): some publishers write an ornament's realized
+              // notes as hidden notes in a separate voice *in addition* to the ornament symbol (e.g. the turns
+              // in Beethoven's Pathétique). The symbol already expands into playable notes, so honoring the
+              // hidden copy would double the ornament -- the player would have to play it twice, and the hidden
+              // noteheads would only appear once validated. The player plays what they see, never hidden notes.
+              if (!note.pitch || note.isRest() || note.IsCueNote || note.PrintObject === false) continue
               const noteInfo = pitchToMidiFromSourceNote(note.pitch)
               // Check if this note is a tie continuation (not the start of the tie)
               const isTieContinuation = note.NoteTie && note.NoteTie.StartNote !== note
