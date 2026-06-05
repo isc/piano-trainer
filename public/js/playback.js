@@ -1,5 +1,5 @@
 import { Piano } from '@tonejs/piano'
-import { isOrnamentOrGrace } from './noteExtraction.js'
+import { tsToSeconds, buildMeasureStartTimes, buildCursorTimeline } from './playbackTiming.js'
 
 let piano = null
 let midiState = null
@@ -61,23 +61,6 @@ export function getBPM(osmdInstance) {
   const ratio = beatUnitToQuarter[tempo.beatUnit] ?? 1
   if (tempo.dotted) return tempo.tempoInBpm * ratio * 1.5
   return tempo.tempoInBpm * ratio
-}
-
-export function tsToSeconds(ts, bpm) {
-  return ts * 4 * 60 / bpm
-}
-
-// Build cumulative start times (in whole-note fractions) for each measure in playback order.
-// Each measure's actual duration comes from OSMD, so time signatures other than 4/4 work correctly.
-export function buildCumStartTimes(allNotes, sourceMeasures) {
-  const cumTimes = []
-  let cumulativeTime = 0
-  for (const measureData of allNotes) {
-    cumTimes.push(cumulativeTime)
-    const duration = sourceMeasures[measureData.sourceMeasureIndex]?.Duration?.RealValue ?? 1.0
-    cumulativeTime += duration
-  }
-  return cumTimes
 }
 
 // Fixed ornament note duration (in whole-note fractions) for mordents.
@@ -196,31 +179,6 @@ function stop() {
   hideCursor()
 }
 
-// Build the list of cursor advance timestamps (in ms from start) from allNotes
-// data. Avoids traversing the OSMD cursor (which corrupts its visual state
-// after EndReached+reset). Each unique absolute timestamp (whole-note
-// fractions from start) maps to one cursor.next() call. Ornaments and grace
-// notes are skipped — the visible cursor doesn't stop on them.
-export function buildCursorTimeline(allNotes, cumStartTimes, bpm, offsetMs = 0) {
-  const seen = new Set()
-  const steps = []
-
-  for (let i = 0; i < allNotes.length; i++) {
-    const measureData = allNotes[i]
-    const measureOffset = cumStartTimes[i] - measureData.measureIndex
-
-    for (const n of measureData.notes) {
-      if (isOrnamentOrGrace(n) || n.isTrillEnd) continue
-      const absoluteTs = measureOffset + n.timestamp
-      if (seen.has(absoluteTs)) continue
-      seen.add(absoluteTs)
-      steps.push(offsetMs + tsToSeconds(absoluteTs, bpm) * 1000)
-    }
-  }
-
-  return steps.sort((a, b) => a - b)
-}
-
 async function togglePlayback(allNotes, osmdInstance) {
   if (isPlaying) { stop(); return }
 
@@ -229,12 +187,12 @@ async function togglePlayback(allNotes, osmdInstance) {
   activeOsmd = osmdInstance
   const bpm = getBPM(osmdInstance)
   const sourceMeasures = osmdInstance.Sheet.SourceMeasures
-  const cumStartTimes = buildCumStartTimes(allNotes, sourceMeasures)
+  const measureStartTimes = buildMeasureStartTimes(allNotes, sourceMeasures)
   let maxEndMs = 0
 
   for (let i = 0; i < allNotes.length; i++) {
     const measureData = allNotes[i]
-    const measureStartTs = cumStartTimes[i]
+    const measureStartTs = measureStartTimes[i]
     const measureOffset = measureStartTs - measureData.measureIndex
     const notes = expandOrnamentTimings(measureData.notes)
 
@@ -265,7 +223,7 @@ async function togglePlayback(allNotes, osmdInstance) {
   }
 
   if (osmdInstance.cursor) {
-    const cursorSteps = buildCursorTimeline(allNotes, cumStartTimes, bpm)
+    const cursorSteps = buildCursorTimeline(allNotes, measureStartTimes, bpm)
     scheduledTimeouts.push(...scheduleCursorAdvances(osmdInstance.cursor, cursorSteps))
   }
 
