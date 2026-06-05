@@ -11,6 +11,16 @@ bundle exec rake test > tmp/test-output.txt 2>&1; cat tmp/test-output.txt
 
 PR titles and descriptions must be in English.
 
+## Library
+
+**IMPORTANT:** After adding or removing a score (editing `public/data/scores.json`
+and the file in `public/scores/`), regenerate the fingerprints so the score is
+findable by playing its opening notes on the MIDI keyboard:
+```bash
+ruby scripts/generate_fingerprints.rb
+```
+`public/data/fingerprints.json` must stay in sync with the catalog (same count).
+
 ## Playwright Browser Testing
 
 Use the **Playwright CLI** (`@playwright/cli`, already a devDependency — binary at
