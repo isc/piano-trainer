@@ -38,14 +38,10 @@ async function extractXmlFromMxl(arrayBuffer) {
   throw new Error('No valid MusicXML file found in archive')
 }
 
-export async function loadMxlAsXml(url) {
-  const response = await fetch(url)
-  if (!response.ok) {
-    throw new Error(`Failed to fetch ${url}: ${response.statusText}`)
-  }
-
-  const arrayBuffer = await response.arrayBuffer()
-
+// Turn raw bytes into MusicXML text, transparently unzipping compressed .mxl
+// archives (which start with the ZIP magic bytes) and decoding plain .xml
+// otherwise. Shared by URL loading and local file/drop imports.
+export async function arrayBufferToXml(arrayBuffer) {
   if (isZipFile(arrayBuffer)) {
     return extractXmlFromMxl(arrayBuffer)
   }
@@ -53,4 +49,13 @@ export async function loadMxlAsXml(url) {
   // Not a ZIP, treat as plain XML text
   const decoder = new TextDecoder('utf-8')
   return decoder.decode(arrayBuffer)
+}
+
+export async function loadMxlAsXml(url) {
+  const response = await fetch(url)
+  if (!response.ok) {
+    throw new Error(`Failed to fetch ${url}: ${response.statusText}`)
+  }
+
+  return arrayBufferToXml(await response.arrayBuffer())
 }

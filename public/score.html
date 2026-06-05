@@ -158,12 +158,20 @@
            link in the topbar handles catalog access, so this card focuses
            only on the case the topbar doesn't cover: importing a local
            MusicXML file. -->
-      <div class="pt-onboarding" x-show="!osmdInstance">
+      <div
+        class="pt-onboarding"
+        x-show="!osmdInstance"
+        x-data="{ dragOver: false }"
+        :class="{ 'is-dragover': dragOver }"
+        @dragover.prevent="dragOver = true"
+        @dragleave.prevent="dragOver = false"
+        @drop.prevent="dragOver = false; loadMusicXMLFromFile($event.dataTransfer.files[0])"
+      >
         <h2>Charger un fichier MusicXML</h2>
-        <p>Glissez votre fichier ici ou cliquez pour le sélectionner.</p>
+        <p>Glissez votre fichier ici ou cliquez pour le sélectionner. Les fichiers <code>.mxl</code> compressés sont acceptés.</p>
         <div class="pt-onboarding__cta">
           <label for="musicxml-upload">📄 Choisir un fichier
-            <input type="file" accept=".xml,.musicxml,.mxl" @change="loadMusicXML($event)" id="musicxml-upload" />
+            <input type="file" accept=".xml,.musicxml,.mxl" @change="loadMusicXMLFromFile($event.target.files[0])" id="musicxml-upload" />
           </label>
         </div>
       </div>

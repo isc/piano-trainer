@@ -250,10 +250,11 @@ export function midiApp() {
       await cassettes.replayCassette(this.selectedCassette, midi.parseMidiMessage)
     },
 
-    async loadMusicXML(event) {
+    async loadMusicXMLFromFile(file) {
+      if (!file) return
       this.fingeringEnabled = false
       this.scoreUrl = null
-      await musicxml.loadMusicXML(event)
+      await musicxml.loadMusicXML(file)
       await this.afterScoreLoad()
       this.captureScoreMetadata()
     },
