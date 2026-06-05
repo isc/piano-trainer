@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { buildCursorTimeline } from '../../public/js/playback.js'
+import { buildCursorTimeline } from '../../public/js/playbackTiming.js'
 
 // The OSMD cursor stops once per vertical staff-entry container. buildCursorTimeline
 // must emit one step per container (each measure's `cursorStops`), including

@@ -1,4 +1,5 @@
-import { tsToSeconds, buildCumStartTimes, buildCursorTimeline, scheduleCursorAdvances } from './playback.js'
+import { scheduleCursorAdvances } from './playback.js'
+import { tsToSeconds, buildCumStartTimes, buildCursorTimeline } from './playbackTiming.js'
 import {
   isOrnamentOrGrace,
   isNoteActiveForHands,
