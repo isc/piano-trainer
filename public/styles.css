@@ -907,6 +907,11 @@ table tbody td:nth-child(2) a:hover { color: var(--pt-accent); }
   border-radius: var(--pt-radius-lg);
   padding: var(--pt-space-8);
   text-align: center;
+  transition: border-color 0.15s, background 0.15s;
+}
+.pt-onboarding.is-dragover {
+  border-color: var(--pt-accent);
+  background: var(--pt-surface-2);
 }
 .pt-onboarding h2 { margin-bottom: var(--pt-space-2); }
 .pt-onboarding p { color: var(--pt-text-muted); margin-bottom: var(--pt-space-4); }

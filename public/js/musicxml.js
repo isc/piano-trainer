@@ -6,6 +6,7 @@ import {
   svgNoteheadFor,
 } from './noteExtraction.js'
 import { getStickyOffset } from './utils.js'
+import { arrayBufferToXml, isMusicXml } from './mxlLoader.js'
 
 let osmdInstance = null
 let allNotes = []
@@ -169,14 +170,14 @@ function resetPlaybackState() {
   resetReinforcementState()
 }
 
-async function loadMusicXML(event) {
-  const file = event.target.files[0]
+async function loadMusicXML(file) {
   if (!file) return
 
   try {
-    const xmlContent = await file.text()
+    // Handle both plain MusicXML (.xml/.musicxml) and zipped .mxl archives.
+    const xmlContent = await arrayBufferToXml(await file.arrayBuffer())
 
-    if (!xmlContent.includes('score-partwise') && !xmlContent.includes('score-timewise')) {
+    if (!isMusicXml(xmlContent)) {
       alert('Ce fichier ne semble pas être un fichier MusicXML valide')
       return
     }
