@@ -305,6 +305,7 @@ function adjustGraceNoteTimestamps(measureNotes) {
 function extractNotesFromSourceMeasures(sourceMeasures) {
   const notesByMeasure = new Map()
   const pedalEventsByMeasure = new Map()
+  const cursorStopsByMeasure = new Map()
   let currentFifths = 0
 
   sourceMeasures.forEach((measure, measureIndex) => {
@@ -314,6 +315,15 @@ function extractNotesFromSourceMeasures(sourceMeasures) {
     const measureNumber = measure.MeasureNumberXML
     // Track sequential note index for each (staff, voice) combination
     const noteCounters = new Map()
+
+    // The OSMD cursor stops once per vertical container -- including containers
+    // that hold only rests (e.g. one hand pausing while the other sustains a
+    // longer note). Record every container's timestamp so the playback cursor
+    // timeline can stop where the cursor actually stops, not only on note onsets.
+    cursorStopsByMeasure.set(
+      measureIndex,
+      measure.verticalSourceStaffEntryContainers.map((c) => c.Timestamp?.RealValue ?? 0),
+    )
 
     measure.verticalSourceStaffEntryContainers.forEach((container) => {
       if (container.staffEntries) {
@@ -414,7 +424,7 @@ function extractNotesFromSourceMeasures(sourceMeasures) {
     }
   })
 
-  return { notesByMeasure, pedalEventsByMeasure }
+  return { notesByMeasure, pedalEventsByMeasure, cursorStopsByMeasure }
 }
 
 // Extract notes from the score and build the playback sequence
@@ -484,7 +494,7 @@ export function extractNotesFromScore(osmdInstance) {
   // Build the playback sequence (handles repeats and endings)
   const playbackSequence = buildPlaybackSequence(sourceMeasures)
 
-  const { notesByMeasure, pedalEventsByMeasure } = extractNotesFromSourceMeasures(sourceMeasures)
+  const { notesByMeasure, pedalEventsByMeasure, cursorStopsByMeasure } = extractNotesFromSourceMeasures(sourceMeasures)
 
   // Build allNotes array following the playback sequence
   const allNotes = []
@@ -517,6 +527,7 @@ export function extractNotesFromScore(osmdInstance) {
       sourceMeasureIndex: seqItem.sourceMeasureIndex,
       notes: measureNotes,
       pedalEvents,
+      cursorStops: cursorStopsByMeasure.get(seqItem.sourceMeasureIndex) ?? [],
     })
   })
 

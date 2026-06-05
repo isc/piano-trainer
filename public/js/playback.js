@@ -1,5 +1,4 @@
 import { Piano } from '@tonejs/piano'
-import { isOrnamentOrGrace } from './noteExtraction.js'
 
 let piano = null
 let midiState = null
@@ -198,23 +197,21 @@ function stop() {
 
 // Build the list of cursor advance timestamps (in ms from start) from allNotes
 // data. Avoids traversing the OSMD cursor (which corrupts its visual state
-// after EndReached+reset). Each unique absolute timestamp (whole-note
-// fractions from start) maps to one cursor.next() call. Ornaments and grace
-// notes are skipped — the visible cursor doesn't stop on them.
+// after EndReached+reset).
+//
+// The OSMD cursor stops once per vertical staff-entry container, so we emit one
+// step per container (each measure's `cursorStops` holds those timestamps). This
+// includes rest-only containers — a position where one hand rests while the
+// other sustains a longer note. Driving the timeline off note onsets instead
+// skipped those stops, so the cursor fell one position behind after every such
+// container and stayed behind for the rest of the piece. A chord or an ornament
+// is a single container, hence a single stop — no extra handling needed.
 export function buildCursorTimeline(allNotes, cumStartTimes, bpm, offsetMs = 0) {
-  const seen = new Set()
   const steps = []
 
   for (let i = 0; i < allNotes.length; i++) {
-    const measureData = allNotes[i]
-    const measureOffset = cumStartTimes[i] - measureData.measureIndex
-
-    for (const n of measureData.notes) {
-      if (isOrnamentOrGrace(n) || n.isTrillEnd) continue
-      const absoluteTs = measureOffset + n.timestamp
-      if (seen.has(absoluteTs)) continue
-      seen.add(absoluteTs)
-      steps.push(offsetMs + tsToSeconds(absoluteTs, bpm) * 1000)
+    for (const offset of allNotes[i].cursorStops ?? []) {
+      steps.push(offsetMs + tsToSeconds(cumStartTimes[i] + offset, bpm) * 1000)
     }
   }
 
