@@ -6,7 +6,7 @@ function isZipFile(arrayBuffer) {
   return ZIP_MAGIC_BYTES.every((byte, i) => bytes[i] === byte)
 }
 
-function isMusicXml(content) {
+export function isMusicXml(content) {
   return content.includes('score-partwise') || content.includes('score-timewise')
 }
 
