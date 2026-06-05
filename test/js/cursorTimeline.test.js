@@ -12,9 +12,9 @@ describe('buildCursorTimeline', () => {
       { cursorStops: [0, 0.5] }, // measure 0: two stops
       { cursorStops: [0, 0.25, 0.5] }, // measure 1: middle stop is a rest-only container
     ]
-    const cumStartTimes = [0, 1]
+    const measureStartTimes = [0, 1]
 
-    const steps = buildCursorTimeline(allNotes, cumStartTimes, 120)
+    const steps = buildCursorTimeline(allNotes, measureStartTimes, 120)
 
     expect(steps).toEqual([0, 1000, 2000, 2500, 3000])
   })

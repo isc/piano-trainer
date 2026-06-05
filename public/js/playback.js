@@ -1,5 +1,5 @@
 import { Piano } from '@tonejs/piano'
-import { tsToSeconds, buildCumStartTimes, buildCursorTimeline } from './playbackTiming.js'
+import { tsToSeconds, buildMeasureStartTimes, buildCursorTimeline } from './playbackTiming.js'
 
 let piano = null
 let midiState = null
@@ -187,12 +187,12 @@ async function togglePlayback(allNotes, osmdInstance) {
   activeOsmd = osmdInstance
   const bpm = getBPM(osmdInstance)
   const sourceMeasures = osmdInstance.Sheet.SourceMeasures
-  const cumStartTimes = buildCumStartTimes(allNotes, sourceMeasures)
+  const measureStartTimes = buildMeasureStartTimes(allNotes, sourceMeasures)
   let maxEndMs = 0
 
   for (let i = 0; i < allNotes.length; i++) {
     const measureData = allNotes[i]
-    const measureStartTs = cumStartTimes[i]
+    const measureStartTs = measureStartTimes[i]
     const measureOffset = measureStartTs - measureData.measureIndex
     const notes = expandOrnamentTimings(measureData.notes)
 
@@ -223,7 +223,7 @@ async function togglePlayback(allNotes, osmdInstance) {
   }
 
   if (osmdInstance.cursor) {
-    const cursorSteps = buildCursorTimeline(allNotes, cumStartTimes, bpm)
+    const cursorSteps = buildCursorTimeline(allNotes, measureStartTimes, bpm)
     scheduledTimeouts.push(...scheduleCursorAdvances(osmdInstance.cursor, cursorSteps))
   }
 

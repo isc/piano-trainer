@@ -1,5 +1,5 @@
 import { scheduleCursorAdvances } from './playback.js'
-import { tsToSeconds, buildCumStartTimes, buildCursorTimeline } from './playbackTiming.js'
+import { tsToSeconds, buildMeasureStartTimes, buildCursorTimeline } from './playbackTiming.js'
 import {
   isOrnamentOrGrace,
   isNoteActiveForHands,
@@ -92,13 +92,13 @@ function quarterBeatsInFirstMeasure(sourceMeasures) {
 // measure, the reset must be enqueued before the chord's window-open so FIFO
 // on equal-time setTimeouts fires the reset first — otherwise the new
 // expected-note class lands and is immediately wiped.
-function planRepeatResets(allNotes, cumStartTimes, bpm, countInMs) {
+function planRepeatResets(allNotes, measureStartTimes, bpm, countInMs) {
   const playedSources = new Set([allNotes[0].sourceMeasureIndex])
   const plans = []
   for (let i = 0; i < allNotes.length - 1; i++) {
     const sources = sourceMeasuresToResetOnEntry(allNotes, i, playedSources)
     if (sources.size > 0) {
-      const atMs = countInMs + tsToSeconds(cumStartTimes[i + 1], bpm) * 1000
+      const atMs = countInMs + tsToSeconds(measureStartTimes[i + 1], bpm) * 1000
       plans.push({ atMs, sources })
     }
     playedSources.add(allNotes[i + 1].sourceMeasureIndex)
@@ -140,24 +140,24 @@ function start({
   const cursorSkipSteps = startMeasureIndex > 0
     ? buildCursorTimeline(
         allNotes.slice(0, startMeasureIndex),
-        buildCumStartTimes(allNotes.slice(0, startMeasureIndex), sourceMeasures),
+        buildMeasureStartTimes(allNotes.slice(0, startMeasureIndex), sourceMeasures),
         bpm,
       ).length
     : 0
   allNotes = allNotes.slice(startMeasureIndex)
-  const cumStartTimes = buildCumStartTimes(allNotes, sourceMeasures)
+  const measureStartTimes = buildMeasureStartTimes(allNotes, sourceMeasures)
   const beatMs = 60_000 / bpm
   const resolvedCountInBeats = countInBeats ?? quarterBeatsInFirstMeasure(sourceMeasures)
   const countInMs = resolvedCountInBeats * beatMs
 
   pendingEvents = []
-  const cursorTimes = buildCursorTimeline(allNotes, cumStartTimes, bpm, countInMs)
+  const cursorTimes = buildCursorTimeline(allNotes, measureStartTimes, bpm, countInMs)
 
   // Single pass: look up each notehead once, clear residual strict-mode
   // classes from prior runs, push expected inputs into pendingEvents.
   for (let i = 0; i < allNotes.length; i++) {
     const measureData = allNotes[i]
-    const measureOffset = cumStartTimes[i] - measureData.measureIndex
+    const measureOffset = measureStartTimes[i] - measureData.measureIndex
 
     for (const noteData of measureData.notes) {
       const noteheadEl = svgNoteheadFor(activeOsmd, noteData)
@@ -214,7 +214,7 @@ function start({
   // when both fire at the same instant (chord on the first beat of a
   // repeated measure), FIFO order on equal-time setTimeouts ensures the wipe
   // runs first and the new expected-note class survives.
-  for (const { atMs, sources } of planRepeatResets(allNotes, cumStartTimes, bpm, countInMs)) {
+  for (const { atMs, sources } of planRepeatResets(allNotes, measureStartTimes, bpm, countInMs)) {
     timeouts.push(setTimeout(() => {
       for (const event of pendingEvents) {
         if (sources.has(event.sourceMeasureIndex)) {
