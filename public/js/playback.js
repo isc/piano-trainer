@@ -1,5 +1,6 @@
 import { Piano } from '@tonejs/piano'
 import { tsToSeconds, buildMeasureStartTimes, buildCursorTimeline } from './playbackTiming.js'
+import { scrollSystemIntoView } from './utils.js'
 
 let piano = null
 let midiState = null
@@ -135,20 +136,31 @@ function expandOrnamentTimings(notes) {
 // Schedule cursor.next() advances on the given timeline. Returns the timeout
 // IDs so the caller can register them with its own teardown list. The cursor
 // starts visible at the first position; subsequent ticks advance it.
-export function scheduleCursorAdvances(cursor, cursorTimes, { scrollBlock = 'start', skipSteps = 0 } = {}) {
+export function scheduleCursorAdvances(cursor, cursorTimes, { centerOnCursor = false, skipSteps = 0 } = {}) {
   cursor.reset()
   for (let i = 0; i < skipSteps; i++) cursor.next()
   cursor.show()
   syncCursorStyle(cursor)
+  const scoreSvg = document.querySelector('#score svg')
   let lastCursorTop = null
   return cursorTimes.map((t, i) => setTimeout(() => {
     if (i > 0) cursor.next()
     syncCursorStyle(cursor)
     const el = cursor.cursorElement
     if (!el) return
-    const top = el.getBoundingClientRect().top + window.scrollY
+    const rect = el.getBoundingClientRect()
+    const top = rect.top + window.scrollY
     if (lastCursorTop === null || Math.abs(top - lastCursorTop) > 10) {
-      el.scrollIntoView({ behavior: 'smooth', block: scrollBlock })
+      // Free playback anchors the system's visual top (fingerings/slurs above
+      // the staff) below the sticky bars — matching the measure cursor — instead
+      // of scrolling the bare cursor line flush to the top, which clipped the
+      // above-staff markings. Strict mode centres the cursor instead so the
+      // player can read ahead.
+      if (centerOnCursor) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      } else {
+        scrollSystemIntoView(rect.top, scoreSvg)
+      }
     }
     lastCursorTop = top
   }, t))

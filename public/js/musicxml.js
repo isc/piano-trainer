@@ -5,7 +5,7 @@ import {
   sourceMeasuresToResetOnEntry,
   svgNoteheadFor,
 } from './noteExtraction.js'
-import { getStickyOffset } from './utils.js'
+import { scrollSystemIntoView } from './utils.js'
 import { arrayBufferToXml, isMusicXml } from './mxlLoader.js'
 
 let osmdInstance = null
@@ -492,34 +492,11 @@ function jumpToMeasure(measureIndex) {
   }
 }
 
-// Vertical band scanned above a measure's click rect to catch fingerings,
-// dynamics, tempo markings — anything the measure rect itself doesn't bound.
-// Smaller than a typical system spacing (~150px) so we don't grab elements
-// from the previous system.
-const SYSTEM_TOP_LOOKUP_PX = 80
-
-function findSystemTopAnchor(measureRect) {
-  const bbox = measureRect.getBoundingClientRect()
-  const svg = measureRect.ownerSVGElement
-  if (!svg) return bbox.top
-  let topmost = bbox.top
-  for (const ann of svg.querySelectorAll('text')) {
-    const r = ann.getBoundingClientRect()
-    // +1 absorbs sub-pixel rounding so a text whose bottom == bbox.top isn't excluded.
-    if (r.bottom > bbox.top + 1) continue
-    if (r.top < bbox.top - SYSTEM_TOP_LOOKUP_PX) continue
-    if (r.top < topmost) topmost = r.top
-  }
-  return topmost
-}
-
 function scrollToMeasure(measureIndex) {
   const rect = measureClickRectangles[measureIndex]
   if (!rect) return
 
-  const anchorTop = findSystemTopAnchor(rect)
-  const targetY = window.scrollY + anchorTop - getStickyOffset()
-  window.scrollTo({ top: Math.max(0, targetY), behavior: 'smooth' })
+  scrollSystemIntoView(rect.getBoundingClientRect().top, rect.ownerSVGElement)
 }
 
 // A held key can't be re-struck. A note is covered by a currently-held key when a tie
