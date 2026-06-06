@@ -23,6 +23,40 @@ export function applyStickyOffset() {
   document.documentElement.style.setProperty('--pt-sticky-offset', `${getStickyOffset()}px`)
 }
 
+// Vertical band scanned above the reference line to catch fingerings, dynamics
+// and tempo markings — anything that hovers above the top staff line. Kept
+// smaller than the tightest system spacing (~109px here) so we don't grab the
+// previous system's content.
+const SYSTEM_TOP_LOOKUP_PX = 80
+
+// Topmost y (viewport space) of the score content sitting just above
+// `referenceTop` — i.e. the visual top of the system the reference line belongs
+// to, rather than the bare staff line. Falls back to referenceTop when nothing
+// is found above.
+function findSystemTopAnchor(referenceTop, svg) {
+  let topmost = referenceTop
+  for (const ann of svg.querySelectorAll('text')) {
+    const r = ann.getBoundingClientRect()
+    // +1 absorbs sub-pixel rounding so a text whose bottom == referenceTop isn't excluded.
+    if (r.bottom > referenceTop + 1) continue
+    if (r.top < referenceTop - SYSTEM_TOP_LOOKUP_PX) continue
+    if (r.top < topmost) topmost = r.top
+  }
+  return topmost
+}
+
+// Scroll the document so the system whose top staff line is at `referenceTop`
+// (viewport space — a measure rect or the playback cursor) sits just below the
+// sticky bars, leaving getStickyOffset() of headroom for the above-staff
+// markings. Shared by the measure cursor (musicxml.js) and the playback cursor
+// (playback.js) so both autoscroll paths behave identically.
+export function scrollSystemIntoView(referenceTop, svg) {
+  if (!svg) return
+  const anchorTop = findSystemTopAnchor(referenceTop, svg)
+  const targetY = window.scrollY + anchorTop - getStickyOffset()
+  window.scrollTo({ top: Math.max(0, targetY), behavior: 'smooth' })
+}
+
 export function formatDuration(ms) {
   const totalSeconds = Math.floor(ms / 1000)
   const totalMinutes = Math.floor(totalSeconds / 60)

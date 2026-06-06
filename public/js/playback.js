@@ -1,5 +1,6 @@
 import { Piano } from '@tonejs/piano'
 import { tsToSeconds, buildMeasureStartTimes, buildCursorTimeline } from './playbackTiming.js'
+import { scrollSystemIntoView } from './utils.js'
 
 let piano = null
 let midiState = null
@@ -146,9 +147,19 @@ export function scheduleCursorAdvances(cursor, cursorTimes, { scrollBlock = 'sta
     syncCursorStyle(cursor)
     const el = cursor.cursorElement
     if (!el) return
-    const top = el.getBoundingClientRect().top + window.scrollY
+    const rect = el.getBoundingClientRect()
+    const top = rect.top + window.scrollY
     if (lastCursorTop === null || Math.abs(top - lastCursorTop) > 10) {
-      el.scrollIntoView({ behavior: 'smooth', block: scrollBlock })
+      // Free playback anchors the system's visual top (fingerings/slurs above
+      // the staff) below the sticky bars — matching the measure cursor — instead
+      // of scrolling the bare cursor line flush to the top, which clipped the
+      // above-staff markings. Strict mode keeps the cursor centred so the player
+      // can read ahead.
+      if (scrollBlock === 'start') {
+        scrollSystemIntoView(rect.top, el.ownerDocument.querySelector('#score svg'))
+      } else {
+        el.scrollIntoView({ behavior: 'smooth', block: scrollBlock })
+      }
     }
     lastCursorTop = top
   }, t))
