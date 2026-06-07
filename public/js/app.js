@@ -106,12 +106,19 @@ export function midiApp() {
       await midi.connectMIDI({ silent: true, autoSelectFirst: true })
       this.syncMidiState()
 
-      const NAVIGATE_HOME_KEY = 21 // A0 - lowest piano key
+      const NAVIGATE_BACK_KEY = 108 // C8 - highest piano key (less jarring sound)
 
       midi.setCallbacks({
         onNotePlayed: (noteName, midiNote) => {
-          if (midiNote === NAVIGATE_HOME_KEY) {
-            window.location.href = 'index.html'
+          if (midiNote === NAVIGATE_BACK_KEY) {
+            // Go back rather than to index.html so the library's filters
+            // (stored in the URL) that led here are preserved. Fall back to
+            // the library if there's no in-app history to return to.
+            if (window.history.length > 1) {
+              window.history.back()
+            } else {
+              window.location.href = 'index.html'
+            }
             return
           }
           if (strictPlaythrough.isPlaying) {
