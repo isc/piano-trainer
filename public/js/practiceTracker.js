@@ -1,5 +1,97 @@
 import { initStorage } from './storage.js'
 
+// Default knobs for playthrough duration normalization. A segment is
+// "aberrant" (an interruption) when it exceeds max(floor, factor × median)
+// of its own kind. Measures (~7s) and gaps (~0.7s) live on different scales,
+// so each has its own threshold. Calibrated on real exported data: the gap
+// floor sits at the clear knee of the gap distribution (~8s); the measure
+// factor barely matters because real mid-measure interruptions are 15–30×
+// the median, far above any reasonable threshold.
+const PLAYTHROUGH_NORMALIZATION = {
+  measureFloorMs: 15000,
+  measureFactor: 4,
+  gapFloorMs: 8000,
+  gapFactor: 4,
+}
+
+function median(values) {
+  if (values.length === 0) return 0
+  const sorted = [...values].sort((a, b) => a - b)
+  return sorted[Math.floor(sorted.length / 2)]
+}
+
+// Normalize a completed playthrough's duration by removing interruptions
+// (phone calls, breaks). A pause inflates either a single measure's duration
+// (interrupted mid-measure) or an inter-measure gap (interrupted between
+// measures). We detect aberrant segments — those far above the playthrough's
+// own norm — and replace each with a typical value of its own kind:
+//   - aberrant measure → longest normal measure (the notes were still played)
+//   - aberrant gap      → median normal gap (a transition, not playing)
+// Returns the raw wall-clock duration when per-measure timing is unavailable.
+export function computePlaythroughDuration(session, options = {}) {
+  const { measureFloorMs, measureFactor, gapFloorMs, gapFactor } = {
+    ...PLAYTHROUGH_NORMALIZATION,
+    ...options,
+  }
+
+  const start = new Date(session.playthroughStartedAt).getTime()
+  const end = new Date(session.completedAt).getTime()
+  const rawMs = end - start
+
+  // Measure attempts that fall within the playthrough window.
+  const intervals = []
+  for (const measure of session.measures || []) {
+    for (const attempt of measure.attempts || []) {
+      if (!attempt.startedAt) continue
+      const s = new Date(attempt.startedAt).getTime()
+      const durationMs = attempt.durationMs || 0
+      if (s + durationMs > start && s < end) {
+        intervals.push({ start: s, durationMs })
+      }
+    }
+  }
+  // Without per-measure timing we can't reconstruct the timeline.
+  if (intervals.length === 0) return rawMs
+
+  intervals.sort((a, b) => a.start - b.start)
+
+  // Inter-measure gaps (including the trailing gap up to completion).
+  const gaps = []
+  let cursor = start
+  for (const { start: s, durationMs } of intervals) {
+    gaps.push(s - cursor)
+    cursor = Math.max(cursor, s + durationMs)
+  }
+  gaps.push(end - cursor)
+  const positiveGaps = gaps.filter((g) => g > 0)
+
+  // Per-kind aberration thresholds, calibrated on this playthrough's own data.
+  const measureThreshold = Math.max(
+    measureFloorMs,
+    measureFactor * median(intervals.map((i) => i.durationMs))
+  )
+  const gapThreshold = Math.max(gapFloorMs, gapFactor * median(positiveGaps))
+
+  // Replacement values: the "norm" of each kind.
+  const normalMeasures = intervals.map((i) => i.durationMs).filter((d) => d <= measureThreshold)
+  const measureCap = normalMeasures.length ? Math.max(...normalMeasures) : measureThreshold
+  const gapReplacement = median(positiveGaps.filter((g) => g <= gapThreshold))
+
+  // Re-tile [start, end]: clamp aberrant segments, keep the rest as-is.
+  let total = 0
+  cursor = start
+  for (const { start: s, durationMs } of intervals) {
+    const gap = s - cursor
+    if (gap > 0) total += gap > gapThreshold ? gapReplacement : gap
+    total += durationMs > measureThreshold ? measureCap : durationMs
+    cursor = Math.max(cursor, s + durationMs)
+  }
+  const trailingGap = end - cursor
+  if (trailingGap > 0) total += trailingGap > gapThreshold ? gapReplacement : trailingGap
+
+  return Math.round(total)
+}
+
 export function initPracticeTracker(storageInstance = null) {
   const storage = storageInstance || initStorage()
 
@@ -309,11 +401,9 @@ export function initPracticeTracker(storageInstance = null) {
     for (const session of sessions) {
       if (!session.completedAt || !session.playthroughStartedAt) continue
 
-      const completedAtMs = new Date(session.completedAt).getTime()
-      const startMs = new Date(session.playthroughStartedAt).getTime()
       playthroughs.push({
         startedAt: session.playthroughStartedAt,
-        durationMs: completedAtMs - startMs,
+        durationMs: computePlaythroughDuration(session),
       })
     }
 
