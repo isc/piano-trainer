@@ -1,6 +1,9 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import 'fake-indexeddb/auto'
-import { initPracticeTracker } from '../../public/js/practiceTracker.js'
+import {
+  initPracticeTracker,
+  computePlaythroughDuration,
+} from '../../public/js/practiceTracker.js'
 import { initStorage } from '../../public/js/storage.js'
 
 describe('practiceTracker', () => {
@@ -529,6 +532,89 @@ describe('practiceTracker', () => {
 
       expect(history[0].measuresWorked).toEqual([0])
       expect(history[0].measuresReinforced).toEqual([])
+    })
+  })
+
+  describe('computePlaythroughDuration (interruption normalization)', () => {
+    const BASE = new Date('2026-06-10T10:00:00.000Z').getTime()
+
+    // Build a completed playthrough from a list of {dur, gapBefore} segments.
+    // The cursor advances by each gap then each measure duration; completedAt
+    // is set right after the last measure.
+    function buildPlaythrough(segments) {
+      let cursor = BASE
+      const measures = segments.map(({ dur, gapBefore = 0 }, i) => {
+        cursor += gapBefore
+        const startedAt = new Date(cursor).toISOString()
+        cursor += dur
+        return { sourceMeasureIndex: i, attempts: [{ startedAt, durationMs: dur, clean: true }] }
+      })
+      return {
+        playthroughStartedAt: new Date(BASE).toISOString(),
+        completedAt: new Date(cursor).toISOString(),
+        measures,
+      }
+    }
+
+    it('leaves an uninterrupted playthrough unchanged (equals wall-clock)', () => {
+      const session = buildPlaythrough([
+        { dur: 5000 },
+        { dur: 5000, gapBefore: 1000 },
+        { dur: 5000, gapBefore: 1000 },
+        { dur: 5000, gapBefore: 1000 },
+        { dur: 5000, gapBefore: 1000 },
+      ])
+      // 5×5000 measures + 4×1000 gaps = 29000
+      expect(computePlaythroughDuration(session)).toBe(29000)
+    })
+
+    it('does not penalize slow-but-continuous playing', () => {
+      // Slow measures (12s) and slowish-but-normal gaps (3s): nothing clamped.
+      const session = buildPlaythrough([
+        { dur: 12000 },
+        { dur: 12000, gapBefore: 3000 },
+        { dur: 12000, gapBefore: 3000 },
+        { dur: 12000, gapBefore: 3000 },
+      ])
+      const raw =
+        new Date(session.completedAt).getTime() -
+        new Date(session.playthroughStartedAt).getTime()
+      expect(computePlaythroughDuration(session)).toBe(raw)
+    })
+
+    it('clamps an interruption that lands inside a measure', () => {
+      // Measure 2 ballooned to 200s (interrupted mid-measure before completing).
+      const session = buildPlaythrough([
+        { dur: 5000 },
+        { dur: 5000, gapBefore: 1000 },
+        { dur: 200000, gapBefore: 1000 },
+        { dur: 5000, gapBefore: 1000 },
+        { dur: 5000, gapBefore: 1000 },
+      ])
+      // Aberrant measure → longest normal measure (5000). Same as uninterrupted.
+      expect(computePlaythroughDuration(session)).toBe(29000)
+    })
+
+    it('clamps an interruption that lands between two measures', () => {
+      // A 5-minute pause before measure 3 (phone call after finishing measure 2).
+      const session = buildPlaythrough([
+        { dur: 5000 },
+        { dur: 5000, gapBefore: 1000 },
+        { dur: 5000, gapBefore: 1000 },
+        { dur: 5000, gapBefore: 300000 },
+        { dur: 5000, gapBefore: 1000 },
+      ])
+      // Aberrant gap → median normal gap (1000). Same as uninterrupted.
+      expect(computePlaythroughDuration(session)).toBe(29000)
+    })
+
+    it('falls back to raw duration when attempts lack timing', () => {
+      const session = {
+        playthroughStartedAt: new Date(BASE).toISOString(),
+        completedAt: new Date(BASE + 42000).toISOString(),
+        measures: [{ sourceMeasureIndex: 0, attempts: [{ clean: true }] }],
+      }
+      expect(computePlaythroughDuration(session)).toBe(42000)
     })
   })
 
