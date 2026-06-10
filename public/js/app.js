@@ -432,6 +432,17 @@ export function midiApp() {
       this.resultMode = null
     },
 
+    // Close whichever modal is currently open when Escape is pressed.
+    // The fingering modal manages its own keyboard handling (digits /
+    // backspace / enter / escape), so it is intentionally not handled here.
+    handleEscape() {
+      if (this.showResultModal) return this.closeResultModal()
+      if (this.showHistoryModal) return (this.showHistoryModal = false)
+      if (this.showMidiHelpModal) return (this.showMidiHelpModal = false)
+      const noMidi = document.getElementById('noMidiModal')
+      if (noMidi?.open) noMidi.close()
+    },
+
     resultTitle() {
       switch (this.resultMode) {
         case 'strict':         return '⏱ Playthrough strict terminé'
