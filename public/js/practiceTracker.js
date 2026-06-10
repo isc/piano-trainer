@@ -28,11 +28,8 @@ function median(values) {
 //   - aberrant measure → longest normal measure (the notes were still played)
 //   - aberrant gap      → median normal gap (a transition, not playing)
 // Returns the raw wall-clock duration when per-measure timing is unavailable.
-export function computePlaythroughDuration(session, options = {}) {
-  const { measureFloorMs, measureFactor, gapFloorMs, gapFactor } = {
-    ...PLAYTHROUGH_NORMALIZATION,
-    ...options,
-  }
+export function computePlaythroughDuration(session) {
+  const { measureFloorMs, measureFactor, gapFloorMs, gapFactor } = PLAYTHROUGH_NORMALIZATION
 
   const start = new Date(session.playthroughStartedAt).getTime()
   const end = new Date(session.completedAt).getTime()
@@ -66,28 +63,27 @@ export function computePlaythroughDuration(session, options = {}) {
   const positiveGaps = gaps.filter((g) => g > 0)
 
   // Per-kind aberration thresholds, calibrated on this playthrough's own data.
-  const measureThreshold = Math.max(
-    measureFloorMs,
-    measureFactor * median(intervals.map((i) => i.durationMs))
-  )
+  const measureDurations = intervals.map((i) => i.durationMs)
+  const measureThreshold = Math.max(measureFloorMs, measureFactor * median(measureDurations))
   const gapThreshold = Math.max(gapFloorMs, gapFactor * median(positiveGaps))
 
   // Replacement values: the "norm" of each kind.
-  const normalMeasures = intervals.map((i) => i.durationMs).filter((d) => d <= measureThreshold)
+  const normalMeasures = measureDurations.filter((d) => d <= measureThreshold)
   const measureCap = normalMeasures.length ? Math.max(...normalMeasures) : measureThreshold
   const gapReplacement = median(positiveGaps.filter((g) => g <= gapThreshold))
 
   // Re-tile [start, end]: clamp aberrant segments, keep the rest as-is.
+  const clampGap = (gap) => (gap > gapThreshold ? gapReplacement : gap)
   let total = 0
   cursor = start
   for (const { start: s, durationMs } of intervals) {
     const gap = s - cursor
-    if (gap > 0) total += gap > gapThreshold ? gapReplacement : gap
+    if (gap > 0) total += clampGap(gap)
     total += durationMs > measureThreshold ? measureCap : durationMs
     cursor = Math.max(cursor, s + durationMs)
   }
   const trailingGap = end - cursor
-  if (trailingGap > 0) total += trailingGap > gapThreshold ? gapReplacement : trailingGap
+  if (trailingGap > 0) total += clampGap(trailingGap)
 
   return Math.round(total)
 }
