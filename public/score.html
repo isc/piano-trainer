@@ -31,7 +31,7 @@
       document.head.appendChild(alpine)
     </script>
   </head>
-  <body @click="closeSettingsMenu()">
+  <body @click="closeSettingsMenu()" @keydown.escape.window="handleEscape()">
     <header class="pt-topbar">
       <a href="index.html" class="pt-topbar__back">&larr; Bibliothèque</a>
       <div class="pt-topbar__title" x-show="osmdInstance">
