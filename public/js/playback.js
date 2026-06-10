@@ -5,6 +5,7 @@ import { scrollSystemIntoView } from './utils.js'
 let piano = null
 let midiState = null
 let scheduledTimeouts = []
+let activeNotes = new Set()
 let isPlaying = false
 let onPlaybackEnd = null
 let activeOsmd = null
@@ -32,10 +33,12 @@ function sendMidi(midiBytes, pianoFn) {
 }
 
 function noteOn(midiNumber, velocity) {
+  activeNotes.add(midiNumber)
   sendMidi([0x90, midiNumber, Math.round(velocity * 127)], (p) => p.keyDown({ midi: midiNumber, velocity }))
 }
 
 function noteOff(midiNumber) {
+  activeNotes.delete(midiNumber)
   sendMidi([0x80, midiNumber, 0], (p) => p.keyUp({ midi: midiNumber }))
 }
 
@@ -184,6 +187,9 @@ function stop() {
   for (const id of scheduledTimeouts) clearTimeout(id)
   scheduledTimeouts = []
   isPlaying = false
+  // Release every note still sounding — their scheduled noteOff timeouts were
+  // just cancelled, so without this they would ring indefinitely.
+  for (const midiNumber of [...activeNotes]) noteOff(midiNumber)
   pedalUp()
   if (midiState?.midiOutput) {
     midiState.midiOutput.send([0xB0, 123, 0]) // All Notes Off
