@@ -1315,13 +1315,12 @@ img[id^="cursorImg"] { scroll-margin-top: var(--pt-sticky-offset, 100px); }
 .pt-hero__cta { display: flex; flex-wrap: wrap; gap: var(--pt-space-3); align-items: center; }
 .pt-hero__cta a[role="button"] { margin: 0; }
 .pt-hero__visual {
-  background: var(--pt-surface);
   border: 1px solid var(--pt-border);
   border-radius: var(--pt-radius-lg);
   box-shadow: var(--pt-shadow-lg);
-  padding: var(--pt-space-6);
+  overflow: hidden;
 }
-.pt-hero__visual svg { display: block; width: 100%; height: auto; }
+.pt-hero__visual img { display: block; width: 100%; height: auto; }
 
 .pt-section { padding-block: var(--pt-space-10); }
 .pt-section__head { text-align: center; max-width: 44ch; margin: 0 auto var(--pt-space-8); }
