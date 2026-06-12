@@ -501,7 +501,7 @@ function scrollToMeasure(measureIndex) {
   // the staff — that left the top staff clipped under the sticky bars when the
   // repeat jumped back to the top.
   const note = allNotes[measureIndex]?.notes?.[0]?.note
-  const referenceTop = (note && systemTopStaffLineY(note)) ?? rect.getBoundingClientRect().top
+  const referenceTop = systemTopStaffLineY(note) ?? rect.getBoundingClientRect().top
   scrollSystemIntoView(referenceTop, rect.ownerSVGElement)
 }
 
