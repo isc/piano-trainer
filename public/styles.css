@@ -203,6 +203,18 @@ button.pt-topbar__pill {
   height: auto;
 }
 button.pt-topbar__pill:hover { background: var(--pt-surface-2); border-color: var(--pt-border-strong); }
+button.pt-topbar__pill:disabled { opacity: 0.4; cursor: default; }
+
+/* Part navigator in the topbar (collections, e.g. exercices de Hanon) */
+.pt-part-nav { display: flex; align-items: center; gap: var(--pt-space-1); flex-shrink: 0; }
+.pt-part-nav select {
+  margin: 0;
+  width: auto;
+  height: auto;
+  padding: 4px 36px 4px 12px;
+  font-size: 0.85rem;
+  border-radius: var(--pt-radius-pill);
+}
 
 /* Icon buttons (settings, history) */
 .pt-icon-button {

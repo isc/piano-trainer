@@ -295,8 +295,45 @@ export function libraryApp() {
       ].filter((opt) => opt.count > 0)
     },
 
-    getScoreUrl(score)         { return this.baseUrl + score.file },
-    aggregateFor(score)        { return this.aggregatesByScore[this.getScoreUrl(score)] },
+    // A collection ("recueil", e.g. les 20 exercices de Hanon) is a single
+    // library row whose entry has `parts` instead of `file`. Practice data
+    // stays keyed per part file; the row aggregates it and opening the row
+    // resumes the last-played part.
+    isCollection(score) { return Array.isArray(score.parts) },
+
+    lastPlayedPartOf(score) {
+      let best = null
+      for (const part of score.parts) {
+        const at = this.lastPlayedByScore[this.baseUrl + part.file]
+        if (at && (!best || at > best.at)) best = { part, at }
+      }
+      return best?.part
+    },
+
+    getScoreUrl(score) {
+      const file = this.isCollection(score)
+        ? (this.lastPlayedPartOf(score) ?? score.parts[0]).file
+        : score.file
+      return this.baseUrl + file
+    },
+
+    aggregateFor(score) {
+      if (!this.isCollection(score)) return this.aggregatesByScore[this.getScoreUrl(score)]
+      // Synthesized from the parts: times summed, dates maxed. No status —
+      // statuses live per exercise, not per recueil.
+      let agg = null
+      for (const part of score.parts) {
+        const partAgg = this.aggregatesByScore[this.baseUrl + part.file]
+        if (!partAgg) continue
+        agg ??= { totalPracticeTimeMs: 0, timesCompleted: 0, lastPlayedAt: null, lastCompletedAt: null, measures: {} }
+        agg.totalPracticeTimeMs += partAgg.totalPracticeTimeMs || 0
+        agg.timesCompleted += partAgg.timesCompleted || 0
+        for (const key of ['lastPlayedAt', 'lastCompletedAt']) {
+          if (partAgg[key] && (!agg[key] || partAgg[key] > agg[key])) agg[key] = partAgg[key]
+        }
+      }
+      return agg
+    },
     getStatusFor(score)        { return this.aggregateFor(score)?.status || null },
     getPracticeTimeFor(score)  { return this.aggregateFor(score)?.totalPracticeTimeMs || 0 },
 

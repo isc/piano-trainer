@@ -70,6 +70,28 @@
     { "title": "Minuet in G Major BWV Anh. 116", "composer": "J.S. Bach", "file": "bach-minuet-in-g-major-bwv-anh-116.mxl" },
     { "title": "Kinderszenen No. 12 - Kind im Einschlummern", "composer": "Schumann", "file": "kind-im-einschlummern-kinderszenen-no-12-child-falling-asleep.mxl" },
     { "title": "Minuet in D Minor BWV Anh. 132", "composer": "J.S. Bach", "file": "bach-minuet-in-d-minor-bwv-anh-132.mxl" },
-    { "title": "Polonaise in G Minor BWV Anh. 125", "composer": "C.P.E. Bach", "file": "bach-polonaise-in-g-minor-bwv-anh-125.mxl" }
+    { "title": "Polonaise in G Minor BWV Anh. 125", "composer": "C.P.E. Bach", "file": "bach-polonaise-in-g-minor-bwv-anh-125.mxl" },
+    { "title": "Le Pianiste virtuose (1re partie)", "composer": "Hanon", "parts": [
+      { "title": "Exercice 1", "file": "Hanon_Le_Pianiste_Virtuose_Ex_01.mxl" },
+      { "title": "Exercice 2", "file": "Hanon_Le_Pianiste_Virtuose_Ex_02.mxl" },
+      { "title": "Exercice 3", "file": "Hanon_Le_Pianiste_Virtuose_Ex_03.mxl" },
+      { "title": "Exercice 4", "file": "Hanon_Le_Pianiste_Virtuose_Ex_04.mxl" },
+      { "title": "Exercice 5", "file": "Hanon_Le_Pianiste_Virtuose_Ex_05.mxl" },
+      { "title": "Exercice 6", "file": "Hanon_Le_Pianiste_Virtuose_Ex_06.mxl" },
+      { "title": "Exercice 7", "file": "Hanon_Le_Pianiste_Virtuose_Ex_07.mxl" },
+      { "title": "Exercice 8", "file": "Hanon_Le_Pianiste_Virtuose_Ex_08.mxl" },
+      { "title": "Exercice 9", "file": "Hanon_Le_Pianiste_Virtuose_Ex_09.mxl" },
+      { "title": "Exercice 10", "file": "Hanon_Le_Pianiste_Virtuose_Ex_10.mxl" },
+      { "title": "Exercice 11", "file": "Hanon_Le_Pianiste_Virtuose_Ex_11.mxl" },
+      { "title": "Exercice 12", "file": "Hanon_Le_Pianiste_Virtuose_Ex_12.mxl" },
+      { "title": "Exercice 13", "file": "Hanon_Le_Pianiste_Virtuose_Ex_13.mxl" },
+      { "title": "Exercice 14", "file": "Hanon_Le_Pianiste_Virtuose_Ex_14.mxl" },
+      { "title": "Exercice 15", "file": "Hanon_Le_Pianiste_Virtuose_Ex_15.mxl" },
+      { "title": "Exercice 16", "file": "Hanon_Le_Pianiste_Virtuose_Ex_16.mxl" },
+      { "title": "Exercice 17", "file": "Hanon_Le_Pianiste_Virtuose_Ex_17.mxl" },
+      { "title": "Exercice 18", "file": "Hanon_Le_Pianiste_Virtuose_Ex_18.mxl" },
+      { "title": "Exercice 19", "file": "Hanon_Le_Pianiste_Virtuose_Ex_19.mxl" },
+      { "title": "Exercice 20", "file": "Hanon_Le_Pianiste_Virtuose_Ex_20.mxl" }
+    ] }
   ]
 }

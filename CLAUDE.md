@@ -19,7 +19,14 @@ findable by playing its opening notes on the MIDI keyboard:
 ```bash
 ruby scripts/generate_fingerprints.rb
 ```
-`public/data/fingerprints.json` must stay in sync with the catalog (same count).
+`public/data/fingerprints.json` must stay in sync with the catalog: one
+fingerprint per score file, including each part of a collection.
+
+A catalog entry with `parts: [{title, file}]` instead of `file` is a
+**collection** (e.g. the Hanon exercises): one library row, a part navigator on
+the score page, and practice data, fingerings and fingerprints kept per part
+file. The Hanon files were produced by `scripts/split_hanon.rb` from the
+combined MuseScore export.
 
 ## Changelog in-app
 

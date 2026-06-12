@@ -56,34 +56,44 @@ def extract_notes(xml_content)
   part = REXML::XPath.first(doc.root, './/part')
   return notes unless part
 
-  REXML::XPath.each(part, 'measure/note') do |note|
-    next if note.elements['rest']
-    next if note.elements['grace']
-    next if note.elements['chord']
+  REXML::XPath.each(part, 'measure') do |measure|
+    # Voice 1 (the melody / right hand) can be engraved on the lower staff —
+    # e.g. when both hands play in the bass register (Hanon) or the melody
+    # dips below the treble staff (The Entertainer). Per measure, follow
+    # voice 1 onto the topmost staff it occupies.
+    by_staff = Hash.new { |h, k| h[k] = [] }
 
-    staff = note.elements['staff']&.text&.to_i
-    next if staff && staff != 1
+    measure.elements.each('note') do |note|
+      next if note.elements['rest']
+      next if note.elements['grace']
+      next if note.elements['chord']
 
-    voice = note.elements['voice']&.text&.to_i || 1
-    next if voice != 1
+      voice = note.elements['voice']&.text&.to_i || 1
+      next if voice != 1
 
-    has_stop  = REXML::XPath.first(note, "tie[@type='stop']")
-    has_start = REXML::XPath.first(note, "tie[@type='start']")
-    next if has_stop && !has_start
+      has_stop  = REXML::XPath.first(note, "tie[@type='stop']")
+      has_start = REXML::XPath.first(note, "tie[@type='start']")
+      next if has_stop && !has_start
 
-    pitch = note.elements['pitch']
-    next unless pitch
+      pitch = note.elements['pitch']
+      next unless pitch
 
-    step   = pitch.elements['step']&.text
-    alter  = pitch.elements['alter']&.text&.to_i || 0
-    octave = pitch.elements['octave']&.text
-    next unless step && octave && STEP_SEMITONES.key?(step)
+      step   = pitch.elements['step']&.text
+      alter  = pitch.elements['alter']&.text&.to_i || 0
+      octave = pitch.elements['octave']&.text
+      next unless step && octave && STEP_SEMITONES.key?(step)
 
-    notes << pitch_to_midi(step, alter, octave)
+      staff = note.elements['staff']&.text&.to_i || 1
+      by_staff[staff] << pitch_to_midi(step, alter, octave)
+    end
+
+    next if by_staff.empty?
+
+    notes.concat(by_staff[by_staff.keys.min])
     break if notes.length >= NOTE_COUNT
   end
 
-  notes
+  notes.first(NOTE_COUNT)
 rescue REXML::ParseException => e
   warn "  XML parse error: #{e.message.lines.first&.chomp}"
   []
@@ -94,7 +104,16 @@ data = JSON.parse(File.read(SCORES_JSON))
 fingerprints = []
 errors = []
 
-data['scores'].each do |score|
+# Collections ("parts" instead of "file") get one fingerprint per part, so
+# playing the opening of an exercise opens that exercise directly.
+entries = data['scores'].flat_map do |score|
+  next score unless score['parts']
+  score['parts'].map do |part|
+    { 'title' => "#{score['title']} — #{part['title']}", 'composer' => score['composer'], 'file' => part['file'] }
+  end
+end
+
+entries.each do |score|
   file_path = File.join(SCORES_DIR, score['file'])
 
   unless File.exist?(file_path)
@@ -133,4 +152,4 @@ end
 
 lines = fingerprints.map { |fp| JSON.generate(fp) }
 File.write(OUTPUT_FILE, "{\n  \"fingerprints\": [\n    #{lines.join(",\n    ")}\n  ]\n}\n")
-puts "\nGenerated #{fingerprints.length}/#{data['scores'].length} fingerprints → #{OUTPUT_FILE}"
+puts "\nGenerated #{fingerprints.length}/#{entries.length} fingerprints → #{OUTPUT_FILE}"

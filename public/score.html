@@ -35,8 +35,29 @@
     <header class="pt-topbar">
       <a href="index.html" class="pt-topbar__back">&larr; Bibliothèque</a>
       <div class="pt-topbar__title" x-show="osmdInstance">
-        <span x-text="scoreTitle || 'Partition'"></span>
+        <span x-text="collection ? collection.title : (scoreTitle || 'Partition')"></span>
         <small x-show="scoreComposer" x-text="scoreComposer"></small>
+      </div>
+
+      <!-- Part navigator, shown when the score belongs to a collection -->
+      <div class="pt-part-nav" x-show="collection && osmdInstance">
+        <button
+          class="pt-topbar__pill"
+          :disabled="collectionIndex <= 0"
+          @click="gotoPart(collectionIndex - 1)"
+          aria-label="Exercice précédent"
+        >←</button>
+        <select aria-label="Choisir un exercice" @change="gotoPart(Number($event.target.value))">
+          <template x-for="(part, i) in collection?.parts ?? []" :key="part.file">
+            <option :value="i" :selected="i === collectionIndex" x-text="part.title"></option>
+          </template>
+        </select>
+        <button
+          class="pt-topbar__pill"
+          :disabled="collectionIndex >= (collection?.parts.length ?? 0) - 1"
+          @click="gotoPart(collectionIndex + 1)"
+          aria-label="Exercice suivant"
+        >→</button>
       </div>
       <div class="pt-topbar__actions">
         <!-- MIDI status / connect -->
