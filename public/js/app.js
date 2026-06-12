@@ -3,7 +3,7 @@ import { initMusicXML } from './musicxml.js'
 import { initFingeringEditor } from './fingeringEditor.js'
 import { initCassettes } from './cassettes.js'
 import { initPracticeTracker } from './practiceTracker.js'
-import { formatDuration, formatDate, applyStickyOffset } from './utils.js'
+import { formatDuration, formatDate, applyStickyOffset, scorePageUrl } from './utils.js'
 import { initStorage } from './storage.js'
 import { loadMxlAsXml } from './mxlLoader.js'
 import { injectFingerings } from './fingeringInjector.js'
@@ -311,7 +311,7 @@ export function midiApp() {
     gotoPart(index) {
       const part = this.collection?.parts[index]
       if (!part) return
-      window.location.href = `score.html?url=${encodeURIComponent(part.url)}`
+      window.location.href = scorePageUrl(part.url)
     },
 
     captureScoreMetadata() {

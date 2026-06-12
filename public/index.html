@@ -106,7 +106,7 @@
                 <div class="pt-journal__entries">
                   <template x-for="entry in dateEntry.log" :key="entry.scoreId">
                     <div class="pt-journal__entry">
-                      <a :href="'score.html?url=' + encodeURIComponent(entry.scoreId)" x-text="(entry.scoreTitle || 'Sans titre') + ' · ' + entry.composer"></a>
+                      <a :href="scorePageUrl(entry.scoreId)" x-text="(entry.scoreTitle || 'Sans titre') + ' · ' + entry.composer"></a>
                       <small>
                         <span x-text="formatDuration(entry.totalPracticeTimeMs)"></span>
                         <span x-show="entry.timesPlayedInFull === 1"> · Joué en entier</span>
@@ -154,7 +154,7 @@
               <template x-for="score in filteredScores" :key="score.file || score.title">
                 <tr>
                   <td>
-                    <a :href="'score.html?url=' + encodeURIComponent(getScoreUrl(score))" x-text="score.title"></a>
+                    <a :href="scorePageUrl(getScoreUrl(score))" x-text="score.title"></a>
                     <small x-show="isCollection(score)" x-text="score.parts?.length + ' exercices'"></small>
                   </td>
                   <td>

@@ -1,7 +1,7 @@
 import { initMidi } from './midi.js'
 import { initPracticeTracker } from './practiceTracker.js'
 import { initStorage } from './storage.js'
-import { formatDuration, formatDate, formatRelativeDate, statusLabel } from './utils.js'
+import { formatDuration, formatDate, formatRelativeDate, statusLabel, scorePageUrl } from './utils.js'
 import { PERIODS, getPeriodForComposer } from './musicalPeriods.js'
 import { CHANGELOG } from './changelog.js'
 
@@ -157,7 +157,7 @@ export function libraryApp() {
       }
 
       if (maxPos >= MIN_MATCH && leader !== null) {
-        window.location.href = `score.html?url=${encodeURIComponent(this.baseUrl + leader.file)}`
+        window.location.href = scorePageUrl(this.baseUrl + leader.file)
         return
       }
 
@@ -319,8 +319,9 @@ export function libraryApp() {
 
     aggregateFor(score) {
       if (!this.isCollection(score)) return this.aggregatesByScore[this.getScoreUrl(score)]
-      // Synthesized from the parts: times summed, dates maxed. No status —
-      // statuses live per exercise, not per recueil.
+      // Synthesized from the parts: times summed, dates maxed, measures pooled
+      // (keys namespaced by part — focus chips only look at the values). No
+      // status — statuses live per exercise, not per recueil.
       let agg = null
       for (const part of score.parts) {
         const partAgg = this.aggregatesByScore[this.baseUrl + part.file]
@@ -330,6 +331,9 @@ export function libraryApp() {
         agg.timesCompleted += partAgg.timesCompleted || 0
         for (const key of ['lastPlayedAt', 'lastCompletedAt']) {
           if (partAgg[key] && (!agg[key] || partAgg[key] > agg[key])) agg[key] = partAgg[key]
+        }
+        for (const [index, measure] of Object.entries(partAgg.measures || {})) {
+          agg.measures[`${part.file}:${index}`] = measure
         }
       }
       return agg
@@ -352,6 +356,7 @@ export function libraryApp() {
     formatDuration,
     formatDate,
     statusLabel,
+    scorePageUrl,
 
     openChangelog() {
       this.showChangelogModal = true
