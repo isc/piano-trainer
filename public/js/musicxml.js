@@ -496,7 +496,13 @@ function scrollToMeasure(measureIndex) {
   const rect = measureClickRectangles[measureIndex]
   if (!rect) return
 
-  scrollSystemIntoView(rect.getBoundingClientRect().top, rect.ownerSVGElement)
+  // Anchor on the system's top staff line (matching the playback cursor) rather
+  // than the measure rect, whose top tracks the noteheads and can sit well below
+  // the staff — that left the top staff clipped under the sticky bars when the
+  // repeat jumped back to the top.
+  const note = allNotes[measureIndex]?.notes?.[0]?.note
+  const referenceTop = (note && systemTopStaffLineY(note)) ?? rect.getBoundingClientRect().top
+  scrollSystemIntoView(referenceTop, rect.ownerSVGElement)
 }
 
 // A held key can't be re-struck. A note is covered by a currently-held key when a tie
@@ -829,11 +835,33 @@ function svgNotehead(noteData) {
   return svgNoteheadFor(osmdInstance, noteData)
 }
 
+// Navigate up the OSMD hierarchy: note → parentVoiceEntry → parentStaffEntry → parentMeasure.
+function graphicalMeasureForNote(note) {
+  return osmdInstance.rules.GNote(note).parentVoiceEntry.parentStaffEntry.parentMeasure
+}
+
+// Viewport-space Y of the top staff line of the system that contains `note`.
+// The playback cursor's top sits exactly on this line, so anchoring measure-mode
+// autoscroll here makes free MIDI mode and free playback (écoute) scroll
+// identically — the measure rect's own top tracks the noteheads and can sit well
+// below the staff, which left the top staff clipped under the sticky bars when
+// jumping back to the top on a repeat. Returns null if the OSMD lookup fails.
+function systemTopStaffLineY(note) {
+  try {
+    const system = graphicalMeasureForNote(note).parentMusicSystem
+    const svgY = system.graphicalMeasures[0][0].stave.getYForLine(0)
+    const svg = svgNote(note).ownerSVGElement
+    const point = svg.createSVGPoint()
+    point.y = svgY
+    return point.matrixTransform(svg.getScreenCTM()).y
+  } catch {
+    return null
+  }
+}
+
 function getSystemIndexForNote(note) {
   try {
-    // Navigate up the OSMD hierarchy: note → parentVoiceEntry → parentStaffEntry → parentMeasure
-    const graphicalNote = osmdInstance.rules.GNote(note)
-    const parentMeasure = graphicalNote.parentVoiceEntry.parentStaffEntry.parentMeasure
+    const parentMeasure = graphicalMeasureForNote(note)
 
     // Find which MusicSystem contains this measure (MusicSystems are in the first music page)
     const musicSystems = osmdInstance.graphic.musicPages[0].MusicSystems
