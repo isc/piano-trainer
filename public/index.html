@@ -14,7 +14,7 @@
     <script defer src="vendor/alpinejs.3.14.9.min.js"></script>
   </head>
   <body>
-    <main class="container pt-library-page">
+    <main class="container pt-library-page" @keydown.escape.window="showChangelogModal = false">
       <div class="pt-library-chrome">
         <div class="pt-page-header">
           <h1>Bibliothèque</h1>
@@ -28,6 +28,16 @@
               />
             </div>
             <a href="score.html" role="button" class="secondary">📄 Charger une partition</a>
+            <button
+              type="button"
+              role="button"
+              class="secondary pt-changelog-btn"
+              @click="openChangelog()"
+              :aria-label="hasUnseenChangelog ? 'Nouveautés (nouvelles entrées)' : 'Nouveautés'"
+            >
+              ✨ Nouveautés
+              <span class="pt-changelog-dot" x-show="hasUnseenChangelog" aria-hidden="true"></span>
+            </button>
           </div>
         </div>
 
@@ -172,6 +182,26 @@
           </table>
         </div>
       </div>
+
+      <!-- Changelog ("Nouveautés") modal -->
+      <dialog class="pt-changelog-dialog" :open="showChangelogModal">
+        <article>
+          <header>
+            <p><strong>✨ Nouveautés</strong></p>
+            <button aria-label="Close" rel="prev" @click="showChangelogModal = false"></button>
+          </header>
+          <template x-for="entry in changelog" :key="entry.date">
+            <section class="pt-changelog-entry">
+              <h4 x-text="formatChangelogDate(entry.date)"></h4>
+              <ul>
+                <template x-for="(item, i) in entry.items" :key="i">
+                  <li x-text="item"></li>
+                </template>
+              </ul>
+            </section>
+          </template>
+        </article>
+      </dialog>
     </main>
   </body>
 </html>
