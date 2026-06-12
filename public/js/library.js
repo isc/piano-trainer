@@ -3,6 +3,14 @@ import { initPracticeTracker } from './practiceTracker.js'
 import { initStorage } from './storage.js'
 import { formatDuration, formatDate, formatRelativeDate, statusLabel } from './utils.js'
 import { PERIODS, getPeriodForComposer } from './musicalPeriods.js'
+import { CHANGELOG } from './changelog.js'
+
+const CHANGELOG_SEEN_KEY = 'pt-changelog-seen'
+const CHANGELOG_DATE_FORMATTER = new Intl.DateTimeFormat('fr-FR', {
+  day: 'numeric',
+  month: 'long',
+  year: 'numeric',
+})
 
 const MIN_MATCH = 5
 const STATUS_ORDER = ['dechiffrage', 'perfectionnement', 'repertoire']
@@ -33,8 +41,17 @@ export function libraryApp() {
     dailyLogsByDate: [],
     lastPlayedByScore: {},
     aggregatesByScore: {},
+    changelog: CHANGELOG,
+    showChangelogModal: false,
+    hasUnseenChangelog: false,
 
     async init() {
+      // Flag the "Nouveautés" button when the latest entry post-dates the last
+      // time the user opened the changelog (or has never opened it).
+      const latest = CHANGELOG[0]?.date
+      const seen = localStorage.getItem(CHANGELOG_SEEN_KEY)
+      this.hasUnseenChangelog = !!latest && seen !== latest
+
       for (const key of ['statusFilter', 'composerFilter', 'periodFilter', 'focusFilter', 'searchQuery']) {
         this.$watch(key, () => this.syncUrl())
       }
@@ -298,6 +315,19 @@ export function libraryApp() {
     formatDuration,
     formatDate,
     statusLabel,
+
+    openChangelog() {
+      this.showChangelogModal = true
+      // Opening the changelog clears the "unseen" flag until the next entry.
+      const latest = CHANGELOG[0]?.date
+      if (latest) localStorage.setItem(CHANGELOG_SEEN_KEY, latest)
+      this.hasUnseenChangelog = false
+    },
+
+    formatChangelogDate(iso) {
+      const [y, m, d] = iso.split('-').map(Number)
+      return CHANGELOG_DATE_FORMATTER.format(new Date(y, m - 1, d))
+    },
 
     getTotalPracticeTimeForDate(dateEntry) {
       return dateEntry.log.reduce((sum, entry) => sum + entry.totalPracticeTimeMs, 0)

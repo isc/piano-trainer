@@ -21,6 +21,18 @@ ruby scripts/generate_fingerprints.rb
 ```
 `public/data/fingerprints.json` must stay in sync with the catalog (same count).
 
+## Changelog in-app
+
+`public/js/changelog.js` feeds the "Nouveautés" modal on the library page. The
+bar is high: an entry must be worth the reader's time. Add **real user-facing
+changes** here — a new feature, a notable behaviour change, a fix the player
+would have noticed. Do NOT add per-score notation fixes, refactors, CI, lint, or
+purely technical changes. When in doubt, leave it out.
+
+**IMPORTANT:** After shipping a significant feature, add a French entry at the
+top of `CHANGELOG` (antechronological order), grouping items under the
+publication date (`YYYY-MM-DD`). Keep each item short and concrete.
+
 ## Playwright Browser Testing
 
 Use the **Playwright CLI** (`@playwright/cli`, already a devDependency — binary at

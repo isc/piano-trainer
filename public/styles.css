@@ -1064,6 +1064,30 @@ dialog > article > footer button { margin: 0; }
 .pt-modal-note { color: var(--pt-text-muted); margin-top: var(--pt-space-3); font-size: 0.9rem; }
 .pt-modal-note--inline { margin-left: var(--pt-space-2); margin-top: 0; }
 
+/* Changelog ("Nouveautés") */
+.pt-changelog-btn { position: relative; }
+.pt-changelog-dot {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--pt-accent);
+}
+.pt-changelog-entry { margin-top: var(--pt-space-4); }
+.pt-changelog-entry:first-of-type { margin-top: 0; }
+.pt-changelog-entry h4 {
+  color: var(--pt-text-muted);
+  font-size: 0.85rem;
+  letter-spacing: 0.01em;
+  margin-bottom: var(--pt-space-2);
+  font-weight: 600;
+}
+.pt-changelog-entry ul { margin: 0; padding-left: 1.1rem; }
+.pt-changelog-entry li { margin-bottom: var(--pt-space-2); }
+.pt-changelog-entry li:last-child { margin-bottom: 0; }
+
 .pt-strict-breakdown { list-style: none; padding: 0; margin: var(--pt-space-3) 0; color: var(--pt-text-muted); font-size: 0.9rem; }
 
 .pt-hot-measures { list-style: none; padding: 0; margin: 0; }
