@@ -1320,7 +1320,8 @@ img[id^="cursorImg"] { scroll-margin-top: var(--pt-sticky-offset, 100px); }
   box-shadow: var(--pt-shadow-lg);
   overflow: hidden;
 }
-.pt-hero__visual img { display: block; width: 100%; height: auto; }
+.pt-hero__visual img,
+.pt-hero__visual video { display: block; width: 100%; height: auto; }
 
 .pt-section { padding-block: var(--pt-space-10); }
 .pt-section__head { text-align: center; max-width: 44ch; margin: 0 auto var(--pt-space-8); }

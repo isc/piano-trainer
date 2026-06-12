@@ -51,12 +51,18 @@
           </div>
         </div>
         <div class="pt-hero__visual">
-          <img
-            src="img/app-preview.png"
+          <video
+            id="hero-video"
             width="1280"
             height="720"
-            alt="La partition de l'Arabesque no 1 de Debussy ouverte dans Piano Trainer, avec la barre de modes de travail."
-          />
+            muted
+            loop
+            playsinline
+            poster="img/hero-poster.jpg"
+            aria-label="Aperçu de Piano Trainer : la bibliothèque de partitions, une partition avec retour en temps réel, et l'accroche du produit."
+          >
+            <source src="video/hero.mp4" type="video/mp4" />
+          </video>
         </div>
       </section>
 
@@ -130,5 +136,16 @@
         Piano Trainer · partitions du domaine public · vos données restent dans votre navigateur.
       </footer>
     </main>
+
+    <!-- Autoplay the hero video only when the visitor hasn't asked to reduce
+         motion; otherwise the poster frame stands in. -->
+    <script>
+      const heroVideo = document.getElementById('hero-video')
+      if (heroVideo && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        heroVideo.autoplay = true
+        const playing = heroVideo.play()
+        if (playing) playing.catch(() => {})
+      }
+    </script>
   </body>
 </html>
