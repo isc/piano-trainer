@@ -6,7 +6,7 @@ require_relative 'test_helper'
 class CollectionTest < CapybaraTestBase
   def setup
     page.driver.set_cookie('test-env', 'true')
-    visit '/index.html'
+    visit '/library'
     assert_selector 'tbody tr', minimum: 1
   end
 
@@ -58,7 +58,7 @@ class CollectionTest < CapybaraTestBase
     JS
     sleep 0.2
 
-    visit '/index.html'
+    visit '/library'
     assert_selector 'tbody tr', minimum: 1
     link = find('td a', text: 'Le Pianiste virtuose (1re partie)')
     assert_match(/Ex_03/, link[:href])

@@ -67,9 +67,15 @@ class App < Sinatra::Base
     end
   end
 
-  # Route pour servir le fichier HTML principal
+  # Landing page (pitch + onboarding) served at the root.
   get '/' do
     send_file File.join(settings.public_folder, 'index.html')
+  end
+
+  # The score library — the app itself. Returning visitors are redirected
+  # here from the landing page (see public/index.html).
+  get '/library' do
+    send_file File.join(settings.public_folder, 'library.html')
   end
 
   # API pour lister les cassettes disponibles

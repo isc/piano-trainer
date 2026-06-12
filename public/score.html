@@ -33,7 +33,7 @@
   </head>
   <body @click="closeSettingsMenu()" @keydown.escape.window="handleEscape()">
     <header class="pt-topbar">
-      <a href="index.html" class="pt-topbar__back">&larr; Bibliothèque</a>
+      <a href="/library" class="pt-topbar__back">&larr; Bibliothèque</a>
       <div class="pt-topbar__title" x-show="osmdInstance">
         <span x-text="collection ? collection.title : (scoreTitle || 'Partition')"></span>
         <small x-show="scoreComposer" x-text="scoreComposer"></small>
