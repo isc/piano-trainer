@@ -3,7 +3,7 @@ import { initMusicXML } from './musicxml.js'
 import { initFingeringEditor } from './fingeringEditor.js'
 import { initCassettes } from './cassettes.js'
 import { initPracticeTracker } from './practiceTracker.js'
-import { formatDuration, formatDate, applyStickyOffset } from './utils.js'
+import { formatDuration, formatDate, applyStickyOffset, scorePageUrl } from './utils.js'
 import { initStorage } from './storage.js'
 import { loadMxlAsXml } from './mxlLoader.js'
 import { injectFingerings } from './fingeringInjector.js'
@@ -51,6 +51,11 @@ export function midiApp() {
     scoreUrl: null,
     scoreTitle: null,
     scoreComposer: null,
+
+    // Set when the loaded score is one part of a collection (e.g. un
+    // exercice de Hanon) — drives the part navigator in the topbar.
+    collection: null,
+    collectionIndex: 0,
 
     rightHandActive: true,
     leftHandActive: true,
@@ -269,6 +274,7 @@ export function midiApp() {
     async loadScoreFromURL(url) {
       this.scoreUrl = url
       this.fingeringEnabled = true
+      this.loadCollectionInfo(url) // fire-and-forget: the navigator appears when ready
 
       await this.renderScoreWithFingerings()
       this.captureScoreMetadata()
@@ -278,6 +284,34 @@ export function midiApp() {
 
       // Load reinforcement suggestions from last completed playthrough
       await this.refreshReinforcementSuggestions()
+    },
+
+    // If the loaded file is one part of a collection in the catalog, expose
+    // the sibling parts so the topbar can offer prev/next navigation.
+    async loadCollectionInfo(url) {
+      try {
+        const response = await fetch('data/scores.json')
+        const data = await response.json()
+        for (const score of data.scores) {
+          if (!Array.isArray(score.parts)) continue
+          const index = score.parts.findIndex((p) => data.baseUrl + p.file === url)
+          if (index === -1) continue
+          this.collection = {
+            title: score.title,
+            parts: score.parts.map((p) => ({ ...p, url: data.baseUrl + p.file })),
+          }
+          this.collectionIndex = index
+          return
+        }
+      } catch (error) {
+        console.warn('Collection lookup failed:', error)
+      }
+    },
+
+    gotoPart(index) {
+      const part = this.collection?.parts[index]
+      if (!part) return
+      window.location.href = scorePageUrl(part.url)
     },
 
     captureScoreMetadata() {

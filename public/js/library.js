@@ -1,7 +1,7 @@
 import { initMidi } from './midi.js'
 import { initPracticeTracker } from './practiceTracker.js'
 import { initStorage } from './storage.js'
-import { formatDuration, formatDate, formatRelativeDate, statusLabel } from './utils.js'
+import { formatDuration, formatDate, formatRelativeDate, statusLabel, scorePageUrl } from './utils.js'
 import { PERIODS, getPeriodForComposer } from './musicalPeriods.js'
 import { CHANGELOG } from './changelog.js'
 
@@ -157,7 +157,7 @@ export function libraryApp() {
       }
 
       if (maxPos >= MIN_MATCH && leader !== null) {
-        window.location.href = `score.html?url=${encodeURIComponent(this.baseUrl + leader.file)}`
+        window.location.href = scorePageUrl(this.baseUrl + leader.file)
         return
       }
 
@@ -295,8 +295,49 @@ export function libraryApp() {
       ].filter((opt) => opt.count > 0)
     },
 
-    getScoreUrl(score)         { return this.baseUrl + score.file },
-    aggregateFor(score)        { return this.aggregatesByScore[this.getScoreUrl(score)] },
+    // A collection ("recueil", e.g. les 20 exercices de Hanon) is a single
+    // library row whose entry has `parts` instead of `file`. Practice data
+    // stays keyed per part file; the row aggregates it and opening the row
+    // resumes the last-played part.
+    isCollection(score) { return Array.isArray(score.parts) },
+
+    lastPlayedPartOf(score) {
+      let best = null
+      for (const part of score.parts) {
+        const at = this.lastPlayedByScore[this.baseUrl + part.file]
+        if (at && (!best || at > best.at)) best = { part, at }
+      }
+      return best?.part
+    },
+
+    getScoreUrl(score) {
+      const file = this.isCollection(score)
+        ? (this.lastPlayedPartOf(score) ?? score.parts[0]).file
+        : score.file
+      return this.baseUrl + file
+    },
+
+    aggregateFor(score) {
+      if (!this.isCollection(score)) return this.aggregatesByScore[this.getScoreUrl(score)]
+      // Synthesized from the parts: times summed, dates maxed, measures pooled
+      // (keys namespaced by part — focus chips only look at the values). No
+      // status — statuses live per exercise, not per recueil.
+      let agg = null
+      for (const part of score.parts) {
+        const partAgg = this.aggregatesByScore[this.baseUrl + part.file]
+        if (!partAgg) continue
+        agg ??= { totalPracticeTimeMs: 0, timesCompleted: 0, lastPlayedAt: null, lastCompletedAt: null, measures: {} }
+        agg.totalPracticeTimeMs += partAgg.totalPracticeTimeMs || 0
+        agg.timesCompleted += partAgg.timesCompleted || 0
+        for (const key of ['lastPlayedAt', 'lastCompletedAt']) {
+          if (partAgg[key] && (!agg[key] || partAgg[key] > agg[key])) agg[key] = partAgg[key]
+        }
+        for (const [index, measure] of Object.entries(partAgg.measures || {})) {
+          agg.measures[`${part.file}:${index}`] = measure
+        }
+      }
+      return agg
+    },
     getStatusFor(score)        { return this.aggregateFor(score)?.status || null },
     getPracticeTimeFor(score)  { return this.aggregateFor(score)?.totalPracticeTimeMs || 0 },
 
@@ -315,6 +356,7 @@ export function libraryApp() {
     formatDuration,
     formatDate,
     statusLabel,
+    scorePageUrl,
 
     openChangelog() {
       this.showChangelogModal = true

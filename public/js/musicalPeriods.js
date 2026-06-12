@@ -10,6 +10,7 @@ const COMPOSER_PERIODS = {
   'Mozart':             'classique',
   'Beethoven':          'classique',
   'Schubert':           'romantique',
+  'Hanon':              'romantique',
   'Chopin':             'romantique',
   'Schumann':           'romantique',
   'Liszt':              'romantique',

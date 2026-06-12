@@ -57,6 +57,11 @@ export function scrollSystemIntoView(referenceTop, svg) {
   window.scrollTo({ top: Math.max(0, targetY), behavior: 'smooth' })
 }
 
+// Canonical link to the score page for a library score URL ("scores/<file>").
+export function scorePageUrl(url) {
+  return `score.html?url=${encodeURIComponent(url)}`
+}
+
 export function formatDuration(ms) {
   const totalSeconds = Math.floor(ms / 1000)
   const totalMinutes = Math.floor(totalSeconds / 60)
