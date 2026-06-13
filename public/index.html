@@ -8,10 +8,17 @@
     <link rel="stylesheet" href="vendor/pico.2.1.1min.css" />
     <link rel="stylesheet" href="styles.css" />
     <script type="module">
+      // Register the Alpine root component before Alpine boots, then load Alpine.
+      // Loading Alpine from inside this module (rather than a sibling `defer`
+      // script) guarantees `libraryApp` exists before Alpine evaluates `x-data`,
+      // even when library.js's import graph is slow to resolve. Otherwise Alpine
+      // can win the race and every expression throws "<name> is not defined".
       import { libraryApp } from './js/library.js'
       window.libraryApp = libraryApp
+      const alpine = document.createElement('script')
+      alpine.src = 'vendor/alpinejs.3.14.9.min.js'
+      document.head.appendChild(alpine)
     </script>
-    <script defer src="vendor/alpinejs.3.14.9.min.js"></script>
   </head>
   <body>
     <main class="container pt-library-page" @keydown.escape.window="showChangelogModal = false">
