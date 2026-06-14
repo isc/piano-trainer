@@ -1,0 +1,213 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1920, height=1080" />
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+    <style>
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      html, body { width: 1920px; height: 1080px; overflow: hidden; background: #f7f7f9; }
+      body {
+        font-family: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+        color: #1c1f29;
+        -webkit-font-smoothing: antialiased;
+      }
+
+      .bg {
+        position: absolute;
+        inset: 0;
+        background:
+          radial-gradient(1200px 800px at 78% 12%, #eef0fb 0%, rgba(238,240,251,0) 60%),
+          radial-gradient(900px 700px at 12% 96%, #eaf6ef 0%, rgba(234,246,239,0) 55%),
+          #f7f7f9;
+      }
+
+      .scene {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        gap: 84px;
+        padding: 0 150px;
+        will-change: transform, opacity;
+      }
+      .copy { width: 590px; flex: 0 0 590px; }
+      .chip {
+        display: inline-block;
+        font-size: 26px;
+        font-weight: 600;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: #1f2a6e;
+        background: #eef0fb;
+        padding: 12px 24px;
+        border-radius: 999px;
+        margin-bottom: 32px;
+      }
+      .scene h1 {
+        font-size: 92px;
+        line-height: 1.02;
+        font-weight: 700;
+        letter-spacing: -0.024em;
+        margin-bottom: 30px;
+      }
+      .scene p { font-size: 36px; line-height: 1.38; color: #5b6270; max-width: 24ch; }
+      .accent { color: #2f3b8c; }
+
+      .card {
+        position: relative;
+        border-radius: 22px;
+        overflow: hidden;
+        background: #fff;
+        border: 1px solid #e3e5ec;
+        box-shadow: 0 34px 90px rgba(15, 18, 30, 0.18);
+        will-change: transform, opacity;
+      }
+      .card img { display: block; width: 100%; height: auto; }
+      .shot { width: 1000px; flex: 0 0 1000px; }
+
+      .brand {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 30px;
+        text-align: center;
+      }
+      .brand__lockup { display: flex; align-items: center; gap: 22px; }
+      .brand__lockup img { width: 92px; height: 92px; }
+      .brand__lockup span { font-size: 68px; font-weight: 700; letter-spacing: -0.02em; }
+      .brand h2 {
+        font-size: 80px;
+        font-weight: 700;
+        letter-spacing: -0.024em;
+        max-width: 18ch;
+        line-height: 1.06;
+      }
+      .brand__cta {
+        margin-top: 16px;
+        font-size: 34px;
+        font-weight: 600;
+        color: #fff;
+        background: #2f3b8c;
+        padding: 20px 40px;
+        border-radius: 14px;
+      }
+      .brand__montage {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 60px;
+        filter: blur(26px) saturate(1.05);
+        opacity: 0;
+        transform: scale(1.08);
+      }
+      .brand__montage img { width: 760px; border-radius: 22px; box-shadow: 0 30px 80px rgba(15,18,30,0.2); }
+    </style>
+  </head>
+  <body>
+    <div
+      id="root"
+      data-composition-id="main"
+      data-start="0"
+      data-duration="17.4"
+      data-width="1920"
+      data-height="1080"
+    >
+      <div class="bg" id="bg"></div>
+
+      <!-- Scene 1 — Library (copy left) -->
+      <div class="scene clip" id="s1" data-start="0" data-duration="3.6" data-track-index="1">
+        <div class="copy" id="s1-copy">
+          <span class="chip">Bibliothèque</span>
+          <h1>Votre répertoire,<br /><span class="accent">au même endroit.</span></h1>
+          <p>Partitions classiques et exercices, prêts à jouer.</p>
+        </div>
+        <div class="card shot" id="s1-card"><img src="assets/library.png" alt="" /></div>
+      </div>
+
+      <!-- Scene 2 — Real-time feedback (card left) -->
+      <div class="scene clip" id="s2" data-start="3.4" data-duration="3.6" data-track-index="2">
+        <div class="card shot" id="s2-card"><img src="assets/score-feedback.png" alt="" /></div>
+        <div class="copy" id="s2-copy">
+          <span class="chip">Retour en temps réel</span>
+          <h1>Chaque note,<br /><span class="accent">validée à l'instant.</span></h1>
+          <p>Les notes justes passent au vert, en direct.</p>
+        </div>
+      </div>
+
+      <!-- Scene 3 — Training mode (copy left) -->
+      <div class="scene clip" id="s3" data-start="6.8" data-duration="3.6" data-track-index="3">
+        <div class="copy" id="s3-copy">
+          <span class="chip">Mode entraînement</span>
+          <h1>Trois fois,<br /><span class="accent">sans la moindre faute.</span></h1>
+          <p>Chaque mesure se répète jusqu'à la maîtrise.</p>
+        </div>
+        <div class="card shot" id="s3-card"><img src="assets/training.png" alt="" /></div>
+      </div>
+
+      <!-- Scene 4 — History (card left) -->
+      <div class="scene clip" id="s4" data-start="10.2" data-duration="3.6" data-track-index="4">
+        <div class="card shot" id="s4-card"><img src="assets/history.png" alt="" /></div>
+        <div class="copy" id="s4-copy">
+          <span class="chip">Historique</span>
+          <h1>Votre progression,<br /><span class="accent">noir sur blanc.</span></h1>
+          <p>Le temps de jeu complet baisse, séance après séance.</p>
+        </div>
+      </div>
+
+      <!-- Scene 5 — Brand lockup -->
+      <div class="brand clip" id="s5" data-start="13.6" data-duration="3.8" data-track-index="5">
+        <div class="brand__montage" id="s5-montage">
+          <img src="assets/library.png" alt="" />
+          <img src="assets/score-feedback.png" alt="" />
+        </div>
+        <div class="brand__lockup" id="s5-lockup">
+          <img src="assets/favicon.svg" alt="" />
+          <span>Piano Trainer</span>
+        </div>
+        <h2 id="s5-tag">Travaillez votre piano avec un retour en temps réel.</h2>
+        <div class="brand__cta" id="s5-cta">Commencer à jouer</div>
+      </div>
+    </div>
+
+    <script>
+      window.__timelines = window.__timelines || {}
+      const tl = gsap.timeline({ paused: true })
+
+      // Four content scenes share the same entrance/hold/exit choreography.
+      const SCENES = [
+        { id: "s1", t: 0.0, dx: 120 },
+        { id: "s2", t: 3.4, dx: -120 },
+        { id: "s3", t: 6.8, dx: 120 },
+        { id: "s4", t: 10.2, dx: -120 },
+      ]
+      SCENES.forEach((sc) => {
+        const first = sc.id === "s1"
+        if (!first) tl.fromTo("#" + sc.id, { opacity: 0 }, { opacity: 1, duration: 0.45, ease: "power2.out" }, sc.t + 0.05)
+        tl.from("#" + sc.id + "-card", { x: sc.dx, scale: 0.96, opacity: first ? 0 : 1, duration: 0.9, ease: "power3.out" }, sc.t + (first ? 0.25 : 0.15))
+        tl.from("#" + sc.id + "-copy .chip", { y: 40, opacity: 0, duration: 0.6, ease: "power3.out" }, sc.t + 0.35)
+        tl.from("#" + sc.id + "-copy h1", { y: 50, opacity: 0, duration: 0.7, ease: "power3.out" }, sc.t + 0.47)
+        tl.from("#" + sc.id + "-copy p", { y: 40, opacity: 0, duration: 0.6, ease: "power3.out" }, sc.t + 0.63)
+        tl.to("#" + sc.id + "-card", { y: -22, duration: 2.3, ease: "sine.inOut" }, sc.t + 0.8)
+        tl.to("#" + sc.id, { opacity: 0, duration: 0.55, ease: "power2.in" }, sc.t + 3.05)
+      })
+
+      // Brand scene
+      const b = 13.6
+      tl.fromTo("#s5", { opacity: 0 }, { opacity: 1, duration: 0.5, ease: "power2.out" }, b + 0.05)
+      tl.fromTo("#s5-montage", { opacity: 0, scale: 1.12 }, { opacity: 0.5, scale: 1.04, duration: 1.2, ease: "power2.out" }, b + 0.1)
+      tl.fromTo("#s5-lockup", { y: 40, opacity: 0 }, { y: 0, opacity: 1, duration: 0.7, ease: "power3.out" }, b + 0.3)
+      tl.fromTo("#s5-tag", { y: 44, opacity: 0 }, { y: 0, opacity: 1, duration: 0.7, ease: "power3.out" }, b + 0.48)
+      tl.fromTo("#s5-cta", { y: 36, opacity: 0, scale: 0.94 }, { y: 0, opacity: 1, scale: 1, duration: 0.6, ease: "back.out(1.7)" }, b + 0.68)
+      tl.to("#s5-montage", { opacity: 0.28, duration: 1.6, ease: "sine.inOut" }, b + 1.3)
+      tl.to("#s5", { opacity: 0, duration: 0.7, ease: "power2.inOut" }, b + 3.1)
+
+      window.__timelines["main"] = tl
+    </script>
+  </body>
+</html>
