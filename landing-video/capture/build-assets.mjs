@@ -7,7 +7,7 @@
 // Requires the app running locally (default http://localhost:4567). See README.
 import fs from 'fs'
 import path from 'path'
-import { launch, openScore, sleep, ASSETS, BASE } from './lib.mjs'
+import { launch, openScore, sleep, ASSETS, BASE, ROOT } from './lib.mjs'
 
 const BACKUP = process.env.PT_BACKUP
 if (!BACKUP || !fs.existsSync(BACKUP)) {
@@ -16,6 +16,9 @@ if (!BACKUP || !fs.existsSync(BACKUP)) {
 }
 fs.mkdirSync(ASSETS, { recursive: true })
 const out = (name) => path.join(ASSETS, name)
+
+// Static brand asset used by the closing scene (not a screenshot).
+fs.copyFileSync(path.resolve(ROOT, '../../public/favicon.svg'), out('favicon.svg'))
 
 const { ctx, page } = await launch()
 
