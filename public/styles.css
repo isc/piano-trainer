@@ -1316,11 +1316,17 @@ img[id^="cursorImg"] { scroll-margin-top: var(--pt-sticky-offset, 100px); }
 .pt-hero__cta { display: flex; flex-wrap: wrap; gap: var(--pt-space-3); align-items: center; justify-content: center; }
 .pt-hero__cta a[role="button"] { margin: 0; }
 .pt-hero__visual {
+  display: block;
   width: 100%;
   border: 1px solid var(--pt-border);
   border-radius: var(--pt-radius-lg);
   box-shadow: var(--pt-shadow-lg);
   overflow: hidden;
+  transition: box-shadow var(--pt-transition-med), transform var(--pt-transition-med);
+}
+a.pt-hero__visual:hover {
+  box-shadow: 0 16px 40px rgba(15, 18, 30, 0.18);
+  transform: translateY(-2px);
 }
 .pt-hero__visual img,
 .pt-hero__visual video { display: block; width: 100%; height: auto; }
