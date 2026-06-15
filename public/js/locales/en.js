@@ -1,0 +1,46 @@
+// English strings. Keys mirror fr.js exactly. See js/i18n.js.
+export default {
+  common: {
+    openLibrary: 'Open the library',
+  },
+  landing: {
+    pageTitle: 'Piano Trainer · Learn the piano with real-time feedback',
+    metaDescription:
+      'Plug in your MIDI keyboard, open a score and play: Piano Trainer colours the notes in real time, tracks your practice and helps you progress through a classical repertoire.',
+    heroAria: 'Open Piano Trainer',
+    heroTitle: 'Practise the piano with real-time feedback.',
+    heroLead:
+      'Plug in your MIDI keyboard, open a score and play. Every note lights up depending on whether you nailed it, missed it or jumped ahead — and your progress is logged on its own, bar after bar.',
+    featuresTitle: 'Everything you need to practise seriously',
+    featuresSubtitle: 'A practice workshop in your browser — no install, no account.',
+    f1Title: 'MIDI keyboard in one click',
+    f1Body: 'USB or Bluetooth over Web MIDI. Your keyboard is detected automatically — nothing to configure.',
+    f2Title: 'Note-by-note feedback',
+    f2Body:
+      'Notes colour in live: nailed, expected, off-tempo or missed. You see your mistakes without looking up.',
+    f3Title: 'Practice tracking',
+    f3Body:
+      'Practice time, reworked bars and full run-throughs are all logged in a daily journal.',
+    f4Title: 'Practice modes',
+    f4Body:
+      'Free sight-reading, bar-by-bar training, or strict mode with no wrong notes: pick how demanding you want it.',
+    f5Title: 'Built-in fingerings',
+    f5Body:
+      'Show and edit fingerings right on the score, stacked in pitch order for chords.',
+    f6Title: 'Classical library',
+    f6Body:
+      '70+ public-domain scores, from Bach inventions to Hanon, searchable by playing their opening notes.',
+    howTitle: 'How to get started',
+    howSubtitle: 'Three steps, and you’re playing.',
+    step1Title: 'Plug in your keyboard',
+    step1Body:
+      'Connect a MIDI keyboard over USB or Bluetooth and allow access when the browser asks. No keyboard? You can still follow the score on screen.',
+    step2Title: 'Pick a score',
+    step2Body:
+      'Choose from the library, or drop your own MusicXML file (<code>.xml</code>, <code>.mxl</code>) straight onto the page.',
+    step3Title: 'Play and progress',
+    step3Body:
+      'Follow the scrolling notes, let the real-time feedback guide you, and find your progress in the practice journal.',
+    footer: 'Piano Trainer · public-domain scores · your data stays in your browser.',
+  },
+}
