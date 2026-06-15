@@ -31,23 +31,40 @@ landing-video/
 
 ## Regenerate
 
+The video is **bilingual**: the app is captured and the captions rendered once
+per language, producing `public/video/hero.<lang>.mp4` (+ poster). The landing
+serves the file matching the visitor's language. Repeat the steps below for each
+language (`en`, `fr`), setting `PT_LANG` so the captured screenshots are in that
+language and pointing `caps.active.js` at the matching caption catalog.
+
 ```bash
 # 1. Run the app (from the repo root, in another terminal)
 bundle exec ruby app.rb            # serves http://localhost:4567
 
-# 2. Capture the app states into composition/assets/
-cd landing-video
-npm install
-PT_BACKUP=~/Downloads/piano-trainer-backup-2026-06-12.json npm run capture
+cd landing-video && npm install
 
-# 3. Render the composition to MP4 (composition/renders/*.mp4)
+# 2. Point the composition at this language's captions
+echo "export { default as CAPS } from './captions/en.js'" > composition/caps.active.js
+
+# 3. Capture the app states (in that language) into composition/assets/
+PT_LANG=en PT_BACKUP=~/Downloads/piano-trainer-backup-*.json npm run capture
+
+# 4. Render (composition/renders/*.mp4)
 npm run render
 
-# 4. Encode the web-ready hero assets into ../public/
-npm run encode
+# 5. Encode the web-ready, language-suffixed hero assets into ../public/
+bash encode.sh en                  # → ../public/video/hero.en.mp4 + poster
+
+# …then repeat steps 2-5 with `fr`. Leave caps.active.js on fr at the end.
 ```
 
-Then commit the updated `public/video/hero.mp4` and `public/img/hero-poster.jpg`.
+Then commit the updated `public/video/hero.{en,fr}.mp4` and
+`public/img/hero-poster.{en,fr}.jpg`.
+
+`caps.active.js` re-exports `captions/<lang>.js` for the render in progress;
+it's committed pointing at French so `npm run dev`/`render` works unconfigured.
+Caption text lives in `composition/captions/{fr,en}.js`; the screenshots come
+from the running app, so the UI's own i18n keeps them in sync.
 
 ## Notes
 

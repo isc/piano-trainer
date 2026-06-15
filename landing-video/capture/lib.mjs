@@ -25,6 +25,18 @@ export async function launch({ record = false } = {}) {
   })
   // Activate the in-app mock MIDI keyboard (isTestEnv() === test-env cookie).
   await ctx.addCookies([{ name: 'test-env', value: '1', url: BASE }])
+  // Capture the UI in a specific language (PT_LANG=fr|en) by seeding the same
+  // localStorage key the app reads. Runs before any app script on every page.
+  const captureLang = process.env.PT_LANG
+  if (captureLang) {
+    await ctx.addInitScript((lang) => {
+      try {
+        localStorage.setItem('pt-lang', lang)
+      } catch {
+        /* ignore */
+      }
+    }, captureLang)
+  }
   // Expose one mock-MIDI helper to page context so the feedback and training
   // captures share the same dispatch/timing instead of duplicating it.
   await ctx.addInitScript(() => {

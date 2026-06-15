@@ -26,14 +26,15 @@ const COMPOSER_PERIODS = {
   'Traditional':        'traditionnel',
 }
 
-export const PERIODS = [
-  { value: 'baroque',      label: 'Baroque' },
-  { value: 'classique',    label: 'Classique' },
-  { value: 'romantique',   label: 'Romantique' },
-  { value: 'moderne',      label: 'Moderne' },
-  { value: 'contemporain', label: 'Contemporain' },
-  { value: 'traditionnel', label: 'Traditionnel' },
-]
+import { t } from './i18n.js'
+
+// Stable period values (used as filter keys / in the URL). Labels are resolved
+// per-language via periodLabel() so they never get hard-coded to one locale.
+export const PERIODS = ['baroque', 'classique', 'romantique', 'moderne', 'contemporain', 'traditionnel']
+
+export function periodLabel(value) {
+  return t(`period.${value}`)
+}
 
 export function getPeriodForComposer(composer) {
   return COMPOSER_PERIODS[composer] || null

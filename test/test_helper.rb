@@ -18,7 +18,9 @@ Capybara.register_driver(:cuprite) do |app|
     app,
     headless: !ENV['DISABLE_HEADLESS'],
     logger: StringIO.new,
-    browser_options: { 'disable-gpu' => nil },
+    # Force French so the app's language auto-detection (navigator.language)
+    # resolves to 'fr' — the UI assertions in these tests are in French.
+    browser_options: { 'disable-gpu' => nil, 'lang' => 'fr-FR', 'accept-lang' => 'fr-FR' },
     save_path: DOWNLOAD_DIR,
     # The 10s default occasionally fails to spawn Chrome on cold/slow CI runners
     # ("Browser did not produce websocket url within 10 seconds"). Give it room.

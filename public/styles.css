@@ -1294,6 +1294,36 @@ img[id^="cursorImg"] { scroll-margin-top: var(--pt-sticky-offset, 100px); }
 .pt-landing__brand img { width: 28px; height: 28px; }
 .pt-landing__nav a[role="button"] { margin: 0; }
 
+/* FR/EN language switch (shared across pages). width:auto + flex:none override
+   Pico's full-width [role="group"] button-group styling. */
+.pt-langswitch {
+  display: inline-flex;
+  width: auto;
+  flex: 0 0 auto;
+  border: 1px solid var(--pt-border);
+  border-radius: var(--pt-radius-pill);
+  overflow: hidden;
+  background: var(--pt-surface);
+}
+.pt-langswitch button {
+  margin: 0;
+  width: auto;
+  flex: 0 0 auto;
+  padding: 4px 12px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--pt-text-muted);
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  cursor: pointer;
+}
+.pt-langswitch button[aria-pressed="true"] {
+  background: var(--pt-accent);
+  color: var(--pt-text-inverse);
+}
+
 .pt-hero {
   display: flex;
   flex-direction: column;

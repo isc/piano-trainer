@@ -9,6 +9,13 @@ import { loadMxlAsXml } from './mxlLoader.js'
 import { injectFingerings } from './fingeringInjector.js'
 import { initPlayback, getBPM } from './playback.js'
 import { initStrictPlaythrough } from './strictPlaythrough.js'
+import { t, locale } from './i18n.js'
+
+// Built once: the active locale is fixed for the page lifetime (switching
+// language reloads), so these don't need rebuilding per call/point.
+const PLAYTHROUGH_LIST_FORMATTER = new Intl.ListFormat(locale(), { style: 'long', type: 'conjunction' })
+const CHART_DATE_FULL = new Intl.DateTimeFormat(locale())
+const CHART_DATE_AXIS = new Intl.DateTimeFormat(locale(), { day: 'numeric', month: 'short' })
 
 export function midiApp() {
   const midi = initMidi()
@@ -245,10 +252,10 @@ export function midiApp() {
         const saveResult = await cassettes.saveCassette(result.name, result.data)
 
         if (saveResult.success) {
-          alert(`Cassette "${saveResult.name}" sauvegardée avec succès !`)
+          alert(t('score.cassetteSaved', { name: saveResult.name }))
           await this.loadCassettesList()
         } else {
-          alert(`Erreur: ${saveResult.error}`)
+          alert(t('score.cassetteError', { error: saveResult.error }))
         }
       }
     },
@@ -322,7 +329,7 @@ export function midiApp() {
       this.scoreTitle = metadata.title || null
       this.scoreComposer = metadata.composer || null
       if (metadata.title) {
-        document.title = `${metadata.title}${metadata.composer ? ' — ' + metadata.composer : ''} · Piano Trainer`
+        document.title = `${metadata.title}${metadata.composer ? ' — ' + metadata.composer : ''} · ${t('score.pageTitle')}`
       }
     },
 
@@ -481,10 +488,10 @@ export function midiApp() {
 
     resultTitle() {
       switch (this.resultMode) {
-        case 'strict':         return '⏱ Playthrough strict terminé'
-        case 'training':       return '🎉 Félicitations — Entraînement terminé'
-        case 'reinforcement':  return '🎯 Renforcement terminé'
-        default:               return '🎉 Partition terminée'
+        case 'strict':         return t('score.resultTitleStrict')
+        case 'training':       return t('score.resultTitleTraining')
+        case 'reinforcement':  return t('score.resultTitleReinforcement')
+        default:               return t('score.resultTitleScore')
       }
     },
 
@@ -551,10 +558,9 @@ export function midiApp() {
     formatDuration,
 
     formatPlaythroughs(playthroughs) {
-      const formatter = new Intl.ListFormat('fr', { style: 'long', type: 'conjunction' })
       // Reverse to show chronological order (oldest first)
       const durations = [...playthroughs].reverse().map((pt) => formatDuration(pt.durationMs))
-      return `${playthroughs.length}× en entier (${formatter.format(durations)})`
+      return t('score.playthroughsSummary', { n: playthroughs.length, list: PLAYTHROUGH_LIST_FORMATTER.format(durations) })
     },
 
     // Built as a string (not <template x-for>) because Alpine's templates
@@ -587,10 +593,9 @@ export function midiApp() {
         x: xScale(i),
         y: yScale(p.durationMs),
         duration: formatDuration(p.durationMs),
-        date: new Date(p.startedAt).toLocaleDateString('fr-FR'),
+        date: CHART_DATE_FULL.format(new Date(p.startedAt)),
       }))
-      const fmtAxis = (iso) =>
-        new Date(iso).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })
+      const fmtAxis = (iso) => CHART_DATE_AXIS.format(new Date(iso))
 
       const axisY = PAD.top + innerH
       const xMin = PAD.left
@@ -611,7 +616,7 @@ export function midiApp() {
         )
         .join('')
 
-      return `<svg viewBox="0 0 ${W} ${H}" class="playthrough-chart" role="img" aria-label="Évolution du temps de jeu par playthrough">
+      return `<svg viewBox="0 0 ${W} ${H}" class="playthrough-chart" role="img" aria-label="${t('score.chartAria')}">
         <line x1="${xMin}" x2="${xMax}" y1="${axisY}" y2="${axisY}" class="chart-axis" />
         ${yLabels}
         ${xLabels}

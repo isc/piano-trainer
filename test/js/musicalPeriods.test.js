@@ -20,7 +20,7 @@ describe('musicalPeriods', () => {
   it('returns only values that exist in PERIODS', () => {
     // Defensive check so a typo in the map can't silently break the filter UI
     // (the dropdown reads labels from PERIODS).
-    const knownValues = new Set(PERIODS.map((p) => p.value))
+    const knownValues = new Set(PERIODS)
     for (const composer of ['J.S. Bach', 'Mozart', 'Chopin', 'Debussy', 'Luo Ni', 'Traditional']) {
       expect(knownValues.has(getPeriodForComposer(composer))).toBe(true)
     }

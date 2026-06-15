@@ -1,5 +1,6 @@
 import { isTestEnv } from './utils.js'
 import mockMIDI from './midi_mock.js'
+import { t } from './i18n.js'
 
 const NOTE_ON = 144
 const NOTE_OFF = 128
@@ -45,7 +46,7 @@ async function connectMIDI(options = {}) {
 
   if (!navigator.requestMIDIAccess) {
     console.error('Web MIDI API non supportée')
-    if (!silent) alert('Web MIDI API non supportée par ce navigateur')
+    if (!silent) alert(t('errors.webMidiUnsupported'))
     return
   }
 
@@ -76,7 +77,7 @@ async function connectMIDI(options = {}) {
         if (index >= 0 && index < inputs.length) {
           selectMIDIInput(inputs[index])
         } else {
-          if (!silent) alert('Choix invalide')
+          if (!silent) alert(t('errors.invalidChoice'))
           return
         }
       } else {
@@ -116,7 +117,7 @@ async function connectMIDI(options = {}) {
     }
   } catch (e) {
     console.error('Erreur MIDI:', e)
-    if (!silent) alert('Erreur lors de la connexion MIDI: ' + e.message)
+    if (!silent) alert(t('errors.midiConnection', { message: e.message }))
   }
 }
 
@@ -193,7 +194,7 @@ async function stopRecording() {
   state.isRecording = false
 
   if (state.recordingData.length === 0) {
-    alert('Aucune donnée enregistrée !')
+    alert(t('errors.noDataRecorded'))
     return null
   }
 

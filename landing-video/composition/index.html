@@ -123,9 +123,9 @@
       <!-- Scene 1 — Library (copy left) -->
       <div class="scene clip" id="s1" data-start="0" data-duration="3.6" data-track-index="1">
         <div class="copy" id="s1-copy">
-          <span class="chip">Bibliothèque</span>
-          <h1>Votre répertoire,<br /><span class="accent">au même endroit.</span></h1>
-          <p>Partitions classiques et exercices, prêts à jouer.</p>
+          <span class="chip" data-cap="s1.chip">Bibliothèque</span>
+          <h1 data-cap="s1.title">Votre répertoire,<br /><span class="accent">au même endroit.</span></h1>
+          <p data-cap="s1.body">Partitions classiques et exercices, prêts à jouer.</p>
         </div>
         <div class="card shot" id="s1-card"><img src="assets/library.png" alt="" /></div>
       </div>
@@ -134,18 +134,18 @@
       <div class="scene clip" id="s2" data-start="3.4" data-duration="3.6" data-track-index="2">
         <div class="card shot" id="s2-card"><img src="assets/score-feedback.png" alt="" /></div>
         <div class="copy" id="s2-copy">
-          <span class="chip">Retour en temps réel</span>
-          <h1>Chaque note,<br /><span class="accent">validée à l'instant.</span></h1>
-          <p>Les notes justes passent au vert, en direct.</p>
+          <span class="chip" data-cap="s2.chip">Retour en temps réel</span>
+          <h1 data-cap="s2.title">Chaque note,<br /><span class="accent">validée à l'instant.</span></h1>
+          <p data-cap="s2.body">Les notes justes passent au vert, en direct.</p>
         </div>
       </div>
 
       <!-- Scene 3 — Training mode (copy left) -->
       <div class="scene clip" id="s3" data-start="6.8" data-duration="3.6" data-track-index="3">
         <div class="copy" id="s3-copy">
-          <span class="chip">Mode entraînement</span>
-          <h1>Trois fois,<br /><span class="accent">sans la moindre faute.</span></h1>
-          <p>Chaque mesure se répète jusqu'à la maîtrise.</p>
+          <span class="chip" data-cap="s3.chip">Mode entraînement</span>
+          <h1 data-cap="s3.title">Trois fois,<br /><span class="accent">sans la moindre faute.</span></h1>
+          <p data-cap="s3.body">Chaque mesure se répète jusqu'à la maîtrise.</p>
         </div>
         <div class="card shot" id="s3-card"><img src="assets/training.png" alt="" /></div>
       </div>
@@ -154,9 +154,9 @@
       <div class="scene clip" id="s4" data-start="10.2" data-duration="3.6" data-track-index="4">
         <div class="card shot" id="s4-card"><img src="assets/history.png" alt="" /></div>
         <div class="copy" id="s4-copy">
-          <span class="chip">Historique</span>
-          <h1>Votre progression,<br /><span class="accent">noir sur blanc.</span></h1>
-          <p>Le temps de jeu complet baisse, séance après séance.</p>
+          <span class="chip" data-cap="s4.chip">Historique</span>
+          <h1 data-cap="s4.title">Votre progression,<br /><span class="accent">noir sur blanc.</span></h1>
+          <p data-cap="s4.body">Le temps de jeu complet baisse, séance après séance.</p>
         </div>
       </div>
 
@@ -170,10 +170,21 @@
           <img src="assets/favicon.svg" alt="" />
           <span>Piano Trainer</span>
         </div>
-        <h2 id="s5-tag">Travaillez votre piano avec un retour en temps réel.</h2>
-        <div class="brand__cta" id="s5-cta">Commencer à jouer</div>
+        <h2 id="s5-tag" data-cap="brand.tag">Travaillez votre piano avec un retour en temps réel.</h2>
+        <div class="brand__cta" id="s5-cta" data-cap="brand.cta">Commencer à jouer</div>
       </div>
     </div>
+
+    <!-- Fill captions for the active language (caps.active.js re-exports the
+         chosen catalog; the build swaps it per render). Defaults in the HTML
+         keep `npm run dev` working without a build. -->
+    <script type="module">
+      import { CAPS } from './caps.active.js'
+      for (const el of document.querySelectorAll('[data-cap]')) {
+        const v = CAPS[el.dataset.cap]
+        if (v != null) el.innerHTML = v
+      }
+    </script>
 
     <script>
       window.__timelines = window.__timelines || {}

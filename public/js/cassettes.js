@@ -1,3 +1,5 @@
+import { t } from './i18n.js'
+
 let state = {
   cassettes: [],
   selectedCassette: '',
@@ -61,7 +63,7 @@ async function saveCassette(name, recordingData) {
     console.error('Erreur lors de la sauvegarde:', error)
     return {
       success: false,
-      error: 'Erreur lors de la sauvegarde de la cassette',
+      error: t('errors.cassetteSave'),
     }
   }
 }
