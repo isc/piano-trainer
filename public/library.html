@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Piano Trainer · Bibliothèque</title>
+    <title data-i18n="library.pageTitle">Piano Trainer · Bibliothèque</title>
     <link rel="icon" href="favicon.svg" type="image/svg+xml" />
     <link rel="stylesheet" href="vendor/pico.2.1.1min.css" />
     <link rel="stylesheet" href="styles.css" />
@@ -14,7 +14,14 @@
       // even when library.js's import graph is slow to resolve. Otherwise Alpine
       // can win the race and every expression throws "<name> is not defined".
       import { libraryApp } from './js/library.js'
+      import { initI18n, t } from './js/i18n.js'
       window.libraryApp = libraryApp
+      // Translate static [data-i18n] chrome + wire the FR/EN switch.
+      initI18n()
+      // Expose $t to Alpine templates (registered before Alpine processes the DOM).
+      document.addEventListener('alpine:init', () => {
+        window.Alpine.magic('t', () => (key, params) => t(key, params))
+      })
       const alpine = document.createElement('script')
       alpine.src = 'vendor/alpinejs.3.14.9.min.js'
       document.head.appendChild(alpine)
@@ -24,27 +31,31 @@
     <main class="container pt-library-page" @keydown.escape.window="showChangelogModal = false">
       <div class="pt-library-chrome">
         <div class="pt-page-header">
-          <h1>Bibliothèque</h1>
+          <h1 x-text="$t('library.heading')">Bibliothèque</h1>
           <div class="pt-page-header__actions">
             <div class="pt-page-header__search">
               <input
                 type="search"
                 x-model="searchQuery"
-                placeholder="Rechercher une partition… (/)"
-                aria-label="Rechercher une partition"
+                :placeholder="$t('library.searchPlaceholder')"
+                :aria-label="$t('library.searchAria')"
               />
             </div>
-            <a href="score.html" role="button" class="secondary">📄 Charger une partition</a>
+            <a href="score.html" role="button" class="secondary" x-text="$t('library.loadScore')">📄 Charger une partition</a>
             <button
               type="button"
               role="button"
               class="secondary pt-changelog-btn"
               @click="openChangelog()"
-              :aria-label="hasUnseenChangelog ? 'Nouveautés (nouvelles entrées)' : 'Nouveautés'"
+              :aria-label="hasUnseenChangelog ? $t('library.changelogAriaNew') : $t('library.changelogAria')"
             >
-              ✨ Nouveautés
+              <span x-text="$t('library.changelog')">✨ Nouveautés</span>
               <span class="pt-changelog-dot" x-show="hasUnseenChangelog" aria-hidden="true"></span>
             </button>
+            <div class="pt-langswitch" role="group" aria-label="Language">
+              <button type="button" data-set-lang="fr">FR</button>
+              <button type="button" data-set-lang="en">EN</button>
+            </div>
           </div>
         </div>
 
@@ -53,7 +64,7 @@
             class="pt-filter-pill"
             :aria-pressed="!statusFilter"
             @click="statusFilter = ''"
-          >Tous <span class="pt-filter-pill__count" x-text="scores.length"></span></button>
+          ><span x-text="$t('library.filterAll')">Tous</span> <span class="pt-filter-pill__count" x-text="scores.length"></span></button>
           <template x-for="opt in statusOptions" :key="opt.value">
             <button
               class="pt-filter-pill"
@@ -66,14 +77,14 @@
               <span class="pt-filter-pill__count" x-text="opt.count"></span>
             </button>
           </template>
-          <select x-model="composerFilter" aria-label="Filtrer par compositeur" x-show="composerOptions.length > 1">
-            <option value="">Tous compositeurs</option>
+          <select x-model="composerFilter" :aria-label="$t('library.composerFilterAria')" x-show="composerOptions.length > 1">
+            <option value="" x-text="$t('library.allComposers')">Tous compositeurs</option>
             <template x-for="c in composerOptions" :key="c">
               <option :value="c" x-text="c"></option>
             </template>
           </select>
-          <select x-model="periodFilter" aria-label="Filtrer par période musicale" x-show="periodOptions.length > 1">
-            <option value="">Toutes périodes</option>
+          <select x-model="periodFilter" :aria-label="$t('library.periodFilterAria')" x-show="periodOptions.length > 1">
+            <option value="" x-text="$t('library.allPeriods')">Toutes périodes</option>
             <template x-for="p in periodOptions" :key="p.value">
               <option :value="p.value" x-text="`${p.label} (${p.count})`"></option>
             </template>
@@ -81,7 +92,7 @@
         </div>
 
         <div class="pt-focus" x-show="focusOptions.length > 0">
-          <span class="pt-focus__label">À travailler :</span>
+          <span class="pt-focus__label" x-text="$t('library.focusLabel')">À travailler :</span>
           <template x-for="opt in focusOptions" :key="opt.value">
             <button
               class="pt-focus__chip"
@@ -99,7 +110,7 @@
       <div class="pt-library">
         <!-- Sidebar: practice journal + data management -->
         <aside class="pt-library__sidebar">
-          <h2 style="font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--pt-text-subtle); margin: 0;">Journal de pratique</h2>
+          <h2 style="font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--pt-text-subtle); margin: 0;" x-text="$t('library.journalHeading')">Journal de pratique</h2>
           <div id="daily-log" style="display: flex; flex-direction: column; gap: var(--pt-space-2);">
             <template x-for="dateEntry in dailyLogsByDate" :key="dateEntry.date.toISOString()">
               <div class="pt-journal__day">
@@ -108,18 +119,18 @@
                   <small x-show="dateEntry.log.length > 0" x-text="formatDuration(getTotalPracticeTimeForDate(dateEntry))"></small>
                 </div>
                 <template x-if="dateEntry.log.length === 0">
-                  <p class="pt-journal__entry pt-journal__entry--empty">Aucune pratique</p>
+                  <p class="pt-journal__entry pt-journal__entry--empty" x-text="$t('library.noPractice')">Aucune pratique</p>
                 </template>
                 <div class="pt-journal__entries">
                   <template x-for="entry in dateEntry.log" :key="entry.scoreId">
                     <div class="pt-journal__entry">
-                      <a :href="scorePageUrl(entry.scoreId)" x-text="(entry.scoreTitle || 'Sans titre') + ' · ' + entry.composer"></a>
+                      <a :href="scorePageUrl(entry.scoreId)" x-text="(entry.scoreTitle || $t('library.untitled')) + ' · ' + entry.composer"></a>
                       <small>
                         <span x-text="formatDuration(entry.totalPracticeTimeMs)"></span>
-                        <span x-show="entry.timesPlayedInFull === 1"> · Joué en entier</span>
-                        <span x-show="entry.timesPlayedInFull > 1"> · Joué <span x-text="entry.timesPlayedInFull"></span>× en entier</span>
-                        <span x-show="entry.timesPlayedInFull === 0"> · <span x-text="entry.measuresWorked.length"></span> mesures</span>
-                        <span x-show="entry.measuresReinforced.length > 0"> · <span x-text="entry.measuresReinforced.length"></span> renforcées</span>
+                        <span x-show="entry.timesPlayedInFull === 1"> · <span x-text="$t('library.playedFull')"></span></span>
+                        <span x-show="entry.timesPlayedInFull > 1"> · <span x-text="$t('library.playedFullTimes', { n: entry.timesPlayedInFull })"></span></span>
+                        <span x-show="entry.timesPlayedInFull === 0"> · <span x-text="$t('library.measuresCount', { n: entry.measuresWorked.length })"></span></span>
+                        <span x-show="entry.measuresReinforced.length > 0"> · <span x-text="$t('library.reinforcedCount', { n: entry.measuresReinforced.length })"></span></span>
                       </small>
                     </div>
                   </template>
@@ -129,11 +140,11 @@
           </div>
 
           <details class="pt-data-mgmt">
-            <summary>⚙️ Gestion des données</summary>
+            <summary x-text="$t('library.dataMgmt')">⚙️ Gestion des données</summary>
             <div class="pt-data-mgmt__body">
-              <label for="backup-import">📥 Importer sauvegarde</label>
+              <label for="backup-import" x-text="$t('library.importBackup')">📥 Importer sauvegarde</label>
               <input type="file" accept=".json" @change="importBackup($event)" id="backup-import" />
-              <button @click="exportBackup" class="pt-action-button">📤 Exporter sauvegarde</button>
+              <button @click="exportBackup" class="pt-action-button" x-text="$t('library.exportBackup')">📤 Exporter sauvegarde</button>
             </div>
           </details>
         </aside>
@@ -144,16 +155,16 @@
             <thead>
               <tr>
                 <th class="pt-th-sort" @click="toggleSort('title')" :aria-sort="sortBy === 'title' ? (sortDir === 'asc' ? 'ascending' : 'descending') : 'none'">
-                  Titre<span x-text="sortArrow('title')"></span>
+                  <span x-text="$t('library.colTitle')">Titre</span><span x-text="sortArrow('title')"></span>
                 </th>
                 <th class="pt-th-sort" @click="toggleSort('composer')" :aria-sort="sortBy === 'composer' ? (sortDir === 'asc' ? 'ascending' : 'descending') : 'none'">
-                  Compositeur<span x-text="sortArrow('composer')"></span>
+                  <span x-text="$t('library.colComposer')">Compositeur</span><span x-text="sortArrow('composer')"></span>
                 </th>
                 <th class="pt-th-sort" @click="toggleSort('status')" :aria-sort="sortBy === 'status' ? (sortDir === 'asc' ? 'ascending' : 'descending') : 'none'">
-                  Statut<span x-text="sortArrow('status')"></span>
+                  <span x-text="$t('library.colStatus')">Statut</span><span x-text="sortArrow('status')"></span>
                 </th>
                 <th class="pt-th-sort pt-th-right" @click="toggleSort('practice')" :aria-sort="sortBy === 'practice' ? (sortDir === 'asc' ? 'ascending' : 'descending') : 'none'">
-                  Pratiqué<span x-text="sortArrow('practice')"></span>
+                  <span x-text="$t('library.colPractice')">Pratiqué</span><span x-text="sortArrow('practice')"></span>
                 </th>
               </tr>
             </thead>
@@ -162,7 +173,7 @@
                 <tr>
                   <td>
                     <a :href="scorePageUrl(getScoreUrl(score))" x-text="score.title"></a>
-                    <small x-show="isCollection(score)" x-text="score.parts?.length + ' exercices'"></small>
+                    <small x-show="isCollection(score)" x-text="$t('library.exercises', { n: score.parts?.length })"></small>
                   </td>
                   <td>
                     <a href="#" @click.prevent="setComposerFilter(score.composer)" x-text="score.composer"></a>
@@ -195,14 +206,14 @@
       <dialog class="pt-changelog-dialog" :open="showChangelogModal">
         <article>
           <header>
-            <p><strong>✨ Nouveautés</strong></p>
-            <button aria-label="Close" rel="prev" @click="showChangelogModal = false"></button>
+            <p><strong x-text="$t('library.changelog')">✨ Nouveautés</strong></p>
+            <button :aria-label="$t('common.close')" rel="prev" @click="showChangelogModal = false"></button>
           </header>
           <template x-for="entry in changelog" :key="entry.date">
             <section class="pt-changelog-entry">
               <h4 x-text="formatChangelogDate(entry.date)"></h4>
               <ul>
-                <template x-for="(item, i) in entry.items" :key="i">
+                <template x-for="(item, i) in changelogItems(entry)" :key="i">
                   <li x-text="item"></li>
                 </template>
               </ul>

@@ -1,3 +1,5 @@
+import { t, locale } from './i18n.js'
+
 export function isTestEnv() {
   return document.cookie.includes('test-env')
 }
@@ -73,14 +75,8 @@ export function formatDuration(ms) {
   return `${hours}h ${minutes}m`
 }
 
-const STATUS_LABELS = {
-  dechiffrage: 'Déchiffrage',
-  perfectionnement: 'Perfectionnement',
-  repertoire: 'Répertoire',
-}
-
 export function statusLabel(status) {
-  return STATUS_LABELS[status] || status
+  return status ? t(`status.${status}`) : status
 }
 
 function daysAgo(date) {
@@ -96,16 +92,17 @@ function daysAgo(date) {
 export function formatRelativeDate(date) {
   if (!date) return ''
   const { diffDays } = daysAgo(date)
-  if (diffDays === 0) return "aujourd'hui"
-  if (diffDays === 1) return 'hier'
-  if (diffDays < 30) return `il y a ${diffDays} j`
-  if (diffDays < 365) return `il y a ${Math.floor(diffDays / 30)} mois`
-  return `il y a ${Math.floor(diffDays / 365)} an${diffDays >= 730 ? 's' : ''}`
+  if (diffDays === 0) return t('date.today')
+  if (diffDays === 1) return t('date.yesterday')
+  if (diffDays < 30) return t('date.daysAgo', { n: diffDays })
+  if (diffDays < 365) return t('date.monthsAgo', { n: Math.floor(diffDays / 30) })
+  const years = Math.floor(diffDays / 365)
+  return t(years > 1 ? 'date.yearsAgo' : 'date.yearAgo', { n: years })
 }
 
 export function formatDate(date) {
   const { compareDate, diffDays } = daysAgo(date)
-  if (diffDays === 0) return "aujourd'hui"
-  if (diffDays === 1) return 'hier'
-  return compareDate.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })
+  if (diffDays === 0) return t('date.today')
+  if (diffDays === 1) return t('date.yesterday')
+  return compareDate.toLocaleDateString(locale(), { weekday: 'long', day: 'numeric', month: 'long' })
 }

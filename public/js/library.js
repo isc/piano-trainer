@@ -2,11 +2,12 @@ import { initMidi } from './midi.js'
 import { initPracticeTracker } from './practiceTracker.js'
 import { initStorage } from './storage.js'
 import { formatDuration, formatDate, formatRelativeDate, statusLabel, scorePageUrl } from './utils.js'
-import { PERIODS, getPeriodForComposer } from './musicalPeriods.js'
+import { PERIODS, periodLabel, getPeriodForComposer } from './musicalPeriods.js'
 import { CHANGELOG } from './changelog.js'
+import { t, locale, getLang } from './i18n.js'
 
 const CHANGELOG_SEEN_KEY = 'pt-changelog-seen'
-const CHANGELOG_DATE_FORMATTER = new Intl.DateTimeFormat('fr-FR', {
+const CHANGELOG_DATE_FORMATTER = new Intl.DateTimeFormat(locale(), {
   day: 'numeric',
   month: 'long',
   year: 'numeric',
@@ -195,7 +196,7 @@ export function libraryApp() {
         const va = this.sortKey(a), vb = this.sortKey(b)
         if (this.sortBy === 'status') return ((STATUS_RANK[va] ?? -1) - (STATUS_RANK[vb] ?? -1)) * dir
         if (typeof va === 'number') return (va - vb) * dir
-        return (va || '').localeCompare(vb || '', 'fr') * dir
+        return (va || '').localeCompare(vb || '', locale()) * dir
       })
     },
 
@@ -253,7 +254,7 @@ export function libraryApp() {
 
     get composerOptions() {
       const set = new Set(this.scores.map((s) => s.composer).filter(Boolean))
-      return [...set].sort((a, b) => a.localeCompare(b, 'fr'))
+      return [...set].sort((a, b) => a.localeCompare(b, locale()))
     },
 
     // Surface only periods that actually have scores in the library, so the
@@ -265,8 +266,8 @@ export function libraryApp() {
         if (p) counts[p] = (counts[p] || 0) + 1
       }
       return PERIODS
-        .filter((p) => counts[p.value] > 0)
-        .map((p) => ({ ...p, count: counts[p.value] }))
+        .filter((value) => counts[value] > 0)
+        .map((value) => ({ value, label: periodLabel(value), count: counts[value] }))
     },
 
     // Each focus chip filters the table to an actionable subset — the user
@@ -297,9 +298,9 @@ export function libraryApp() {
         }
       }
       return [
-        { value: 'reinforce',    label: '🎯 À renforcer',          count: counts.reinforce },
-        { value: 'near-mastery', label: '⭐ Proches du répertoire', count: counts['near-mastery'] },
-        { value: 'stale',        label: `💤 Pas joué depuis ${STALE_DAYS} j`, count: counts.stale },
+        { value: 'reinforce',    label: t('focus.reinforce'),                 count: counts.reinforce },
+        { value: 'near-mastery', label: t('focus.nearMastery'),               count: counts['near-mastery'] },
+        { value: 'stale',        label: t('focus.stale', { n: STALE_DAYS }),  count: counts.stale },
       ].filter((opt) => opt.count > 0)
     },
 
@@ -356,7 +357,7 @@ export function libraryApp() {
       const last = agg?.lastCompletedAt || agg?.lastPlayedAt
       const times = agg?.timesCompleted || 0
       const parts = []
-      if (times > 0) parts.push(`${times}× joué`)
+      if (times > 0) parts.push(t('library.timesPlayed', { n: times }))
       if (last) parts.push(formatRelativeDate(last))
       return parts.join(' · ')
     },
@@ -379,6 +380,13 @@ export function libraryApp() {
       return CHANGELOG_DATE_FORMATTER.format(new Date(y, m - 1, d))
     },
 
+    // Changelog entries carry their items per language ({ fr: [...], en: [...] });
+    // fall back to the other language, then to a bare array for older entries.
+    changelogItems(entry) {
+      if (Array.isArray(entry.items)) return entry.items
+      return entry.items?.[getLang()] ?? entry.items?.fr ?? entry.items?.en ?? []
+    },
+
     getTotalPracticeTimeForDate(dateEntry) {
       return dateEntry.log.reduce((sum, entry) => sum + entry.totalPracticeTimeMs, 0)
     },
@@ -395,17 +403,18 @@ export function libraryApp() {
 
         if (result.success) {
           alert(
-            `✅ Sauvegarde importée avec succès !\n\n` +
-            `${result.importedSessions} session(s) importée(s)\n` +
-            `${result.importedAggregates} agrégat(s) importé(s)\n` +
-            `${result.importedFingerings} doigté(s) importé(s)`
+            t('library.importOk', {
+              sessions: result.importedSessions,
+              aggregates: result.importedAggregates,
+              fingerings: result.importedFingerings,
+            })
           )
 
           await this.reloadDailyLogs()
         }
       } catch (error) {
         console.error('Import error:', error)
-        alert(`❌ Erreur lors de l'import : ${error.message}`)
+        alert(t('library.importError', { error: error.message }))
       }
 
       event.target.value = ''
@@ -428,10 +437,10 @@ export function libraryApp() {
         document.body.removeChild(a)
         URL.revokeObjectURL(url)
 
-        alert('✅ Sauvegarde exportée avec succès !')
+        alert(t('library.exportOk'))
       } catch (error) {
         console.error('Export error:', error)
-        alert(`❌ Erreur lors de l'export : ${error.message}`)
+        alert(t('library.exportError', { error: error.message }))
       }
     },
 
