@@ -1297,21 +1297,29 @@ img[id^="cursorImg"] { scroll-margin-top: var(--pt-sticky-offset, 100px); }
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: var(--pt-space-8);
-  padding-block: var(--pt-space-10) var(--pt-space-12);
+  gap: var(--pt-space-6);
+  padding-block: var(--pt-space-8) var(--pt-space-12);
 }
-.pt-hero__intro { text-align: center; max-width: 46ch; }
+/* Headline and lead sit side by side so the intro stays short and the video
+   rides higher up the page. */
+.pt-hero__intro {
+  display: grid;
+  grid-template-columns: 1.1fr 1fr;
+  align-items: end;
+  gap: var(--pt-space-6) var(--pt-space-8);
+  width: 100%;
+}
 .pt-hero h1 {
   font-size: clamp(2rem, 1.2rem + 2.8vw, 3.1rem);
   line-height: 1.08;
-  margin-bottom: var(--pt-space-4);
+  margin: 0;
   letter-spacing: -0.022em;
 }
 .pt-hero__lead {
   font-size: 1.14rem;
   color: var(--pt-text-muted);
-  margin: 0 auto var(--pt-space-6);
-  max-width: 50ch;
+  margin: 0;
+  max-width: 46ch;
 }
 .pt-hero__cta { display: flex; flex-wrap: wrap; gap: var(--pt-space-3); align-items: center; justify-content: center; }
 .pt-hero__cta a[role="button"] { margin: 0; }
@@ -1372,5 +1380,6 @@ a.pt-hero__visual:hover {
 
 @media (max-width: 720px) {
   .pt-hero { gap: var(--pt-space-6); padding-block: var(--pt-space-6) var(--pt-space-8); }
+  .pt-hero__intro { grid-template-columns: 1fr; gap: var(--pt-space-4); }
   .pt-steps { grid-template-columns: 1fr; gap: var(--pt-space-4); }
 }
