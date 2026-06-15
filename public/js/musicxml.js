@@ -1,4 +1,5 @@
 import { noteName } from './midi.js'
+import { traced } from './perfTrace.js' // TEMP diagnostic
 import {
   extractNotesFromScore as extractNotes,
   isNoteActiveForHands as isNoteActiveForHandsShared,
@@ -63,8 +64,8 @@ export function initMusicXML() {
     renderScore,
     renderMusicXML,
     extractNotesFromScore,
-    activateNote,
-    deactivateNote,
+    activateNote: (m) => traced(`activateNote(${m}) m${currentMeasureIndex} held=${heldMidiNotes.size}`, () => activateNote(m)), // TEMP
+    deactivateNote: (m) => traced(`deactivateNote(${m}) held=${heldMidiNotes.size}`, () => deactivateNote(m)), // TEMP
     resetProgress,
     setCallbacks,
     setActiveHands: (hands) => {
@@ -634,7 +635,7 @@ function activateNote(midiNote) {
     // A held tie can fully cover a *later* timestamp (the tied pitch plus its
     // same-pitch unisons in other voices). No fresh keypress can trigger that
     // group, so cascade those validations here instead of stalling.
-    cascadeHeldTieValidations()
+    traced('cascadeHeldTieValidations', cascadeHeldTieValidations) // TEMP
   }
 
   return true
