@@ -3,7 +3,7 @@ require_relative 'test_helper'
 class LibraryTest < CapybaraTestBase
   def setup
     page.driver.set_cookie('test-env', 'true')
-    visit '/library'
+    visit '/library.html'
   end
 
   def test_library_page_loads_scores
@@ -99,7 +99,7 @@ class LibraryTest < CapybaraTestBase
     visit '/score.html'
     click_on 'Bibliothèque'
 
-    assert_current_path '/library'
+    assert_current_path '/library.html'
     assert_text 'Bibliothèque'
     assert_selector 'table'
   end
@@ -118,7 +118,7 @@ class LibraryTest < CapybaraTestBase
 
   def test_import_export_roundtrip
     with_virtual_time('2026-01-10 12:00') do
-      visit '/library'
+      visit '/library.html'
       find('summary', text: '⚙️ Gestion des données').click
 
       # Import initial data from fixture

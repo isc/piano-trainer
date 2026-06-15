@@ -42,20 +42,12 @@ await page.screenshot({ path: out('score.png') })
 //    from the OSMD cursor; the app's matching engine colours them green).
 await page.evaluate(async (steps) => {
   const cursor = document.documentElement._x_dataStack[0].osmdInstance.cursor
-  const wait = (ms) => new Promise((r) => setTimeout(r, ms))
-  const send = (s, m, v) =>
-    window.dispatchEvent(new CustomEvent('mock-midi-input', { detail: { data: [s, m, v] } }))
   cursor.reset()
   for (let i = 0; i < steps; i++) {
-    for (const n of cursor.NotesUnderCursor().filter((x) => x.Pitch)) {
-      const midi = n.Pitch.halfTone + 12
-      send(144, midi, 92)
-      await wait(60)
-      send(128, midi, 0)
-      await wait(45)
-    }
+    const pitches = cursor.NotesUnderCursor().filter((n) => n.Pitch).map((n) => n.Pitch.halfTone + 12)
+    await window.__ptMidi.play(pitches)
     cursor.next()
-    await wait(170)
+    await window.__ptMidi.sleep(170)
   }
 }, 17)
 await sleep(300)
@@ -68,9 +60,6 @@ await openScore(page, 'scores/Minuet_in_G_Major_Bach.mxl')
 await page.evaluate(async () => {
   const d = document.documentElement._x_dataStack[0]
   const cursor = d.osmdInstance.cursor
-  const wait = (ms) => new Promise((r) => setTimeout(r, ms))
-  const send = (s, m, v) =>
-    window.dispatchEvent(new CustomEvent('mock-midi-input', { detail: { data: [s, m, v] } }))
   cursor.reset()
   const measures = {}
   for (let i = 0; i < 60; i++) {
@@ -83,15 +72,10 @@ await page.evaluate(async () => {
   cursor.reset()
   try { cursor.hide() } catch {}
   d.setMode('training')
-  await wait(450)
+  await window.__ptMidi.sleep(450)
   const playMeasure = async (mi) => {
-    for (const m of measures[mi] || []) {
-      send(144, m, 92)
-      await wait(55)
-      send(128, m, 0)
-      await wait(40)
-    }
-    await wait(220)
+    await window.__ptMidi.play(measures[mi] || [])
+    await window.__ptMidi.sleep(220)
   }
   for (let r = 0; r < 3; r++) await playMeasure(0)
   for (let r = 0; r < 2; r++) await playMeasure(1)

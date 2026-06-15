@@ -25,6 +25,25 @@ export async function launch({ record = false } = {}) {
   })
   // Activate the in-app mock MIDI keyboard (isTestEnv() === test-env cookie).
   await ctx.addCookies([{ name: 'test-env', value: '1', url: BASE }])
+  // Expose one mock-MIDI helper to page context so the feedback and training
+  // captures share the same dispatch/timing instead of duplicating it.
+  await ctx.addInitScript(() => {
+    const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
+    const send = (status, midi, vel) =>
+      window.dispatchEvent(new CustomEvent('mock-midi-input', { detail: { data: [status, midi, vel] } }))
+    window.__ptMidi = {
+      sleep,
+      // Play a list of MIDI note numbers in sequence (note-on then note-off).
+      async play(pitches) {
+        for (const m of pitches) {
+          send(0x90, m, 92)
+          await sleep(60)
+          send(0x80, m, 0)
+          await sleep(45)
+        }
+      },
+    }
+  })
   const page = ctx.pages()[0] ?? (await ctx.newPage())
   page.on('dialog', (d) => d.accept())
   return { ctx, page }

@@ -118,11 +118,13 @@ export function midiApp() {
           if (midiNote === NAVIGATE_BACK_KEY) {
             // Go back rather than to the library so its filters (stored in
             // the URL) that led here are preserved. Fall back to the library
-            // if there's no in-app history to return to.
+            // if there's no in-app history to return to. Relative path: the
+            // app is served statically (GitHub Pages) under a project subpath,
+            // so an absolute "/library" would resolve off the base and 404.
             if (window.history.length > 1) {
               window.history.back()
             } else {
-              window.location.href = '/library'
+              window.location.href = 'library.html'
             }
             return
           }

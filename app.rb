@@ -67,15 +67,11 @@ class App < Sinatra::Base
     end
   end
 
-  # Landing page (pitch + onboarding) served at the root.
+  # Landing page (pitch + onboarding) served at the root. The score library is
+  # public/library.html, reached via relative links (library.html) so it works
+  # both here and on static hosting (GitHub Pages) under a project subpath.
   get '/' do
     send_file File.join(settings.public_folder, 'index.html')
-  end
-
-  # The score library — the app itself. Returning visitors are redirected
-  # here from the landing page (see public/index.html).
-  get '/library' do
-    send_file File.join(settings.public_folder, 'library.html')
   end
 
   # API pour lister les cassettes disponibles

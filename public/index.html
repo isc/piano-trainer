@@ -19,7 +19,7 @@
           localStorage.getItem('pt-returning') &&
           !new URLSearchParams(location.search).has('accueil')
         ) {
-          location.replace('/library')
+          location.replace('library.html')
         }
       } catch {
         /* localStorage unavailable: just show the landing. */
@@ -48,7 +48,7 @@
         </div>
         <!-- The whole preview is a link to the app, so the CTA shown at the end
              of the (non-interactive) video actually works when clicked. -->
-        <a href="/library" class="pt-hero__visual" aria-label="Ouvrir Piano Trainer">
+        <a href="library.html" class="pt-hero__visual" aria-label="Ouvrir Piano Trainer">
           <video
             id="hero-video"
             width="1280"
@@ -126,8 +126,8 @@
             <p>Suivez les notes qui défilent, laissez le retour en temps réel vous guider, et retrouvez vos progrès dans le journal de pratique.</p>
           </div>
         </div>
-        <div class="pt-hero__cta" style="justify-content: center; margin-top: var(--pt-space-8);">
-          <a href="/library" role="button">Ouvrir la bibliothèque</a>
+        <div class="pt-section__cta">
+          <a href="library.html" role="button">Ouvrir la bibliothèque</a>
         </div>
       </section>
 
