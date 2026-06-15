@@ -14,7 +14,7 @@ const SUPPORTED = ['fr', 'en']
 const FALLBACK = 'en'
 const STORAGE_KEY = 'pt-lang'
 
-export function detectLang() {
+function detectLang() {
   try {
     const stored = localStorage.getItem(STORAGE_KEY)
     if (stored && SUPPORTED.includes(stored)) return stored
@@ -93,5 +93,15 @@ export function initI18n() {
       e.preventDefault()
       setLang(el.getAttribute('data-set-lang'))
     })
+  })
+}
+
+// One-call setup for Alpine pages: translate static chrome + wire the switch
+// (initI18n), then expose $t to templates. Registered on alpine:init so the
+// magic exists before Alpine evaluates any expression.
+export function initAlpineI18n() {
+  initI18n()
+  document.addEventListener('alpine:init', () => {
+    window.Alpine.magic('t', () => (key, params) => t(key, params))
   })
 }

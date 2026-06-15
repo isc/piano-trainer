@@ -11,6 +11,12 @@ import { initPlayback, getBPM } from './playback.js'
 import { initStrictPlaythrough } from './strictPlaythrough.js'
 import { t, locale } from './i18n.js'
 
+// Built once: the active locale is fixed for the page lifetime (switching
+// language reloads), so these don't need rebuilding per call/point.
+const PLAYTHROUGH_LIST_FORMATTER = new Intl.ListFormat(locale(), { style: 'long', type: 'conjunction' })
+const CHART_DATE_FULL = new Intl.DateTimeFormat(locale())
+const CHART_DATE_AXIS = new Intl.DateTimeFormat(locale(), { day: 'numeric', month: 'short' })
+
 export function midiApp() {
   const midi = initMidi()
   const musicxml = initMusicXML()
@@ -552,10 +558,9 @@ export function midiApp() {
     formatDuration,
 
     formatPlaythroughs(playthroughs) {
-      const formatter = new Intl.ListFormat(locale(), { style: 'long', type: 'conjunction' })
       // Reverse to show chronological order (oldest first)
       const durations = [...playthroughs].reverse().map((pt) => formatDuration(pt.durationMs))
-      return t('score.playthroughsSummary', { n: playthroughs.length, list: formatter.format(durations) })
+      return t('score.playthroughsSummary', { n: playthroughs.length, list: PLAYTHROUGH_LIST_FORMATTER.format(durations) })
     },
 
     // Built as a string (not <template x-for>) because Alpine's templates
@@ -588,10 +593,9 @@ export function midiApp() {
         x: xScale(i),
         y: yScale(p.durationMs),
         duration: formatDuration(p.durationMs),
-        date: new Date(p.startedAt).toLocaleDateString(locale()),
+        date: CHART_DATE_FULL.format(new Date(p.startedAt)),
       }))
-      const fmtAxis = (iso) =>
-        new Date(iso).toLocaleDateString(locale(), { day: 'numeric', month: 'short' })
+      const fmtAxis = (iso) => CHART_DATE_AXIS.format(new Date(iso))
 
       const axisY = PAD.top + innerH
       const xMin = PAD.left

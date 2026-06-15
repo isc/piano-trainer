@@ -41,8 +41,7 @@
         heroVideo.load()
         if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
           heroVideo.autoplay = true
-          const playing = heroVideo.play()
-          if (playing) playing.catch(() => {})
+          heroVideo.play().catch(() => {})
         }
       }
     </script>

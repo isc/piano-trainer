@@ -14,14 +14,10 @@
       // even when library.js's import graph is slow to resolve. Otherwise Alpine
       // can win the race and every expression throws "<name> is not defined".
       import { libraryApp } from './js/library.js'
-      import { initI18n, t } from './js/i18n.js'
+      import { initAlpineI18n } from './js/i18n.js'
       window.libraryApp = libraryApp
-      // Translate static [data-i18n] chrome + wire the FR/EN switch.
-      initI18n()
-      // Expose $t to Alpine templates (registered before Alpine processes the DOM).
-      document.addEventListener('alpine:init', () => {
-        window.Alpine.magic('t', () => (key, params) => t(key, params))
-      })
+      // Translate static chrome, wire the FR/EN switch, and expose $t to templates.
+      initAlpineI18n()
       const alpine = document.createElement('script')
       alpine.src = 'vendor/alpinejs.3.14.9.min.js'
       document.head.appendChild(alpine)

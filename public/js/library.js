@@ -380,11 +380,10 @@ export function libraryApp() {
       return CHANGELOG_DATE_FORMATTER.format(new Date(y, m - 1, d))
     },
 
-    // Changelog entries carry their items per language ({ fr: [...], en: [...] });
-    // fall back to the other language, then to a bare array for older entries.
+    // Changelog entries carry their items per language ({ fr: [...], en: [...] }),
+    // falling back to English when a translation is missing.
     changelogItems(entry) {
-      if (Array.isArray(entry.items)) return entry.items
-      return entry.items?.[getLang()] ?? entry.items?.fr ?? entry.items?.en ?? []
+      return entry.items?.[getLang()] ?? entry.items?.en ?? []
     },
 
     getTotalPracticeTimeForDate(dateEntry) {

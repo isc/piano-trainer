@@ -25,14 +25,10 @@
       // cross-origin esm.sh dependency). Otherwise Alpine can win the race and
       // every expression throws "<name> is not defined".
       import { midiApp } from './js/app.js'
-      import { initI18n, t } from './js/i18n.js'
+      import { initAlpineI18n } from './js/i18n.js'
       window.midiApp = midiApp
-      // Translate static [data-i18n] chrome + wire the FR/EN switch.
-      initI18n()
-      // Expose $t to Alpine templates (registered before Alpine processes the DOM).
-      document.addEventListener('alpine:init', () => {
-        window.Alpine.magic('t', () => (key, params) => t(key, params))
-      })
+      // Translate static chrome, wire the FR/EN switch, and expose $t to templates.
+      initAlpineI18n()
       const alpine = document.createElement('script')
       alpine.src = 'vendor/alpinejs.3.14.9.min.js'
       document.head.appendChild(alpine)
@@ -438,10 +434,10 @@
             <details>
               <summary><strong x-text="$t('score.macSetupSummary')">Via Audio MIDI Setup (ex : Kawai)</strong></summary>
               <ol>
-                <li><span x-text="$t('score.macSetupStep1Prefix')">Ouvrez l'application </span><strong x-text="$t('score.macSetupStep1App')">Audio MIDI Setup</strong><span x-text="$t('score.macSetupStep1Suffix')"> (Spotlight : « Audio MIDI »)</span></li>
-                <li><span x-text="$t('score.macSetupStep2Prefix')">Allez dans </span><strong x-text="$t('score.macSetupStep2Menu')">Fenêtre → Afficher le studio MIDI</strong></li>
-                <li><span x-text="$t('score.macSetupStep3Prefix')">Cliquez sur l'icône </span><strong x-text="$t('score.macSetupStep3Bt')">Bluetooth</strong></li>
-                <li><span x-text="$t('score.macSetupStep4Prefix')">Repérez votre piano dans la liste et cliquez sur </span><strong x-text="$t('score.macSetupStep4Connect')">Connecter</strong></li>
+                <li x-html="$t('score.macSetupStep1')">Ouvrez l'application <strong>Audio MIDI Setup</strong> (Spotlight : « Audio MIDI »)</li>
+                <li x-html="$t('score.macSetupStep2')">Allez dans <strong>Fenêtre → Afficher le studio MIDI</strong></li>
+                <li x-html="$t('score.macSetupStep3')">Cliquez sur l'icône <strong>Bluetooth</strong></li>
+                <li x-html="$t('score.macSetupStep4')">Repérez votre piano dans la liste et cliquez sur <strong>Connecter</strong></li>
               </ol>
               <p x-text="$t('score.macSetupReturn')">Revenez ensuite sur cette page et cliquez sur « Connecter clavier MIDI ».</p>
             </details>
@@ -453,8 +449,8 @@
             <h4>Windows</h4>
             <p x-text="$t('score.windowsIntro')">La connexion Bluetooth MIDI sur Windows nécessite des logiciels tiers :</p>
             <ol>
-              <li><span x-text="$t('score.install')">Installez </span><strong x-text="$t('score.windowsStep1App')">BLE MIDI Bridge</strong><span x-text="$t('score.windowsStep1Suffix')"> (pour recevoir le signal Bluetooth MIDI)</span></li>
-              <li><span x-text="$t('score.install')">Installez </span><strong x-text="$t('score.windowsStep2App')">loopMIDI</strong><span x-text="$t('score.windowsStep2Suffix')"> (pour créer un port MIDI virtuel)</span></li>
+              <li x-html="$t('score.windowsStep1')">Installez <strong>BLE MIDI Bridge</strong> (pour recevoir le signal Bluetooth MIDI)</li>
+              <li x-html="$t('score.windowsStep2')">Installez <strong>loopMIDI</strong> (pour créer un port MIDI virtuel)</li>
               <li x-text="$t('score.windowsStep3')">Configurez BLE MIDI Bridge pour rediriger vers le port loopMIDI</li>
             </ol>
             <p x-text="$t('score.windowsReturn')">Une fois le pont configuré, revenez sur cette page et cliquez sur « Connecter clavier MIDI ».</p>
