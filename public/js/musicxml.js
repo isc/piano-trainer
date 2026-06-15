@@ -7,6 +7,7 @@ import {
 } from './noteExtraction.js'
 import { scrollSystemIntoView } from './utils.js'
 import { arrayBufferToXml, isMusicXml } from './mxlLoader.js'
+import { t } from './i18n.js'
 
 let osmdInstance = null
 let allNotes = []
@@ -178,14 +179,14 @@ async function loadMusicXML(file) {
     const xmlContent = await arrayBufferToXml(await file.arrayBuffer())
 
     if (!isMusicXml(xmlContent)) {
-      alert('Ce fichier ne semble pas être un fichier MusicXML valide')
+      alert(t('errors.invalidMusicXml'))
       return
     }
 
     await renderMusicXML(xmlContent)
   } catch (error) {
     console.error('Erreur lors du chargement du MusicXML:', error)
-    alert('Erreur lors du chargement du fichier MusicXML')
+    alert(t('errors.musicXmlLoad'))
   }
 }
 
