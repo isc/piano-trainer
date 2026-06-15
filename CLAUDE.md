@@ -36,6 +36,10 @@ changes** here — a new feature, a notable behaviour change, a fix the player
 would have noticed. Do NOT add per-score notation fixes, refactors, CI, lint, or
 purely technical changes. When in doubt, leave it out.
 
+Entries are **bilingual**: each entry's `items` is `{ fr: [...], en: [...] }`
+with the same count in the same order. New entries must include both languages
+(the modal shows the active UI language via `changelogItems()` in library.js).
+
 **IMPORTANT:** After shipping a significant feature, add a French entry at the
 top of `CHANGELOG` (antechronological order), grouping items under the
 publication date (`YYYY-MM-DD`). Keep each item short and concrete.

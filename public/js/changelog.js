@@ -5,168 +5,306 @@
 // user-facing changes** here — a new feature, a notable behaviour change, a
 // fix to something the player would have noticed. Do NOT list per-score
 // notation fixes, refactors, CI, lint, or purely technical changes. When in
-// doubt, leave it out. Keep each item short, concrete, and in French.
+// doubt, leave it out. Keep each item short and concrete.
+//
+// Each entry's `items` is bilingual: `{ fr: [...], en: [...] }`. Both languages
+// are required for new entries — write the French items, then a natural,
+// idiomatic English translation of each, in the same order and same count.
+// `library.js` (`changelogItems`) picks the array for the active language.
 //
 // See CLAUDE.md ("Changelog in-app") for the update rule.
 
 export const CHANGELOG = [
   {
     date: '2026-06-12',
-    items: [
-      "Les 20 premiers exercices du Pianiste virtuose de Hanon rejoignent la bibliothèque, regroupés en une seule entrée. Sur la partition, un sélecteur permet de passer d'un exercice à l'autre ; chaque exercice garde son propre historique de pratique, et jouer les premières notes d'un exercice depuis la bibliothèque l'ouvre directement.",
-    ],
+    items: {
+      fr: [
+        "Les 20 premiers exercices du Pianiste virtuose de Hanon rejoignent la bibliothèque, regroupés en une seule entrée. Sur la partition, un sélecteur permet de passer d'un exercice à l'autre ; chaque exercice garde son propre historique de pratique, et jouer les premières notes d'un exercice depuis la bibliothèque l'ouvre directement.",
+      ],
+      en: [
+        "The first 20 exercises from Hanon's The Virtuoso Pianist join the library, grouped under a single entry. On the score, a selector lets you move from one exercise to the next; each exercise keeps its own practice history, and playing an exercise's opening notes from the library opens it directly.",
+      ],
+    },
   },
   {
     date: '2026-06-10',
-    items: [
-      "Les durées de parcours ne comptent plus les temps morts : quand vous mettez en pause ou êtes interrompu en plein milieu, ce temps est retranché. La comparaison entre vos passages reflète mieux votre progression réelle.",
-      "Les fenêtres (résultats, historique, aide…) se ferment désormais avec la touche Échap.",
-    ],
+    items: {
+      fr: [
+        "Les durées de parcours ne comptent plus les temps morts : quand vous mettez en pause ou êtes interrompu en plein milieu, ce temps est retranché. La comparaison entre vos passages reflète mieux votre progression réelle.",
+        "Les fenêtres (résultats, historique, aide…) se ferment désormais avec la touche Échap.",
+      ],
+      en: [
+        "Run durations no longer count idle time: when you pause or get interrupted partway through, that time is subtracted. Comparing your runs now reflects your real progress more accurately.",
+        "Dialogs (results, history, help…) can now be closed with the Esc key.",
+      ],
+    },
   },
   {
     date: '2026-06-07',
-    items: [
-      "Retour à la bibliothèque depuis le clavier : appuyez sur la touche la plus aiguë du piano pour revenir à la liste des partitions, en conservant les filtres en cours.",
-    ],
+    items: {
+      fr: [
+        "Retour à la bibliothèque depuis le clavier : appuyez sur la touche la plus aiguë du piano pour revenir à la liste des partitions, en conservant les filtres en cours.",
+      ],
+      en: [
+        "Back to the library from the keyboard: press the highest key on the piano to return to the score list, keeping your current filters.",
+      ],
+    },
   },
   {
     date: '2026-06-05',
-    items: [
-      "Chargement par glisser-déposer : déposez un fichier MusicXML — y compris les .mxl compressés — directement sur la page pour l'ouvrir, sans passer par le bouton.",
-    ],
+    items: {
+      fr: [
+        "Chargement par glisser-déposer : déposez un fichier MusicXML — y compris les .mxl compressés — directement sur la page pour l'ouvrir, sans passer par le bouton.",
+      ],
+      en: [
+        "Drag-and-drop loading: drop a MusicXML file — including compressed .mxl files — straight onto the page to open it, no button required.",
+      ],
+    },
   },
   {
     date: '2026-05-28',
-    items: [
-      "Raccourci « / » : appuyez sur la touche slash pour placer aussitôt le curseur dans la recherche de la bibliothèque.",
-    ],
+    items: {
+      fr: [
+        "Raccourci « / » : appuyez sur la touche slash pour placer aussitôt le curseur dans la recherche de la bibliothèque.",
+      ],
+      en: [
+        "“/” shortcut: press the slash key to jump the cursor straight into the library search.",
+      ],
+    },
   },
   {
     date: '2026-05-22',
-    items: [
-      "Nouveau filtre par période musicale (baroque, classique, romantique, moderne…) dans la bibliothèque.",
-    ],
+    items: {
+      fr: [
+        "Nouveau filtre par période musicale (baroque, classique, romantique, moderne…) dans la bibliothèque.",
+      ],
+      en: [
+        "New filter by musical period (Baroque, Classical, Romantic, Modern…) in the library.",
+      ],
+    },
   },
   {
     date: '2026-05-21',
-    items: [
-      "Le statut « répertoire » est plus exigeant : une partition n'y accède qu'après une maîtrise plus solidement démontrée, pour que le répertoire reste un vrai repère.",
-    ],
+    items: {
+      fr: [
+        "Le statut « répertoire » est plus exigeant : une partition n'y accède qu'après une maîtrise plus solidement démontrée, pour que le répertoire reste un vrai repère.",
+      ],
+      en: [
+        "The “repertoire” status is now more demanding: a score reaches it only after more solidly demonstrated mastery, so that your repertoire stays a meaningful benchmark.",
+      ],
+    },
   },
   {
     date: '2026-05-20',
-    items: [
-      "Mode strict plus pratique : les contrôles restent visibles pendant le jeu, un clic sur une mesure définit le point de départ, et le tempo choisi est mémorisé d'une séance à l'autre.",
-    ],
+    items: {
+      fr: [
+        "Mode strict plus pratique : les contrôles restent visibles pendant le jeu, un clic sur une mesure définit le point de départ, et le tempo choisi est mémorisé d'une séance à l'autre.",
+      ],
+      en: [
+        "More convenient strict mode: the controls stay visible while you play, clicking a bar sets the starting point, and your chosen tempo is remembered from one session to the next.",
+      ],
+    },
   },
   {
     date: '2026-05-11',
-    items: [
-      "Refonte de l'interface : nouveau système de design, pages repensées et modes de jeu unifiés pour une navigation plus claire.",
-    ],
+    items: {
+      fr: [
+        "Refonte de l'interface : nouveau système de design, pages repensées et modes de jeu unifiés pour une navigation plus claire.",
+      ],
+      en: [
+        "Interface overhaul: a new design system, redesigned pages, and unified play modes for clearer navigation.",
+      ],
+    },
   },
   {
     date: '2026-05-10',
-    items: [
-      "Nouveau mode « parcours strict » : jouez la partition du début à la fin au tempo imposé par un métronome, pour mesurer votre régularité plutôt que votre seule justesse.",
-    ],
+    items: {
+      fr: [
+        "Nouveau mode « parcours strict » : jouez la partition du début à la fin au tempo imposé par un métronome, pour mesurer votre régularité plutôt que votre seule justesse.",
+      ],
+      en: [
+        "New “strict run” mode: play the score from start to finish at a tempo set by a metronome, to measure your steadiness rather than just your accuracy.",
+      ],
+    },
   },
   {
     date: '2026-05-04',
-    items: [
-      "Graphique d'évolution dans l'historique d'une partition : visualisez la durée de vos parcours au fil des séances pour voir si vous gagnez en aisance.",
-    ],
+    items: {
+      fr: [
+        "Graphique d'évolution dans l'historique d'une partition : visualisez la durée de vos parcours au fil des séances pour voir si vous gagnez en aisance.",
+      ],
+      en: [
+        "Progress chart in a score's history: see how your run durations evolve session after session to tell whether you're getting more fluent.",
+      ],
+    },
   },
   {
     date: '2026-04-10',
-    items: [
-      "Ouvrez une partition en la jouant : depuis la bibliothèque, jouez les premières notes d'un morceau sur le piano et l'appli l'ouvre automatiquement.",
-      "Pédale de sustain prise en compte pendant l'écoute de la partition.",
-    ],
+    items: {
+      fr: [
+        "Ouvrez une partition en la jouant : depuis la bibliothèque, jouez les premières notes d'un morceau sur le piano et l'appli l'ouvre automatiquement.",
+        "Pédale de sustain prise en compte pendant l'écoute de la partition.",
+      ],
+      en: [
+        "Open a score by playing it: from the library, play a piece's opening notes on the piano and the app opens it automatically.",
+        "Sustain pedal taken into account while listening to the score.",
+      ],
+    },
   },
   {
     date: '2026-03-24',
-    items: [
-      "Retour à l'accueil en appuyant sur la touche la plus grave du piano (le La0 tout à gauche).",
-    ],
+    items: {
+      fr: [
+        "Retour à l'accueil en appuyant sur la touche la plus grave du piano (le La0 tout à gauche).",
+      ],
+      en: [
+        "Back to the home page by pressing the lowest key on the piano (the A0 at the far left).",
+      ],
+    },
   },
   {
     date: '2026-03-19',
-    items: [
-      "Parcourez la bibliothèque par niveau de travail — déchiffrage, perfectionnement, répertoire — grâce aux pages de statut.",
-    ],
+    items: {
+      fr: [
+        "Parcourez la bibliothèque par niveau de travail — déchiffrage, perfectionnement, répertoire — grâce aux pages de statut.",
+      ],
+      en: [
+        "Browse the library by working level — sight-reading, polishing, repertoire — through the status pages.",
+      ],
+    },
   },
   {
     date: '2026-03-15',
-    items: [
-      "Curseur et défilement automatique pendant l'écoute : le curseur suit la musique et la page défile toute seule.",
-      "Pages compositeur pour parcourir les partitions regroupées par compositeur.",
-    ],
+    items: {
+      fr: [
+        "Curseur et défilement automatique pendant l'écoute : le curseur suit la musique et la page défile toute seule.",
+        "Pages compositeur pour parcourir les partitions regroupées par compositeur.",
+      ],
+      en: [
+        "Cursor and auto-scrolling while listening: the cursor follows the music and the page scrolls on its own.",
+        "Composer pages to browse scores grouped by composer.",
+      ],
+    },
   },
   {
     date: '2026-02-21',
-    items: [
-      "Écoute avec un vrai son de piano : la partition peut désormais être jouée avec un rendu audio réaliste, en plus de l'envoi vers un piano MIDI connecté.",
-    ],
+    items: {
+      fr: [
+        "Écoute avec un vrai son de piano : la partition peut désormais être jouée avec un rendu audio réaliste, en plus de l'envoi vers un piano MIDI connecté.",
+      ],
+      en: [
+        "Listen with a real piano sound: the score can now be played with realistic audio, in addition to being sent to a connected MIDI piano.",
+      ],
+    },
   },
   {
     date: '2026-02-18',
-    items: [
-      "Reconnaissance des ornements : trilles, mordants, grupettos et appoggiatures sont validés avec une tolérance adaptée lorsque vous les jouez.",
-    ],
+    items: {
+      fr: [
+        "Reconnaissance des ornements : trilles, mordants, grupettos et appoggiatures sont validés avec une tolérance adaptée lorsque vous les jouez.",
+      ],
+      en: [
+        "Ornament recognition: trills, mordents, turns, and appoggiaturas are validated with a suitable tolerance when you play them.",
+      ],
+    },
   },
   {
     date: '2026-02-09',
-    items: [
-      "Aide à la connexion : si aucun clavier n'est détecté, une fenêtre explique comment connecter votre piano selon votre système (macOS, Windows, Linux).",
-    ],
+    items: {
+      fr: [
+        "Aide à la connexion : si aucun clavier n'est détecté, une fenêtre explique comment connecter votre piano selon votre système (macOS, Windows, Linux).",
+      ],
+      en: [
+        "Connection help: if no keyboard is detected, a dialog explains how to connect your piano depending on your system (macOS, Windows, Linux).",
+      ],
+    },
   },
   {
     date: '2026-02-06',
-    items: [
-      "Doigtés à plusieurs chiffres pris en charge (par exemple pour les changements de doigt sur une même note).",
-    ],
+    items: {
+      fr: [
+        "Doigtés à plusieurs chiffres pris en charge (par exemple pour les changements de doigt sur une même note).",
+      ],
+      en: [
+        "Multi-digit fingerings supported (for example, finger changes on the same note).",
+      ],
+    },
   },
   {
     date: '2026-01-30',
-    items: [
-      "Mode renforcement ciblé : à la fin d'un parcours complet, l'appli vous propose de retravailler précisément les mesures où vous avez fait des erreurs.",
-    ],
+    items: {
+      fr: [
+        "Mode renforcement ciblé : à la fin d'un parcours complet, l'appli vous propose de retravailler précisément les mesures où vous avez fait des erreurs.",
+      ],
+      en: [
+        "Targeted reinforcement mode: at the end of a full run, the app offers to rework precisely the bars where you made mistakes.",
+      ],
+    },
   },
   {
     date: '2026-01-18',
-    items: [
-      "Annotation des doigtés : ajoutez vos propres doigtés directement sur la partition. Ils sont sauvegardés et réaffichés à chaque ouverture.",
-    ],
+    items: {
+      fr: [
+        "Annotation des doigtés : ajoutez vos propres doigtés directement sur la partition. Ils sont sauvegardés et réaffichés à chaque ouverture.",
+      ],
+      en: [
+        "Fingering annotation: add your own fingerings directly on the score. They are saved and shown again every time you open it.",
+      ],
+    },
   },
   {
     date: '2026-01-15',
-    items: [
-      "Historique de pratique et journal quotidien : suivez, partition par partition et jour par jour, le temps passé et les mesures travaillées.",
-    ],
+    items: {
+      fr: [
+        "Historique de pratique et journal quotidien : suivez, partition par partition et jour par jour, le temps passé et les mesures travaillées.",
+      ],
+      en: [
+        "Practice history and daily log: track, score by score and day by day, the time spent and the bars worked on.",
+      ],
+    },
   },
   {
     date: '2026-01-13',
-    items: [
-      "Sauvegarde de vos données : exportez puis réimportez un fichier contenant vos doigtés, votre historique et votre progression — utile pour changer d'appareil.",
-    ],
+    items: {
+      fr: [
+        "Sauvegarde de vos données : exportez puis réimportez un fichier contenant vos doigtés, votre historique et votre progression — utile pour changer d'appareil.",
+      ],
+      en: [
+        "Back up your data: export and later re-import a file containing your fingerings, history, and progress — handy when switching devices.",
+      ],
+    },
   },
   {
     date: '2026-01-10',
-    items: [
-      "Recherche multi-mots dans la bibliothèque : tapez plusieurs mots (titre et compositeur) pour affiner les résultats.",
-    ],
+    items: {
+      fr: [
+        "Recherche multi-mots dans la bibliothèque : tapez plusieurs mots (titre et compositeur) pour affiner les résultats.",
+      ],
+      en: [
+        "Multi-word search in the library: type several words (title and composer) to narrow down the results.",
+      ],
+    },
   },
   {
     date: '2026-01-04',
-    items: [
-      "Choix de la main à travailler — main droite, main gauche ou les deux — et bouton plein écran pour la partition.",
-    ],
+    items: {
+      fr: [
+        "Choix de la main à travailler — main droite, main gauche ou les deux — et bouton plein écran pour la partition.",
+      ],
+      en: [
+        "Choose which hand to practice — right hand, left hand, or both — plus a full-screen button for the score.",
+      ],
+    },
   },
   {
     date: '2026-01-02',
-    items: [
-      "Bibliothèque de partitions classiques du domaine public, et connexion du clavier via la Web MIDI API (USB ou Bluetooth).",
-    ],
+    items: {
+      fr: [
+        "Bibliothèque de partitions classiques du domaine public, et connexion du clavier via la Web MIDI API (USB ou Bluetooth).",
+      ],
+      en: [
+        "A library of public-domain classical scores, and keyboard connection through the Web MIDI API (USB or Bluetooth).",
+      ],
+    },
   },
 ]
