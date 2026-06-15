@@ -29,8 +29,22 @@
     <link rel="stylesheet" href="vendor/pico.2.1.1min.css" />
     <link rel="stylesheet" href="styles.css" />
     <script type="module">
-      import { initI18n } from './js/i18n.js'
+      import { initI18n, getLang } from './js/i18n.js'
       initI18n()
+      // Serve the hero video for the active language, then autoplay it unless the
+      // visitor prefers reduced motion (the poster frame stands in otherwise).
+      const lang = getLang()
+      const heroVideo = document.getElementById('hero-video')
+      if (heroVideo) {
+        heroVideo.poster = `img/hero-poster.${lang}.jpg`
+        heroVideo.querySelector('source').src = `video/hero.${lang}.mp4`
+        heroVideo.load()
+        if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+          heroVideo.autoplay = true
+          const playing = heroVideo.play()
+          if (playing) playing.catch(() => {})
+        }
+      }
     </script>
   </head>
   <body>
@@ -70,11 +84,11 @@
             muted
             loop
             playsinline
-            poster="img/hero-poster.jpg"
+            poster="img/hero-poster.fr.jpg"
             aria-hidden="true"
             tabindex="-1"
           >
-            <source src="video/hero.mp4" type="video/mp4" />
+            <source src="video/hero.fr.mp4" type="video/mp4" />
           </video>
         </a>
       </section>
@@ -149,16 +163,5 @@
         Piano Trainer · partitions du domaine public · vos données restent dans votre navigateur.
       </footer>
     </main>
-
-    <!-- Autoplay the hero video only when the visitor hasn't asked to reduce
-         motion; otherwise the poster frame stands in. -->
-    <script>
-      const heroVideo = document.getElementById('hero-video')
-      if (heroVideo && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-        heroVideo.autoplay = true
-        const playing = heroVideo.play()
-        if (playing) playing.catch(() => {})
-      }
-    </script>
   </body>
 </html>
