@@ -366,8 +366,8 @@
                   <small x-text="formatDuration(day.totalPracticeTimeMs)"></small>
                 </div>
                 <div class="pt-history-day__body">
-                  <small x-show="day.timesPlayedInFull === 0 && day.measuresWorked.length > 0" x-text="$t('score.measuresPlayed', { n: day.measuresWorked.length })"></small>
-                  <small x-show="day.measuresReinforced.length > 0" x-text="$t('score.measuresReinforced', { n: day.measuresReinforced.length })"></small>
+                  <small x-show="day.timesPlayedInFull === 0 && day.measuresWorked.length > 0" x-text="$tn('score.measuresPlayed', day.measuresWorked.length)"></small>
+                  <small x-show="day.measuresReinforced.length > 0" x-text="$tn('score.measuresReinforced', day.measuresReinforced.length)"></small>
                   <small x-show="day.fullPlaythroughs.length > 0" x-text="formatPlaythroughs(day.fullPlaythroughs)"></small>
                 </div>
               </div>
@@ -387,7 +387,7 @@
         <p>
           <span data-i18n="score.noMidiBody">Votre navigateur ne supporte pas Web MIDI API. Essayez avec</span>
           <a href="https://caniuse.com/?search=web%20midi" data-i18n="score.otherBrowser">un autre navigateur</a>
-          (Chrome, Edge ou Opera).
+          <span data-i18n="score.noMidiBrowsers">(Chrome, Edge ou Opera).</span>
         </p>
       </article>
     </dialog>

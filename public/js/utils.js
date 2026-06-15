@@ -1,5 +1,9 @@
 import { t, locale } from './i18n.js'
 
+// Built once: the active locale is fixed for the page lifetime (switching
+// language reloads), so the verbose-date formatter needn't rebuild per call.
+const VERBOSE_DATE_FORMATTER = new Intl.DateTimeFormat(locale(), { weekday: 'long', day: 'numeric', month: 'long' })
+
 export function isTestEnv() {
   return document.cookie.includes('test-env')
 }
@@ -104,5 +108,5 @@ export function formatDate(date) {
   const { compareDate, diffDays } = daysAgo(date)
   if (diffDays === 0) return t('date.today')
   if (diffDays === 1) return t('date.yesterday')
-  return compareDate.toLocaleDateString(locale(), { weekday: 'long', day: 'numeric', month: 'long' })
+  return VERBOSE_DATE_FORMATTER.format(compareDate)
 }

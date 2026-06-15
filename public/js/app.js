@@ -329,7 +329,7 @@ export function midiApp() {
       this.scoreTitle = metadata.title || null
       this.scoreComposer = metadata.composer || null
       if (metadata.title) {
-        document.title = `${metadata.title}${metadata.composer ? ' — ' + metadata.composer : ''} · Piano Trainer`
+        document.title = `${metadata.title}${metadata.composer ? ' — ' + metadata.composer : ''} · ${t('score.pageTitle')}`
       }
     },
 

@@ -125,8 +125,8 @@
                         <span x-text="formatDuration(entry.totalPracticeTimeMs)"></span>
                         <span x-show="entry.timesPlayedInFull === 1"> · <span x-text="$t('library.playedFull')"></span></span>
                         <span x-show="entry.timesPlayedInFull > 1"> · <span x-text="$t('library.playedFullTimes', { n: entry.timesPlayedInFull })"></span></span>
-                        <span x-show="entry.timesPlayedInFull === 0"> · <span x-text="$t('library.measuresCount', { n: entry.measuresWorked.length })"></span></span>
-                        <span x-show="entry.measuresReinforced.length > 0"> · <span x-text="$t('library.reinforcedCount', { n: entry.measuresReinforced.length })"></span></span>
+                        <span x-show="entry.timesPlayedInFull === 0"> · <span x-text="$tn('library.measuresCount', entry.measuresWorked.length)"></span></span>
+                        <span x-show="entry.measuresReinforced.length > 0"> · <span x-text="$tn('library.reinforcedCount', entry.measuresReinforced.length)"></span></span>
                       </small>
                     </div>
                   </template>

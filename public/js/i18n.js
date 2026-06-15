@@ -21,7 +21,9 @@ function detectLang() {
   } catch {
     /* localStorage unavailable */
   }
-  const nav = (navigator.language || '').slice(0, 2).toLowerCase()
+  // `navigator` is absent in the node test environment (and Node < 21), so guard it.
+  const navLang = typeof navigator !== 'undefined' ? navigator.language || '' : ''
+  const nav = navLang.slice(0, 2).toLowerCase()
   return SUPPORTED.includes(nav) ? nav : FALLBACK
 }
 
@@ -53,7 +55,9 @@ function lookup(d, key) {
 
 function interpolate(str, params) {
   if (!params) return str
-  return str.replace(/\{(\w+)\}/g, (m, k) => (k in params ? params[k] : m))
+  // Substitute when the key is provided (nullish → '' rather than the literal
+  // string "undefined"); leave the placeholder untouched when the key is absent.
+  return str.replace(/\{(\w+)\}/g, (m, k) => (k in params ? (params[k] ?? '') : m))
 }
 
 // Resolve a dotted key, falling back to the other language then the key itself,
@@ -61,6 +65,12 @@ function interpolate(str, params) {
 export function t(key, params) {
   const val = lookup(dict, key) ?? lookup(DICTS[FALLBACK], key) ?? key
   return typeof val === 'string' ? interpolate(val, params) : val
+}
+
+// Count-aware variant: resolves `${key}One` when n === 1, otherwise `key`, and
+// always exposes {n}. Lets count strings agree in number per language.
+export function tn(key, n, params) {
+  return t(n === 1 ? `${key}One` : key, { n, ...params })
 }
 
 const ATTR_KEYS = ['placeholder', 'aria-label', 'title', 'alt', 'content']
@@ -103,5 +113,6 @@ export function initAlpineI18n() {
   initI18n()
   document.addEventListener('alpine:init', () => {
     window.Alpine.magic('t', () => (key, params) => t(key, params))
+    window.Alpine.magic('tn', () => (key, n, params) => tn(key, n, params))
   })
 }

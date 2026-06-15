@@ -36,9 +36,11 @@
       const lang = getLang()
       const heroVideo = document.getElementById('hero-video')
       if (heroVideo) {
+        // Set the source here (not in static markup) so a non-French visitor
+        // doesn't have the FR video preloaded and then refetched. Assigning .src
+        // loads it; no explicit load() (which would race the play() below).
         heroVideo.poster = `img/hero-poster.${lang}.jpg`
-        heroVideo.querySelector('source').src = `video/hero.${lang}.mp4`
-        heroVideo.load()
+        heroVideo.src = `video/hero.${lang}.mp4`
         if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
           heroVideo.autoplay = true
           heroVideo.play().catch(() => {})
@@ -87,7 +89,9 @@
             aria-hidden="true"
             tabindex="-1"
           >
-            <source src="video/hero.fr.mp4" type="video/mp4" />
+            <!-- src is set per-language by the head module; the FR poster is the
+                 no-JS fallback. No static <source> so the wrong-language video
+                 isn't preloaded. -->
           </video>
         </a>
       </section>
