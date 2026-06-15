@@ -16,6 +16,17 @@
 
 export const CHANGELOG = [
   {
+    date: '2026-06-15',
+    items: {
+      fr: [
+        "Piano Trainer est désormais disponible en anglais. Un sélecteur FR/EN en haut de page bascule toute l'interface ; la langue est détectée automatiquement selon votre navigateur et votre choix est mémorisé. Vos données de pratique ne sont pas affectées.",
+      ],
+      en: [
+        'Piano Trainer is now available in English. An FR/EN switch at the top of the page flips the whole interface; the language is auto-detected from your browser and your choice is remembered. Your practice data is unaffected.',
+      ],
+    },
+  },
+  {
     date: '2026-06-12',
     items: {
       fr: [
