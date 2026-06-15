@@ -1,215 +1,150 @@
 <!doctype html>
-<html lang="fr" x-data="libraryApp()">
+<html lang="fr">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Piano Trainer · Bibliothèque</title>
+    <title>Piano Trainer · Apprenez le piano avec un retour en temps réel</title>
+    <meta
+      name="description"
+      content="Branchez votre clavier MIDI, ouvrez une partition et jouez : Piano Trainer colore les notes en temps réel, suit votre pratique et vous aide à progresser sur un répertoire classique."
+    />
     <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+    <!-- Returning visitors (anyone who has already opened the library) skip the
+         pitch and land straight in the app. The marker is set by library.js.
+         Run before paint to avoid a flash of landing content. ?accueil forces
+         the landing to stay visible. -->
+    <script>
+      try {
+        if (
+          localStorage.getItem('pt-returning') &&
+          !new URLSearchParams(location.search).has('accueil')
+        ) {
+          location.replace('library.html')
+        }
+      } catch {
+        /* localStorage unavailable: just show the landing. */
+      }
+    </script>
     <link rel="stylesheet" href="vendor/pico.2.1.1min.css" />
     <link rel="stylesheet" href="styles.css" />
-    <script type="module">
-      // Register the Alpine root component before Alpine boots, then load Alpine.
-      // Loading Alpine from inside this module (rather than a sibling `defer`
-      // script) guarantees `libraryApp` exists before Alpine evaluates `x-data`,
-      // even when library.js's import graph is slow to resolve. Otherwise Alpine
-      // can win the race and every expression throws "<name> is not defined".
-      import { libraryApp } from './js/library.js'
-      window.libraryApp = libraryApp
-      const alpine = document.createElement('script')
-      alpine.src = 'vendor/alpinejs.3.14.9.min.js'
-      document.head.appendChild(alpine)
-    </script>
   </head>
   <body>
-    <main class="container pt-library-page" @keydown.escape.window="showChangelogModal = false">
-      <div class="pt-library-chrome">
-        <div class="pt-page-header">
-          <h1>Bibliothèque</h1>
-          <div class="pt-page-header__actions">
-            <div class="pt-page-header__search">
-              <input
-                type="search"
-                x-model="searchQuery"
-                placeholder="Rechercher une partition… (/)"
-                aria-label="Rechercher une partition"
-              />
-            </div>
-            <a href="score.html" role="button" class="secondary">📄 Charger une partition</a>
-            <button
-              type="button"
-              role="button"
-              class="secondary pt-changelog-btn"
-              @click="openChangelog()"
-              :aria-label="hasUnseenChangelog ? 'Nouveautés (nouvelles entrées)' : 'Nouveautés'"
-            >
-              ✨ Nouveautés
-              <span class="pt-changelog-dot" x-show="hasUnseenChangelog" aria-hidden="true"></span>
-            </button>
+    <main class="container pt-landing">
+      <nav class="pt-landing__nav">
+        <span class="pt-landing__brand">
+          <img src="favicon.svg" alt="" aria-hidden="true" />
+          Piano Trainer
+        </span>
+      </nav>
+
+      <section class="pt-hero">
+        <div class="pt-hero__intro">
+          <h1>Travaillez votre piano avec un retour en temps réel.</h1>
+          <p class="pt-hero__lead">
+            Branchez votre clavier MIDI, ouvrez une partition et jouez. Chaque note
+            se colore selon que vous l'avez réussie, manquée ou anticipée — et votre
+            progression se note toute seule, mesure après mesure.
+          </p>
+        </div>
+        <!-- The whole preview is a link to the app, so the CTA shown at the end
+             of the (non-interactive) video actually works when clicked. -->
+        <a href="library.html" class="pt-hero__visual" aria-label="Ouvrir Piano Trainer">
+          <video
+            id="hero-video"
+            width="1280"
+            height="720"
+            muted
+            loop
+            playsinline
+            poster="img/hero-poster.jpg"
+            aria-hidden="true"
+            tabindex="-1"
+          >
+            <source src="video/hero.mp4" type="video/mp4" />
+          </video>
+        </a>
+      </section>
+
+      <section class="pt-section">
+        <div class="pt-section__head">
+          <h2>Tout ce qu'il faut pour pratiquer sérieusement</h2>
+          <p>Un atelier de travail dans le navigateur, sans installation ni compte.</p>
+        </div>
+        <div class="pt-card-grid">
+          <article class="pt-card pt-feature">
+            <span class="pt-feature__icon">🎹</span>
+            <h3>Clavier MIDI en un clic</h3>
+            <p>USB ou Bluetooth via le Web MIDI. Le clavier est détecté automatiquement, rien à configurer.</p>
+          </article>
+          <article class="pt-card pt-feature">
+            <span class="pt-feature__icon">🎯</span>
+            <h3>Retour note par note</h3>
+            <p>Les notes se colorent en direct : réussie, attendue, hors tempo ou manquée. Vous voyez vos erreurs sans lever les yeux.</p>
+          </article>
+          <article class="pt-card pt-feature">
+            <span class="pt-feature__icon">📊</span>
+            <h3>Suivi de pratique</h3>
+            <p>Temps de travail, mesures retravaillées et passages joués en entier sont consignés dans un journal quotidien.</p>
+          </article>
+          <article class="pt-card pt-feature">
+            <span class="pt-feature__icon">🎚️</span>
+            <h3>Modes de travail</h3>
+            <p>Déchiffrage libre, entraînement mesure par mesure ou mode strict sans fausse note : choisissez votre exigence.</p>
+          </article>
+          <article class="pt-card pt-feature">
+            <span class="pt-feature__icon">✋</span>
+            <h3>Doigtés intégrés</h3>
+            <p>Affichez et éditez les doigtés directement sur la partition, empilés dans l'ordre des notes pour les accords.</p>
+          </article>
+          <article class="pt-card pt-feature">
+            <span class="pt-feature__icon">📚</span>
+            <h3>Bibliothèque classique</h3>
+            <p>70+ partitions du domaine public, des inventions de Bach au Hanon, recherchables en jouant leurs premières notes.</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="pt-section">
+        <div class="pt-section__head">
+          <h2>Comment démarrer</h2>
+          <p>Trois étapes, et vous jouez.</p>
+        </div>
+        <div class="pt-steps">
+          <div class="pt-step">
+            <span class="pt-step__num"></span>
+            <h3>Branchez votre clavier</h3>
+            <p>Reliez un clavier MIDI en USB ou en Bluetooth et autorisez l'accès quand le navigateur le demande. Pas de clavier ? Vous pouvez aussi suivre la partition à l'écran.</p>
+          </div>
+          <div class="pt-step">
+            <span class="pt-step__num"></span>
+            <h3>Choisissez une partition</h3>
+            <p>Piochez dans la bibliothèque ou déposez votre propre fichier MusicXML (<code>.xml</code>, <code>.mxl</code>) directement sur la page.</p>
+          </div>
+          <div class="pt-step">
+            <span class="pt-step__num"></span>
+            <h3>Jouez et progressez</h3>
+            <p>Suivez les notes qui défilent, laissez le retour en temps réel vous guider, et retrouvez vos progrès dans le journal de pratique.</p>
           </div>
         </div>
-
-        <div class="pt-filters" x-show="scores.length > 0">
-          <button
-            class="pt-filter-pill"
-            :aria-pressed="!statusFilter"
-            @click="statusFilter = ''"
-          >Tous <span class="pt-filter-pill__count" x-text="scores.length"></span></button>
-          <template x-for="opt in statusOptions" :key="opt.value">
-            <button
-              class="pt-filter-pill"
-              :data-status="opt.value"
-              :aria-pressed="statusFilter === opt.value"
-              @click="statusFilter = (statusFilter === opt.value ? '' : opt.value)"
-              x-show="opt.count > 0"
-            >
-              <span x-text="opt.label"></span>
-              <span class="pt-filter-pill__count" x-text="opt.count"></span>
-            </button>
-          </template>
-          <select x-model="composerFilter" aria-label="Filtrer par compositeur" x-show="composerOptions.length > 1">
-            <option value="">Tous compositeurs</option>
-            <template x-for="c in composerOptions" :key="c">
-              <option :value="c" x-text="c"></option>
-            </template>
-          </select>
-          <select x-model="periodFilter" aria-label="Filtrer par période musicale" x-show="periodOptions.length > 1">
-            <option value="">Toutes périodes</option>
-            <template x-for="p in periodOptions" :key="p.value">
-              <option :value="p.value" x-text="`${p.label} (${p.count})`"></option>
-            </template>
-          </select>
+        <div class="pt-section__cta">
+          <a href="library.html" role="button">Ouvrir la bibliothèque</a>
         </div>
+      </section>
 
-        <div class="pt-focus" x-show="focusOptions.length > 0">
-          <span class="pt-focus__label">À travailler :</span>
-          <template x-for="opt in focusOptions" :key="opt.value">
-            <button
-              class="pt-focus__chip"
-              :data-focus="opt.value"
-              :aria-pressed="focusFilter === opt.value"
-              @click="setFocusFilter(opt.value)"
-            >
-              <span x-text="opt.label"></span>
-              <span class="pt-focus__count" x-text="opt.count"></span>
-            </button>
-          </template>
-        </div>
-      </div>
-
-      <div class="pt-library">
-        <!-- Sidebar: practice journal + data management -->
-        <aside class="pt-library__sidebar">
-          <h2 style="font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--pt-text-subtle); margin: 0;">Journal de pratique</h2>
-          <div id="daily-log" style="display: flex; flex-direction: column; gap: var(--pt-space-2);">
-            <template x-for="dateEntry in dailyLogsByDate" :key="dateEntry.date.toISOString()">
-              <div class="pt-journal__day">
-                <div class="pt-journal__day-header">
-                  <h3 x-text="formatDate(dateEntry.date)"></h3>
-                  <small x-show="dateEntry.log.length > 0" x-text="formatDuration(getTotalPracticeTimeForDate(dateEntry))"></small>
-                </div>
-                <template x-if="dateEntry.log.length === 0">
-                  <p class="pt-journal__entry pt-journal__entry--empty">Aucune pratique</p>
-                </template>
-                <div class="pt-journal__entries">
-                  <template x-for="entry in dateEntry.log" :key="entry.scoreId">
-                    <div class="pt-journal__entry">
-                      <a :href="scorePageUrl(entry.scoreId)" x-text="(entry.scoreTitle || 'Sans titre') + ' · ' + entry.composer"></a>
-                      <small>
-                        <span x-text="formatDuration(entry.totalPracticeTimeMs)"></span>
-                        <span x-show="entry.timesPlayedInFull === 1"> · Joué en entier</span>
-                        <span x-show="entry.timesPlayedInFull > 1"> · Joué <span x-text="entry.timesPlayedInFull"></span>× en entier</span>
-                        <span x-show="entry.timesPlayedInFull === 0"> · <span x-text="entry.measuresWorked.length"></span> mesures</span>
-                        <span x-show="entry.measuresReinforced.length > 0"> · <span x-text="entry.measuresReinforced.length"></span> renforcées</span>
-                      </small>
-                    </div>
-                  </template>
-                </div>
-              </div>
-            </template>
-          </div>
-
-          <details class="pt-data-mgmt">
-            <summary>⚙️ Gestion des données</summary>
-            <div class="pt-data-mgmt__body">
-              <label for="backup-import">📥 Importer sauvegarde</label>
-              <input type="file" accept=".json" @change="importBackup($event)" id="backup-import" />
-              <button @click="exportBackup" class="pt-action-button">📤 Exporter sauvegarde</button>
-            </div>
-          </details>
-        </aside>
-
-        <!-- Library list -->
-        <div class="pt-library__main">
-          <table>
-            <thead>
-              <tr>
-                <th class="pt-th-sort" @click="toggleSort('title')" :aria-sort="sortBy === 'title' ? (sortDir === 'asc' ? 'ascending' : 'descending') : 'none'">
-                  Titre<span x-text="sortArrow('title')"></span>
-                </th>
-                <th class="pt-th-sort" @click="toggleSort('composer')" :aria-sort="sortBy === 'composer' ? (sortDir === 'asc' ? 'ascending' : 'descending') : 'none'">
-                  Compositeur<span x-text="sortArrow('composer')"></span>
-                </th>
-                <th class="pt-th-sort" @click="toggleSort('status')" :aria-sort="sortBy === 'status' ? (sortDir === 'asc' ? 'ascending' : 'descending') : 'none'">
-                  Statut<span x-text="sortArrow('status')"></span>
-                </th>
-                <th class="pt-th-sort pt-th-right" @click="toggleSort('practice')" :aria-sort="sortBy === 'practice' ? (sortDir === 'asc' ? 'ascending' : 'descending') : 'none'">
-                  Pratiqué<span x-text="sortArrow('practice')"></span>
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              <template x-for="score in filteredScores" :key="score.file || score.title">
-                <tr>
-                  <td>
-                    <a :href="scorePageUrl(getScoreUrl(score))" x-text="score.title"></a>
-                    <small x-show="isCollection(score)" x-text="score.parts?.length + ' exercices'"></small>
-                  </td>
-                  <td>
-                    <a href="#" @click.prevent="setComposerFilter(score.composer)" x-text="score.composer"></a>
-                  </td>
-                  <td>
-                    <template x-if="getStatusFor(score)">
-                      <a href="#"
-                         @click.prevent="setStatusFilter(getStatusFor(score))"
-                         class="pt-pill is-link"
-                         :class="'pt-pill--' + getStatusFor(score)"
-                         x-text="statusLabel(getStatusFor(score))"></a>
-                    </template>
-                  </td>
-                  <td class="pt-row__time">
-                    <template x-if="getPracticeTimeFor(score)">
-                      <div>
-                        <span x-text="formatDuration(getPracticeTimeFor(score))"></span>
-                        <small x-show="getPracticeSubline(score)" x-text="getPracticeSubline(score)"></small>
-                      </div>
-                    </template>
-                  </td>
-                </tr>
-              </template>
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      <!-- Changelog ("Nouveautés") modal -->
-      <dialog class="pt-changelog-dialog" :open="showChangelogModal">
-        <article>
-          <header>
-            <p><strong>✨ Nouveautés</strong></p>
-            <button aria-label="Close" rel="prev" @click="showChangelogModal = false"></button>
-          </header>
-          <template x-for="entry in changelog" :key="entry.date">
-            <section class="pt-changelog-entry">
-              <h4 x-text="formatChangelogDate(entry.date)"></h4>
-              <ul>
-                <template x-for="(item, i) in entry.items" :key="i">
-                  <li x-text="item"></li>
-                </template>
-              </ul>
-            </section>
-          </template>
-        </article>
-      </dialog>
+      <footer class="pt-landing__footer">
+        Piano Trainer · partitions du domaine public · vos données restent dans votre navigateur.
+      </footer>
     </main>
+
+    <!-- Autoplay the hero video only when the visitor hasn't asked to reduce
+         motion; otherwise the poster frame stands in. -->
+    <script>
+      const heroVideo = document.getElementById('hero-video')
+      if (heroVideo && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        heroVideo.autoplay = true
+        const playing = heroVideo.play()
+        if (playing) playing.catch(() => {})
+      }
+    </script>
   </body>
 </html>

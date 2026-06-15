@@ -78,6 +78,7 @@
   --pt-shadow-sm: 0 1px 2px rgba(15, 18, 30, 0.05);
   --pt-shadow-md: 0 4px 12px rgba(15, 18, 30, 0.08);
   --pt-shadow-lg: 0 10px 30px rgba(15, 18, 30, 0.12);
+  --pt-shadow-xl: 0 16px 40px rgba(15, 18, 30, 0.18);
 
   /* Z-layers */
   --pt-z-sticky: 20;
@@ -1269,4 +1270,117 @@ img[id^="cursorImg"] { scroll-margin-top: var(--pt-sticky-offset, 100px); }
   .pt-page-header { gap: var(--pt-space-2); }
   .pt-page-header__actions { width: 100%; }
   .pt-page-header__search { max-width: none; }
+}
+
+/* =============================================================================
+   Landing page (/) — pitch + onboarding shown to first-time visitors.
+   ========================================================================== */
+.pt-landing { max-width: 960px; }
+
+.pt-landing__nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--pt-space-3);
+  padding-block: var(--pt-space-4);
+}
+.pt-landing__brand {
+  display: flex;
+  align-items: center;
+  gap: var(--pt-space-2);
+  font-weight: 600;
+  color: var(--pt-text);
+}
+.pt-landing__brand img { width: 28px; height: 28px; }
+.pt-landing__nav a[role="button"] { margin: 0; }
+
+.pt-hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--pt-space-6);
+  padding-block: var(--pt-space-8) var(--pt-space-12);
+}
+/* Headline and lead sit side by side so the intro stays short and the video
+   rides higher up the page. */
+.pt-hero__intro {
+  display: grid;
+  grid-template-columns: 1.1fr 1fr;
+  align-items: end;
+  gap: var(--pt-space-6) var(--pt-space-8);
+  width: 100%;
+}
+.pt-hero h1 {
+  font-size: clamp(2rem, 1.2rem + 2.8vw, 3.1rem);
+  line-height: 1.08;
+  margin: 0;
+  letter-spacing: -0.022em;
+}
+.pt-hero__lead {
+  font-size: 1.14rem;
+  color: var(--pt-text-muted);
+  margin: 0;
+  max-width: 46ch;
+}
+.pt-section__cta { display: flex; justify-content: center; margin-top: var(--pt-space-8); }
+.pt-section__cta a[role="button"] { margin: 0; }
+.pt-hero__visual {
+  display: block;
+  width: 100%;
+  border: 1px solid var(--pt-border);
+  border-radius: var(--pt-radius-lg);
+  box-shadow: var(--pt-shadow-lg);
+  overflow: hidden;
+  transition: box-shadow var(--pt-transition-med), transform var(--pt-transition-med);
+}
+a.pt-hero__visual:hover {
+  box-shadow: var(--pt-shadow-xl);
+  transform: translateY(-2px);
+}
+.pt-hero__visual img,
+.pt-hero__visual video { display: block; width: 100%; height: auto; }
+
+.pt-section { padding-block: var(--pt-space-10); }
+.pt-section__head { text-align: center; max-width: 44ch; margin: 0 auto var(--pt-space-8); }
+.pt-section__head h2 { margin-bottom: var(--pt-space-2); }
+.pt-section__head p { color: var(--pt-text-muted); margin: 0; }
+
+.pt-feature { gap: var(--pt-space-3); }
+.pt-feature__icon { font-size: 1.6rem; line-height: 1; }
+.pt-feature h3 { font-size: 1rem; margin: 0; }
+.pt-feature p { font-size: 0.9rem; color: var(--pt-text-muted); margin: 0; }
+
+.pt-steps {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--pt-space-6);
+  counter-reset: step;
+}
+.pt-step { display: flex; flex-direction: column; gap: var(--pt-space-2); }
+.pt-step__num {
+  counter-increment: step;
+  width: 2rem; height: 2rem;
+  display: inline-flex; align-items: center; justify-content: center;
+  border-radius: var(--pt-radius-pill);
+  background: var(--pt-accent-soft);
+  color: var(--pt-accent-strong);
+  font-weight: 700;
+}
+.pt-step__num::before { content: counter(step); }
+.pt-step h3 { font-size: 1rem; margin: 0; }
+.pt-step p { font-size: 0.9rem; color: var(--pt-text-muted); margin: 0; }
+
+.pt-landing__footer {
+  text-align: center;
+  color: var(--pt-text-subtle);
+  font-size: 0.85rem;
+  padding-block: var(--pt-space-10) var(--pt-space-6);
+  border-top: 1px solid var(--pt-border);
+  margin-top: var(--pt-space-8);
+}
+
+@media (max-width: 720px) {
+  .pt-hero { gap: var(--pt-space-6); padding-block: var(--pt-space-6) var(--pt-space-8); }
+  .pt-hero__intro { grid-template-columns: 1fr; gap: var(--pt-space-4); }
+  .pt-steps { grid-template-columns: 1fr; gap: var(--pt-space-4); }
 }
