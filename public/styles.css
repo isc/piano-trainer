@@ -889,10 +889,10 @@ table tbody td:nth-child(2) a:hover { color: var(--pt-accent); }
 .pt-journal__entry--empty { color: var(--pt-text-subtle); font-style: italic; font-size: 0.82rem; }
 
 .pt-data-mgmt { background: var(--pt-bg-elevated); border: 1px solid var(--pt-border); border-radius: var(--pt-radius-md); }
+/* Keep only Pico's right-hand chevron: hide the native marker; no custom
+   left triangle (it duplicated the chevron). */
 .pt-data-mgmt summary { padding: var(--pt-space-3); cursor: pointer; font-size: 0.85rem; color: var(--pt-text-muted); list-style: none; }
 .pt-data-mgmt summary::-webkit-details-marker { display: none; }
-.pt-data-mgmt summary::before { content: "▸"; margin-right: 6px; transition: transform var(--pt-transition-fast); display: inline-block; }
-.pt-data-mgmt[open] summary::before { transform: rotate(90deg); }
 .pt-data-mgmt__body { padding: 0 var(--pt-space-3) var(--pt-space-3); display: flex; flex-direction: column; gap: var(--pt-space-2); }
 .pt-data-mgmt__body label { font-size: 0.85rem; color: var(--pt-text-muted); }
 .pt-data-mgmt__body input[type="file"] { font-size: 0.8rem; }
@@ -1300,6 +1300,9 @@ img[id^="cursorImg"] { scroll-margin-top: var(--pt-sticky-offset, 100px); }
   display: inline-flex;
   width: auto;
   flex: 0 0 auto;
+  /* Zero Pico's [role="group"] margin-bottom — in the centred header row it
+     would shift the pill upward, breaking vertical alignment with the buttons. */
+  margin: 0;
   border: 1px solid var(--pt-border);
   border-radius: var(--pt-radius-pill);
   overflow: hidden;
@@ -1309,8 +1312,8 @@ img[id^="cursorImg"] { scroll-margin-top: var(--pt-sticky-offset, 100px); }
   margin: 0;
   width: auto;
   flex: 0 0 auto;
-  padding: 4px 12px;
-  font-size: 0.8rem;
+  padding: 8px 14px;
+  font-size: 0.9rem;
   font-weight: 600;
   letter-spacing: 0.04em;
   color: var(--pt-text-muted);
