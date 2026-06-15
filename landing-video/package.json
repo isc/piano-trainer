@@ -1,0 +1,14 @@
+{
+  "name": "piano-trainer-landing-video",
+  "private": true,
+  "type": "module",
+  "description": "Build pipeline for the landing-page hero video (capture app states → HyperFrames → MP4).",
+  "scripts": {
+    "capture": "node capture/build-assets.mjs",
+    "render": "cd composition && npm run render",
+    "encode": "bash encode.sh"
+  },
+  "devDependencies": {
+    "playwright": "^1.49.0"
+  }
+}

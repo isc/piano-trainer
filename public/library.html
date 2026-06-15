@@ -1,0 +1,215 @@
+<!doctype html>
+<html lang="fr" x-data="libraryApp()">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Piano Trainer · Bibliothèque</title>
+    <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="vendor/pico.2.1.1min.css" />
+    <link rel="stylesheet" href="styles.css" />
+    <script type="module">
+      // Register the Alpine root component before Alpine boots, then load Alpine.
+      // Loading Alpine from inside this module (rather than a sibling `defer`
+      // script) guarantees `libraryApp` exists before Alpine evaluates `x-data`,
+      // even when library.js's import graph is slow to resolve. Otherwise Alpine
+      // can win the race and every expression throws "<name> is not defined".
+      import { libraryApp } from './js/library.js'
+      window.libraryApp = libraryApp
+      const alpine = document.createElement('script')
+      alpine.src = 'vendor/alpinejs.3.14.9.min.js'
+      document.head.appendChild(alpine)
+    </script>
+  </head>
+  <body>
+    <main class="container pt-library-page" @keydown.escape.window="showChangelogModal = false">
+      <div class="pt-library-chrome">
+        <div class="pt-page-header">
+          <h1>Bibliothèque</h1>
+          <div class="pt-page-header__actions">
+            <div class="pt-page-header__search">
+              <input
+                type="search"
+                x-model="searchQuery"
+                placeholder="Rechercher une partition… (/)"
+                aria-label="Rechercher une partition"
+              />
+            </div>
+            <a href="score.html" role="button" class="secondary">📄 Charger une partition</a>
+            <button
+              type="button"
+              role="button"
+              class="secondary pt-changelog-btn"
+              @click="openChangelog()"
+              :aria-label="hasUnseenChangelog ? 'Nouveautés (nouvelles entrées)' : 'Nouveautés'"
+            >
+              ✨ Nouveautés
+              <span class="pt-changelog-dot" x-show="hasUnseenChangelog" aria-hidden="true"></span>
+            </button>
+          </div>
+        </div>
+
+        <div class="pt-filters" x-show="scores.length > 0">
+          <button
+            class="pt-filter-pill"
+            :aria-pressed="!statusFilter"
+            @click="statusFilter = ''"
+          >Tous <span class="pt-filter-pill__count" x-text="scores.length"></span></button>
+          <template x-for="opt in statusOptions" :key="opt.value">
+            <button
+              class="pt-filter-pill"
+              :data-status="opt.value"
+              :aria-pressed="statusFilter === opt.value"
+              @click="statusFilter = (statusFilter === opt.value ? '' : opt.value)"
+              x-show="opt.count > 0"
+            >
+              <span x-text="opt.label"></span>
+              <span class="pt-filter-pill__count" x-text="opt.count"></span>
+            </button>
+          </template>
+          <select x-model="composerFilter" aria-label="Filtrer par compositeur" x-show="composerOptions.length > 1">
+            <option value="">Tous compositeurs</option>
+            <template x-for="c in composerOptions" :key="c">
+              <option :value="c" x-text="c"></option>
+            </template>
+          </select>
+          <select x-model="periodFilter" aria-label="Filtrer par période musicale" x-show="periodOptions.length > 1">
+            <option value="">Toutes périodes</option>
+            <template x-for="p in periodOptions" :key="p.value">
+              <option :value="p.value" x-text="`${p.label} (${p.count})`"></option>
+            </template>
+          </select>
+        </div>
+
+        <div class="pt-focus" x-show="focusOptions.length > 0">
+          <span class="pt-focus__label">À travailler :</span>
+          <template x-for="opt in focusOptions" :key="opt.value">
+            <button
+              class="pt-focus__chip"
+              :data-focus="opt.value"
+              :aria-pressed="focusFilter === opt.value"
+              @click="setFocusFilter(opt.value)"
+            >
+              <span x-text="opt.label"></span>
+              <span class="pt-focus__count" x-text="opt.count"></span>
+            </button>
+          </template>
+        </div>
+      </div>
+
+      <div class="pt-library">
+        <!-- Sidebar: practice journal + data management -->
+        <aside class="pt-library__sidebar">
+          <h2 style="font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--pt-text-subtle); margin: 0;">Journal de pratique</h2>
+          <div id="daily-log" style="display: flex; flex-direction: column; gap: var(--pt-space-2);">
+            <template x-for="dateEntry in dailyLogsByDate" :key="dateEntry.date.toISOString()">
+              <div class="pt-journal__day">
+                <div class="pt-journal__day-header">
+                  <h3 x-text="formatDate(dateEntry.date)"></h3>
+                  <small x-show="dateEntry.log.length > 0" x-text="formatDuration(getTotalPracticeTimeForDate(dateEntry))"></small>
+                </div>
+                <template x-if="dateEntry.log.length === 0">
+                  <p class="pt-journal__entry pt-journal__entry--empty">Aucune pratique</p>
+                </template>
+                <div class="pt-journal__entries">
+                  <template x-for="entry in dateEntry.log" :key="entry.scoreId">
+                    <div class="pt-journal__entry">
+                      <a :href="scorePageUrl(entry.scoreId)" x-text="(entry.scoreTitle || 'Sans titre') + ' · ' + entry.composer"></a>
+                      <small>
+                        <span x-text="formatDuration(entry.totalPracticeTimeMs)"></span>
+                        <span x-show="entry.timesPlayedInFull === 1"> · Joué en entier</span>
+                        <span x-show="entry.timesPlayedInFull > 1"> · Joué <span x-text="entry.timesPlayedInFull"></span>× en entier</span>
+                        <span x-show="entry.timesPlayedInFull === 0"> · <span x-text="entry.measuresWorked.length"></span> mesures</span>
+                        <span x-show="entry.measuresReinforced.length > 0"> · <span x-text="entry.measuresReinforced.length"></span> renforcées</span>
+                      </small>
+                    </div>
+                  </template>
+                </div>
+              </div>
+            </template>
+          </div>
+
+          <details class="pt-data-mgmt">
+            <summary>⚙️ Gestion des données</summary>
+            <div class="pt-data-mgmt__body">
+              <label for="backup-import">📥 Importer sauvegarde</label>
+              <input type="file" accept=".json" @change="importBackup($event)" id="backup-import" />
+              <button @click="exportBackup" class="pt-action-button">📤 Exporter sauvegarde</button>
+            </div>
+          </details>
+        </aside>
+
+        <!-- Library list -->
+        <div class="pt-library__main">
+          <table>
+            <thead>
+              <tr>
+                <th class="pt-th-sort" @click="toggleSort('title')" :aria-sort="sortBy === 'title' ? (sortDir === 'asc' ? 'ascending' : 'descending') : 'none'">
+                  Titre<span x-text="sortArrow('title')"></span>
+                </th>
+                <th class="pt-th-sort" @click="toggleSort('composer')" :aria-sort="sortBy === 'composer' ? (sortDir === 'asc' ? 'ascending' : 'descending') : 'none'">
+                  Compositeur<span x-text="sortArrow('composer')"></span>
+                </th>
+                <th class="pt-th-sort" @click="toggleSort('status')" :aria-sort="sortBy === 'status' ? (sortDir === 'asc' ? 'ascending' : 'descending') : 'none'">
+                  Statut<span x-text="sortArrow('status')"></span>
+                </th>
+                <th class="pt-th-sort pt-th-right" @click="toggleSort('practice')" :aria-sort="sortBy === 'practice' ? (sortDir === 'asc' ? 'ascending' : 'descending') : 'none'">
+                  Pratiqué<span x-text="sortArrow('practice')"></span>
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              <template x-for="score in filteredScores" :key="score.file || score.title">
+                <tr>
+                  <td>
+                    <a :href="scorePageUrl(getScoreUrl(score))" x-text="score.title"></a>
+                    <small x-show="isCollection(score)" x-text="score.parts?.length + ' exercices'"></small>
+                  </td>
+                  <td>
+                    <a href="#" @click.prevent="setComposerFilter(score.composer)" x-text="score.composer"></a>
+                  </td>
+                  <td>
+                    <template x-if="getStatusFor(score)">
+                      <a href="#"
+                         @click.prevent="setStatusFilter(getStatusFor(score))"
+                         class="pt-pill is-link"
+                         :class="'pt-pill--' + getStatusFor(score)"
+                         x-text="statusLabel(getStatusFor(score))"></a>
+                    </template>
+                  </td>
+                  <td class="pt-row__time">
+                    <template x-if="getPracticeTimeFor(score)">
+                      <div>
+                        <span x-text="formatDuration(getPracticeTimeFor(score))"></span>
+                        <small x-show="getPracticeSubline(score)" x-text="getPracticeSubline(score)"></small>
+                      </div>
+                    </template>
+                  </td>
+                </tr>
+              </template>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Changelog ("Nouveautés") modal -->
+      <dialog class="pt-changelog-dialog" :open="showChangelogModal">
+        <article>
+          <header>
+            <p><strong>✨ Nouveautés</strong></p>
+            <button aria-label="Close" rel="prev" @click="showChangelogModal = false"></button>
+          </header>
+          <template x-for="entry in changelog" :key="entry.date">
+            <section class="pt-changelog-entry">
+              <h4 x-text="formatChangelogDate(entry.date)"></h4>
+              <ul>
+                <template x-for="(item, i) in entry.items" :key="i">
+                  <li x-text="item"></li>
+                </template>
+              </ul>
+            </section>
+          </template>
+        </article>
+      </dialog>
+    </main>
+  </body>
+</html>

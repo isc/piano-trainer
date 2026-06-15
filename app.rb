@@ -67,7 +67,9 @@ class App < Sinatra::Base
     end
   end
 
-  # Route pour servir le fichier HTML principal
+  # Landing page (pitch + onboarding) served at the root. The score library is
+  # public/library.html, reached via relative links (library.html) so it works
+  # both here and on static hosting (GitHub Pages) under a project subpath.
   get '/' do
     send_file File.join(settings.public_folder, 'index.html')
   end

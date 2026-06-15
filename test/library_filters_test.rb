@@ -3,9 +3,9 @@ require_relative 'test_helper'
 class LibraryFiltersTest < CapybaraTestBase
   def setup
     page.driver.set_cookie('test-env', 'true')
-    visit '/index.html'
+    visit '/library.html'
     inject_aggregates
-    visit '/index.html'
+    visit '/library.html'
   end
 
   def test_clicking_composer_in_table_filters_library
@@ -46,7 +46,7 @@ class LibraryFiltersTest < CapybaraTestBase
   end
 
   def test_filters_persist_via_url_params
-    visit '/index.html?status=repertoire&composer=Chopin'
+    visit '/library.html?status=repertoire&composer=Chopin'
 
     assert_selector 'tbody tr', count: 1, text: 'Waltz in A Minor'
   end
@@ -71,7 +71,7 @@ class LibraryFiltersTest < CapybaraTestBase
   end
 
   def test_period_filter_persists_via_url_param
-    visit '/index.html?period=baroque'
+    visit '/library.html?period=baroque'
 
     # Wait for init() to finish wiring URL filters into the table before
     # snapshotting composers — init now defers filter restoration to a

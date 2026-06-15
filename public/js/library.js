@@ -46,6 +46,14 @@ export function libraryApp() {
     hasUnseenChangelog: false,
 
     async init() {
+      // Mark this visitor as a returning user so the landing page (/) can
+      // redirect them straight here instead of showing the pitch each time.
+      try {
+        localStorage.setItem('pt-returning', '1')
+      } catch {
+        // localStorage unavailable (private mode): no marker, no redirect — fine.
+      }
+
       // Flag the "Nouveautés" button when the latest entry post-dates the last
       // time the user opened the changelog (or has never opened it).
       const latest = CHANGELOG[0]?.date

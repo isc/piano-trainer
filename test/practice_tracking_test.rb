@@ -95,7 +95,7 @@ class PracticeTrackingTest < CapybaraTestBase
     sleep 0.3
 
     # Go to library and check daily log
-    visit '/index.html'
+    visit '/library.html'
 
     # Verify daily log shows today's practice
     within '#daily-log' do

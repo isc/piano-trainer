@@ -1,0 +1,8 @@
+# Generated screenshots (derived from a personal practice-data backup)
+composition/assets/
+
+# Build + capture working files
+.work/
+node_modules/
+composition/node_modules/
+composition/renders/
