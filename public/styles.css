@@ -129,10 +129,14 @@ button { transition: background-color var(--pt-transition-fast), border-color va
    Topbar (sticky page header on score.html)
    ========================================================================== */
 
-.pt-topbar {
+/* Both bars stick as one block, so the modebar never needs to know the
+   topbar's exact height (which varies with content / viewport width). */
+.pt-stickybars {
   position: sticky;
   top: 0;
   z-index: var(--pt-z-sticky);
+}
+.pt-topbar {
   background: var(--pt-bg-elevated);
   border-bottom: 1px solid var(--pt-border);
   display: flex;
@@ -237,9 +241,6 @@ button.pt-topbar__pill:disabled { opacity: 0.4; cursor: default; }
    ========================================================================== */
 
 .pt-modebar {
-  position: sticky;
-  top: 48px;
-  z-index: calc(var(--pt-z-sticky) - 1);
   background: var(--pt-bg-elevated);
   border-bottom: 1px solid var(--pt-border);
   display: flex;

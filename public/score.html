@@ -35,6 +35,7 @@
     </script>
   </head>
   <body @click="closeSettingsMenu()" @keydown.escape.window="handleEscape()">
+    <div class="pt-stickybars">
     <header class="pt-topbar">
       <a href="library.html" class="pt-topbar__back" data-i18n="score.back">&larr; Bibliothèque</a>
       <div class="pt-topbar__title" x-show="osmdInstance">
@@ -171,6 +172,7 @@
         x-text="isPlaying ? $t('score.stop') : $t('score.listen')"
       ></button>
     </nav>
+    </div><!-- /.pt-stickybars -->
 
     <!-- Mode-context band: shows mode-specific hints. Strict-mode controls
          now live in the sticky modebar; the band only carries a passive
