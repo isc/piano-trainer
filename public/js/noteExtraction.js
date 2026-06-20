@@ -185,6 +185,9 @@ function expandOrnamentNotes(measureNotes, fifths = 0) {
         midiNumber,
         noteName: `${noteNameStd}${octaveStd}`,
         timestamp: noteData.timestamp + ornamentOffset,
+        // Shared with audio playback (expandOrnamentTimings): how long the principal
+        // is held before the turn proper. 0 for on-beat turns, mordents and trills.
+        _turnDelay: turnDelay,
         [flag]: true,
         // Only the last note should highlight the original notehead
         noteheadIndex: i === sequence.length - 1 ? noteData.noteheadIndex : -1,

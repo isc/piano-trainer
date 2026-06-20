@@ -77,16 +77,16 @@ const ORNAMENT_NOTE_DURATION_WN = 1 / 16
 // Ornaments: the note extractor uses ORNAMENT_NOTE_OFFSET=0.00001 between notes (for keyboard
 // matching order), which collapses them to the same instant for audio.
 // - Mordents: fixed duration per note (tempo-relative, not parent-note-relative)
-// - Turns/trills: evenly spread over the full parent note duration. Note that delayed
-//   turns are NOT delayed here: audio keeps the even spread, while the keyboard matcher
-//   (expandOrnamentNotes in noteExtraction.js) offsets the turn into the note's final
-//   sixteenth so the other hand can interleave. Keep both in mind if changing turn timing.
+// - Turns/trills: evenly spread over the full parent note duration. A delayed turn
+//   instead holds the principal on the beat for _turnDelay (set by expandOrnamentNotes
+//   in noteExtraction.js) and plays the turn proper over the note's final stretch, so
+//   audio and the keyboard matcher realize the delayed turn the same way.
 // - isTrillEnd sentinels: skipped (only used by the keyboard matching engine)
 //
 // Grace notes: the extractor places them GRACE_NOTE_OFFSET_WN before their main note
 // (≈0.2ms at 120 BPM — effectively simultaneous). Here we schedule them so the last
 // grace note ends exactly at the main note's start time.
-function expandOrnamentTimings(notes) {
+export function expandOrnamentTimings(notes) {
   const ornamentGroups = new Map()
   const result = []
   let graceGroup = []
@@ -124,6 +124,20 @@ function expandOrnamentTimings(notes) {
     const baseTs = groupNotes[0].timestamp
     const isTrill = groupNotes[0].isTrillNote
     const isTurn = groupNotes[0].isTurnNote
+    const turnDelay = groupNotes[0]._turnDelay ?? 0
+
+    if (isTurn && turnDelay > 0) {
+      // Delayed turn: hold the principal (groupNotes[0]) on the beat for turnDelay,
+      // then play the turn proper over the remainder of the note. Mirrors the
+      // keyboard-matcher timing set in expandOrnamentNotes (noteExtraction.js).
+      const turnNoteDuration = (parentNote.Length.RealValue - turnDelay) / (groupNotes.length - 1)
+      result.push({ ...groupNotes[0], timestamp: baseTs, _ornamentDuration: turnDelay })
+      for (let j = 1; j < groupNotes.length; j++) {
+        result.push({ ...groupNotes[j], timestamp: baseTs + turnDelay + (j - 1) * turnNoteDuration, _ornamentDuration: turnNoteDuration })
+      }
+      continue
+    }
+
     const noteDuration = (isTrill || isTurn)
       ? parentNote.Length.RealValue / groupNotes.length
       : ORNAMENT_NOTE_DURATION_WN
