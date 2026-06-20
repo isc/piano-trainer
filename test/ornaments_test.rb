@@ -60,6 +60,38 @@ class OrnamentsTest < CapybaraTestBase
     assert_selector 'svg circle.repeat-indicator.filled', count: 1
   end
 
+  def test_delayed_turn_lets_left_hand_interleave
+    # A delayed turn holds its principal on the beat and plays the turn proper into
+    # the final sixteenth of the note (the Pathétique-style realization). The inner
+    # left-hand sixteenths therefore fall BETWEEN the held principal and the turn and
+    # must be playable in between -- not after the whole gruppetto.
+    #
+    # RH: C5 quarter (delayed turn -> D5, C5, B4, C5), then G5 quarter.
+    # LH: four C3 sixteenths, then a C3 quarter.
+    load_score('delayed-turn-accompaniment.xml', 7)
+
+    # Beat 1, sixteenth 1: the principal C5 is struck on the beat with the 1st LH note.
+    play_chord(['C5', 'C3'])
+
+    # Beat 1, sixteenths 2 and 3: the principal is held while the left hand continues.
+    # Before the delayed-turn timing fix the engine demanded the whole turn here, so
+    # these left-hand notes would have been rejected and the score never completed.
+    play_note('C3')
+    play_note('C3')
+
+    # Beat 1, sixteenth 4: the turn begins, together with the 4th LH note...
+    play_chord(['D5', 'C3'])
+    # ...then the rest of the turn.
+    play_note('C5')
+    play_note('B4')
+    play_note('C5')
+
+    # Beat 2.
+    play_chord(['G5', 'C3'])
+
+    assert_text 'Partition terminée'
+  end
+
   def test_mordent_notes_expanded_sequentially
     # Tests both regular and inverted mordents in the same measure:
     # - Regular mordent on C5: C5, B4, C5 (3 notes - diatonic lower note)

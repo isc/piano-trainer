@@ -113,16 +113,18 @@ function getOrnamentSequence(mainMidi, ornamentContainer, pitch, fifths = 0) {
 
   const { upperMidi, lowerMidi } = getOrnamentAuxiliaryNotes(mainMidi, ornamentContainer, pitch, fifths)
 
-  // Turn ornaments: 4-5 notes alternating around the main note
+  // Turn ornaments: 4-5 notes alternating around the main note.
+  // Delayed turns sound the principal on the beat, then play the turn proper late
+  // (see expandOrnamentNotes), so their sequence leads with the principal note.
   switch (ornamentType) {
     case OrnamentEnum.Turn:
       return { sequence: [upperMidi, mainMidi, lowerMidi, mainMidi], flag: 'isTurnNote' }
     case OrnamentEnum.InvertedTurn:
       return { sequence: [lowerMidi, mainMidi, upperMidi, mainMidi], flag: 'isTurnNote' }
     case OrnamentEnum.DelayedTurn:
-      return { sequence: [mainMidi, upperMidi, mainMidi, lowerMidi, mainMidi], flag: 'isTurnNote' }
+      return { sequence: [mainMidi, upperMidi, mainMidi, lowerMidi, mainMidi], flag: 'isTurnNote', delayed: true }
     case OrnamentEnum.DelayedInvertedTurn:
-      return { sequence: [mainMidi, lowerMidi, mainMidi, upperMidi, mainMidi], flag: 'isTurnNote' }
+      return { sequence: [mainMidi, lowerMidi, mainMidi, upperMidi, mainMidi], flag: 'isTurnNote', delayed: true }
     // Mordent ornaments: 3 notes with a quick auxiliary note
     case OrnamentEnum.Mordent:
       return { sequence: [mainMidi, lowerMidi, mainMidi], flag: 'isMordentNote' }
@@ -134,6 +136,15 @@ function getOrnamentSequence(mainMidi, ornamentContainer, pitch, fifths = 0) {
       return null
   }
 }
+
+// A delayed turn sounds its principal note on the beat, then plays the turn proper
+// (upper-principal-lower-principal) squeezed into the final sixteenth-note of the
+// principal's written value -- the classical realization. For a dotted note this
+// fills the dot (e.g. the gruppetti in Beethoven's Pathétique 2nd movement: a turn
+// on a dotted eighth lands on the last sixteenth). Holding the principal first lets
+// accompaniment notes that fall between it and the turn be expected in between,
+// instead of forcing the whole turn before them.
+const DELAYED_TURN_FILL_WN = 1 / 16
 
 // Expand ornament notes (turns, mordents, and trills) into their constituent notes
 function expandOrnamentNotes(measureNotes, fifths = 0) {
@@ -150,17 +161,30 @@ function expandOrnamentNotes(measureNotes, fifths = 0) {
       continue
     }
 
-    const { sequence, flag } = ornamentInfo
+    const { sequence, flag, delayed } = ornamentInfo
+    // For a delayed turn, hold the principal (index 0) on the beat and offset the
+    // turn proper into the final DELAYED_TURN_FILL_WN of the note's value. When the
+    // note is too short to delay, fall back to plain sequential offsets so the
+    // expanded notes never collapse onto the same timestamp.
+    const parentDurationWN = noteData.note?.Length?.RealValue ?? 0
+    const turnDelay = delayed ? Math.max(0, parentDurationWN - DELAYED_TURN_FILL_WN) : 0
+
     for (let i = 0; i < sequence.length; i++) {
       const midiNumber = sequence[i]
       const noteNameStd = NOTE_NAMES[midiNumber % 12]
       const octaveStd = Math.floor(midiNumber / 12) - 1
 
+      const timestamp = turnDelay > 0
+        ? (i === 0
+            ? noteData.timestamp
+            : noteData.timestamp + turnDelay + (i - 1) * ORNAMENT_NOTE_OFFSET)
+        : noteData.timestamp + i * ORNAMENT_NOTE_OFFSET
+
       expandedNotes.push({
         ...noteData,
         midiNumber,
         noteName: `${noteNameStd}${octaveStd}`,
-        timestamp: noteData.timestamp + i * ORNAMENT_NOTE_OFFSET,
+        timestamp,
         [flag]: true,
         // Only the last note should highlight the original notehead
         noteheadIndex: i === sequence.length - 1 ? noteData.noteheadIndex : -1,

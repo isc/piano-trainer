@@ -16,6 +16,17 @@
 
 export const CHANGELOG = [
   {
+    date: '2026-06-20',
+    items: {
+      fr: [
+        "Les grupettos différés tombent désormais au bon moment : la note principale est tenue sur le temps, puis l'ornement s'exécute en fin de valeur. Vous pouvez ainsi intercaler les notes de l'autre main entre la note et son grupetto, comme l'exige la partition (par ex. le 2ᵉ mouvement de la Pathétique de Beethoven).",
+      ],
+      en: [
+        "Delayed turns now land at the right moment: the principal note is held on the beat, then the ornament plays at the end of its value. This lets you interleave the other hand's notes between the note and its turn, as the score intends (e.g. the 2nd movement of Beethoven's Pathétique).",
+      ],
+    },
+  },
+  {
     date: '2026-06-15',
     items: {
       fr: [
