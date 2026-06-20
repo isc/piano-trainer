@@ -9,3 +9,6 @@ skills-lock.json
 
 # Landing hero video build workspace (contains seeded personal data + renders)
 tmp/cap/
+
+# Local Claude instructions (personal, not shared)
+CLAUDE.local.md
