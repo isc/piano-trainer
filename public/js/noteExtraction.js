@@ -174,17 +174,17 @@ function expandOrnamentNotes(measureNotes, fifths = 0) {
       const noteNameStd = NOTE_NAMES[midiNumber % 12]
       const octaveStd = Math.floor(midiNumber / 12) - 1
 
-      const timestamp = turnDelay > 0
-        ? (i === 0
-            ? noteData.timestamp
-            : noteData.timestamp + turnDelay + (i - 1) * ORNAMENT_NOTE_OFFSET)
-        : noteData.timestamp + i * ORNAMENT_NOTE_OFFSET
+      // Delayed turn: the principal (i === 0) stays on the beat (offset 0) and the
+      // turn proper is pushed out by turnDelay. Otherwise notes follow immediately.
+      const ornamentOffset = turnDelay > 0 && i > 0
+        ? turnDelay + (i - 1) * ORNAMENT_NOTE_OFFSET
+        : i * ORNAMENT_NOTE_OFFSET
 
       expandedNotes.push({
         ...noteData,
         midiNumber,
         noteName: `${noteNameStd}${octaveStd}`,
-        timestamp,
+        timestamp: noteData.timestamp + ornamentOffset,
         [flag]: true,
         // Only the last note should highlight the original notehead
         noteheadIndex: i === sequence.length - 1 ? noteData.noteheadIndex : -1,

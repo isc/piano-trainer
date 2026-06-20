@@ -77,7 +77,10 @@ const ORNAMENT_NOTE_DURATION_WN = 1 / 16
 // Ornaments: the note extractor uses ORNAMENT_NOTE_OFFSET=0.00001 between notes (for keyboard
 // matching order), which collapses them to the same instant for audio.
 // - Mordents: fixed duration per note (tempo-relative, not parent-note-relative)
-// - Turns/trills: evenly spread over the full parent note duration
+// - Turns/trills: evenly spread over the full parent note duration. Note that delayed
+//   turns are NOT delayed here: audio keeps the even spread, while the keyboard matcher
+//   (expandOrnamentNotes in noteExtraction.js) offsets the turn into the note's final
+//   sixteenth so the other hand can interleave. Keep both in mind if changing turn timing.
 // - isTrillEnd sentinels: skipped (only used by the keyboard matching engine)
 //
 // Grace notes: the extractor places them GRACE_NOTE_OFFSET_WN before their main note
