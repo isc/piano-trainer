@@ -1,5 +1,5 @@
 import { scheduleCursorAdvances } from './playback.js'
-import { tsToSeconds, buildMeasureStartTimes, buildCursorTimeline } from './playbackTiming.js'
+import { tsToSeconds, buildMeasureStartTimes, buildCursorTimeline, cursorStepsBeforeMeasure } from './playbackTiming.js'
 import {
   isOrnamentOrGrace,
   isNoteActiveForHands,
@@ -135,15 +135,7 @@ function start({
   isRunning = true
 
   const sourceMeasures = osmdInstance.Sheet.SourceMeasures
-  // Skip cursor positions covered by measures before the start point so OSMD's
-  // cursor lands on the slice's first note before we start scheduling advances.
-  const cursorSkipSteps = startMeasureIndex > 0
-    ? buildCursorTimeline(
-        allNotes.slice(0, startMeasureIndex),
-        buildMeasureStartTimes(allNotes.slice(0, startMeasureIndex), sourceMeasures),
-        bpm,
-      ).length
-    : 0
+  const cursorSkipSteps = cursorStepsBeforeMeasure(allNotes, startMeasureIndex, sourceMeasures, bpm)
   allNotes = allNotes.slice(startMeasureIndex)
   const measureStartTimes = buildMeasureStartTimes(allNotes, sourceMeasures)
   const beatMs = 60_000 / bpm

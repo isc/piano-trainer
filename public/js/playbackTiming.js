@@ -43,3 +43,14 @@ export function buildCursorTimeline(allNotes, measureStartTimes, bpm, offsetMs =
 
   return steps.sort((a, b) => a - b)
 }
+
+// Number of cursor advances covered by the measures before startMeasureIndex.
+// Both playback engines start their slice at startMeasureIndex and need to
+// pre-advance OSMD's cursor by this many steps so it lands on the slice's first
+// note (cf. scheduleCursorAdvances' skipSteps). Counts cursor stops, not
+// measures or notes — a rest-only container is still a stop.
+export function cursorStepsBeforeMeasure(allNotes, startMeasureIndex, sourceMeasures, bpm) {
+  if (startMeasureIndex <= 0) return 0
+  const before = allNotes.slice(0, startMeasureIndex)
+  return buildCursorTimeline(before, buildMeasureStartTimes(before, sourceMeasures), bpm).length
+}
