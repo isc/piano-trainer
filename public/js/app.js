@@ -194,6 +194,12 @@ export function midiApp() {
           practiceTracker.startSession(this.scoreUrl, metadata.title, metadata.composer, 'free', metadata.totalMeasures)
         },
         onMeasureClicked: (measureIndex) => {
+          // While listening, a measure click seeks playback there instead of
+          // forcing a listen-from-the-top.
+          if (this.isPlaying) {
+            playback.seekToMeasure(measureIndex)
+            return true
+          }
           if (!this.strictSelected) return false
           if (this.isStrictPlaying) strictPlaythrough.stop()
           this.strictStartMeasure = measureIndex
