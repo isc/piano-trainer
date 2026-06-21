@@ -147,7 +147,7 @@ function getOrnamentSequence(mainMidi, ornamentContainer, pitch, fifths = 0) {
 const DELAYED_TURN_FILL_WN = 1 / 16
 
 // Expand ornament notes (turns, mordents, and trills) into their constituent notes
-function expandOrnamentNotes(measureNotes, fifths = 0) {
+export function expandOrnamentNotes(measureNotes, fifths = 0) {
   const ORNAMENT_NOTE_OFFSET = 0.00001
   const expandedNotes = []
 
@@ -185,6 +185,13 @@ function expandOrnamentNotes(measureNotes, fifths = 0) {
         midiNumber,
         noteName: `${noteNameStd}${octaveStd}`,
         timestamp: noteData.timestamp + ornamentOffset,
+        // An ornament re-articulates, so its notes must NOT inherit the parent's
+        // tie-continuation flag -- that would suppress their note-on in audio
+        // (playback skips note-ons for tie continuations) and drop them from the
+        // matcher, silencing the whole ornament on a tied note. The sole exception
+        // is the held principal of a delayed turn (i === 0): when the parent is tied
+        // into, that pitch is already sounding and must not be re-struck.
+        isTieContinuation: delayed && i === 0 ? noteData.isTieContinuation : false,
         // Shared with audio playback (expandOrnamentTimings): how long the principal
         // is held before the turn proper. 0 for on-beat turns, mordents and trills.
         _turnDelay: turnDelay,
