@@ -327,6 +327,21 @@ function adjustGraceNoteTimestamps(measureNotes) {
   }
 }
 
+// Whether the OSMD cursor stops on a vertical container. The cursor visits a
+// container only if it holds at least one note that is actually drawn; a
+// container whose notes are all invisible (print-object="no") is skipped. Rests
+// are drawn, so a rest-only container still counts as a stop.
+export function containerHasCursorStop(container) {
+  for (const staffEntry of container.staffEntries ?? []) {
+    for (const voiceEntry of staffEntry?.voiceEntries ?? []) {
+      for (const note of voiceEntry.notes ?? []) {
+        if (note.PrintObject !== false) return true
+      }
+    }
+  }
+  return false
+}
+
 // Extract notes from source measures into a Map (sourceMeasureIndex -> notes array)
 // This is the raw extraction without considering playback order
 function extractNotesFromSourceMeasures(sourceMeasures) {
@@ -347,9 +362,17 @@ function extractNotesFromSourceMeasures(sourceMeasures) {
     // that hold only rests (e.g. one hand pausing while the other sustains a
     // longer note). Record every container's timestamp so the playback cursor
     // timeline can stop where the cursor actually stops, not only on note onsets.
+    // Exclude containers whose notes are ALL invisible (print-object="no"): the
+    // cursor skips those. Some publishers write an ornament's realized notes as
+    // such hidden notes in their own containers (e.g. the gruppetti in Beethoven's
+    // Pathétique). Counting them scheduled extra cursor.next() advances with no
+    // matching cursor position, so the cursor ran one step ahead per hidden
+    // container and stayed ahead for the rest of the piece.
     cursorStopsByMeasure.set(
       measureIndex,
-      measure.verticalSourceStaffEntryContainers.map((c) => c.Timestamp?.RealValue ?? 0),
+      measure.verticalSourceStaffEntryContainers
+        .filter(containerHasCursorStop)
+        .map((c) => c.Timestamp?.RealValue ?? 0),
     )
 
     measure.verticalSourceStaffEntryContainers.forEach((container) => {
