@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE score-partwise PUBLIC "-//Recordare//DTD MusicXML 3.0 Partwise//EN" "http://www.musicxml.org/dtds/partwise.dtd">
+<score-partwise version="3.0">
+  <work>
+    <work-title>Delayed Turn With Accompaniment Test</work-title>
+  </work>
+  <part-list>
+    <score-part id="P1">
+      <part-name/>
+    </score-part>
+  </part-list>
+  <part id="P1">
+    <!--
+      A delayed turn over a moving left-hand accompaniment, mirroring the gruppetti
+      in Beethoven's Pathétique 2nd movement. The principal sounds on the beat and is
+      held; the turn proper (D5, C5, B4, C5) is squeezed into the final sixteenth of
+      the quarter note. The two inner left-hand sixteenths therefore fall BETWEEN the
+      held principal and the turn, so they must be playable in between, not after the
+      whole turn.
+
+      Right hand (staff 1): C5 quarter with a delayed turn, then G5 quarter.
+      Left hand  (staff 2): four C3 sixteenths, then a C3 quarter.
+
+      In C major the turn on C5 expands to D5, C5, B4, C5. With the delay, the
+      expected order is:
+        beat 1 sixteenth 1: C5  + C3   (principal struck on the beat)
+        beat 1 sixteenth 2:       C3   (held principal, left hand alone)
+        beat 1 sixteenth 3:       C3   (held principal, left hand alone)
+        beat 1 sixteenth 4: D5  + C3   (turn begins, with the 4th left-hand note)
+                            C5, B4, C5  (rest of the turn)
+        beat 2:             G5  + C3
+    -->
+    <measure number="1">
+      <attributes>
+        <divisions>4</divisions>
+        <key>
+          <fifths>0</fifths>
+          <mode>major</mode>
+        </key>
+        <time>
+          <beats>2</beats>
+          <beat-type>4</beat-type>
+        </time>
+        <staves>2</staves>
+        <clef number="1">
+          <sign>G</sign>
+          <line>2</line>
+        </clef>
+        <clef number="2">
+          <sign>F</sign>
+          <line>4</line>
+        </clef>
+      </attributes>
+      <note>
+        <pitch>
+          <step>C</step>
+          <octave>5</octave>
+        </pitch>
+        <duration>4</duration>
+        <voice>1</voice>
+        <type>quarter</type>
+        <staff>1</staff>
+        <notations>
+          <ornaments>
+            <delayed-turn/>
+          </ornaments>
+        </notations>
+      </note>
+      <note>
+        <pitch>
+          <step>G</step>
+          <octave>5</octave>
+        </pitch>
+        <duration>4</duration>
+        <voice>1</voice>
+        <type>quarter</type>
+        <staff>1</staff>
+      </note>
+      <backup>
+        <duration>8</duration>
+      </backup>
+      <note>
+        <pitch>
+          <step>C</step>
+          <octave>3</octave>
+        </pitch>
+        <duration>1</duration>
+        <voice>2</voice>
+        <type>16th</type>
+        <staff>2</staff>
+      </note>
+      <note>
+        <pitch>
+          <step>C</step>
+          <octave>3</octave>
+        </pitch>
+        <duration>1</duration>
+        <voice>2</voice>
+        <type>16th</type>
+        <staff>2</staff>
+      </note>
+      <note>
+        <pitch>
+          <step>C</step>
+          <octave>3</octave>
+        </pitch>
+        <duration>1</duration>
+        <voice>2</voice>
+        <type>16th</type>
+        <staff>2</staff>
+      </note>
+      <note>
+        <pitch>
+          <step>C</step>
+          <octave>3</octave>
+        </pitch>
+        <duration>1</duration>
+        <voice>2</voice>
+        <type>16th</type>
+        <staff>2</staff>
+      </note>
+      <note>
+        <pitch>
+          <step>C</step>
+          <octave>3</octave>
+        </pitch>
+        <duration>4</duration>
+        <voice>2</voice>
+        <type>quarter</type>
+        <staff>2</staff>
+      </note>
+    </measure>
+  </part>
+</score-partwise>
