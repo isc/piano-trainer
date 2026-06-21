@@ -348,6 +348,7 @@ export function midiApp() {
       await this.$nextTick()
       await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)))
       musicxml.renderScore()
+      fingeringEditor.alignFingeringLabelsToNoteheads()
       document.getElementById('score').dataset.renderComplete = Date.now()
       const savedBpm = this.scoreUrl ? Number(localStorage.getItem(`pt:strictBpm:${this.scoreUrl}`)) : NaN
       this.strictBpm = Number.isFinite(savedBpm) && savedBpm > 0 ? savedBpm : Math.round(getBPM(this.osmdInstance))
@@ -702,6 +703,7 @@ export function midiApp() {
         notes.map(({ played, active }) => ({ played, active })))
 
       musicxml.renderScore()
+      fingeringEditor.alignFingeringLabelsToNoteheads()
       this.setupFingeringHandlers()
       fingeringEditor.restoreNoteStates(noteStates, currentMeasureIndex)
       musicxml.setCurrentMeasureIndex(currentMeasureIndex)

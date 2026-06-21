@@ -188,6 +188,19 @@ export function initFingeringEditor({ getOsmdInstance, getAllNotes, getNoteDataB
     return graphicalMeasure.isUpperStaffOfInstrument?.() ?? true
   }
 
+  // Order a staff entry's fingerings to match OSMD's FingeringEntries array, so
+  // orderedFingeringsForStaffEntry(...)[i] pairs with staffEntry.FingeringEntries[i].
+  function orderedFingeringsForStaffEntry(staffEntry, graphicalMeasure) {
+    const fingerings = collectFingeringsFromStaffEntry(staffEntry)
+    if (!isFingeringsPlacedAbove(graphicalMeasure)) {
+      fingerings.reverse()
+    } else if (fingerings[0]?.sourceNote === findTopNoteInStaffEntry(staffEntry)) {
+      // When placed above, OSMD reverses if first fingering belongs to the top note
+      fingerings.reverse()
+    }
+    return fingerings
+  }
+
   // Find the FingeringEntry for a note given its fingeringKey and noteData.
   // fingeringKey format: measureNumber:staffIndex:voiceIndex:noteIndex
   function findFingeringEntry(fingeringKey, targetNoteData) {
@@ -206,23 +219,53 @@ export function initFingeringEditor({ getOsmdInstance, getAllNotes, getNoteDataB
     for (const staffEntry of graphicalMeasure.staffEntries || []) {
       if (!staffEntryContainsNote(staffEntry, targetNoteData.note)) continue
 
-      const fingerings = collectFingeringsFromStaffEntry(staffEntry)
-      const targetFingering = fingerings.find((f) => f.sourceNote === targetNoteData.note)
-      if (!targetFingering) return null
-
-      // Replicate OSMD's ordering to match FingeringEntries array order
-      if (!isFingeringsPlacedAbove(graphicalMeasure)) {
-        fingerings.reverse()
-      } else if (fingerings[0]?.sourceNote === findTopNoteInStaffEntry(staffEntry)) {
-        // When placed above, OSMD reverses if first fingering belongs to the top note
-        fingerings.reverse()
-      }
-
-      const finalIndex = fingerings.indexOf(targetFingering)
+      const fingerings = orderedFingeringsForStaffEntry(staffEntry, graphicalMeasure)
+      const finalIndex = fingerings.findIndex((f) => f.sourceNote === targetNoteData.note)
+      if (finalIndex < 0) return null
       return staffEntry.FingeringEntries?.[finalIndex] || null
     }
 
     return null
+  }
+
+  // OSMD positions each fingering label at its staff entry's x. When a measure has
+  // invisible (print-object="no") notes -- e.g. a gruppetto's realized notes written
+  // alongside the turn symbol -- OSMD's staff-entry coordinates and VexFlow's actual
+  // notehead positions drift apart, so the label renders over the wrong note. Re-center
+  // each fingering label on its note's rendered notehead. A no-op where they already
+  // agree (the common case), since then the correction is ~0.
+  function alignFingeringLabelsToNoteheads() {
+    const osmdInstance = getOsmdInstance()
+    if (!osmdInstance?.graphic?.MeasureList) return
+    const svg = document.getElementById('score')?.querySelector('svg')
+    const scaleX = svg?.getScreenCTM?.()?.a || 1
+
+    // Read all positions first, then write -- interleaving getBoundingClientRect with
+    // setAttribute would force a layout flush per label.
+    const moves = []
+    for (const measureRow of osmdInstance.graphic.MeasureList) {
+      for (const graphicalMeasure of measureRow || []) {
+        for (const staffEntry of graphicalMeasure?.staffEntries || []) {
+          const entries = staffEntry.FingeringEntries
+          if (!entries?.length) continue
+
+          const fingerings = orderedFingeringsForStaffEntry(staffEntry, graphicalMeasure)
+          for (let i = 0; i < entries.length && i < fingerings.length; i++) {
+            const textEl = entries[i]?.SVGNode?.querySelector('text')
+            const note = fingerings[i]?.sourceNote
+            const notehead = note && svgNote(note)?.querySelector('.vf-notehead')
+            const x = textEl && parseFloat(textEl.getAttribute('x'))
+            if (!notehead || !Number.isFinite(x)) continue
+
+            const textRect = textEl.getBoundingClientRect()
+            const headRect = notehead.getBoundingClientRect()
+            const dx = headRect.x + headRect.width / 2 - (textRect.x + textRect.width / 2)
+            moves.push({ textEl, x: x + dx / scaleX })
+          }
+        }
+      }
+    }
+    for (const { textEl, x } of moves) textEl.setAttribute('x', x)
   }
 
   // Create a new SVG <text> element for a grace note fingering, positioned left of the note.
@@ -322,5 +365,6 @@ export function initFingeringEditor({ getOsmdInstance, getAllNotes, getNoteDataB
     updateFingeringSVG,
     addFingeringToDataModel,
     removeFingeringFromDataModel,
+    alignFingeringLabelsToNoteheads,
   }
 }

@@ -194,8 +194,35 @@ async function loadMusicXML(file) {
 function renderScore() {
   if (!osmdInstance) return
   osmdInstance.render()
+  disableInvisibleNoteClicks()
   extractNotesFromScore()
   setupMeasureClickHandlers()
+}
+
+// OSMD renders print-object="no" notes (e.g. the realized gruppetto written alongside
+// the turn symbol in the Pathétique 2nd movement) with a fully transparent fill rather
+// than removing them, to preserve layout. These invisible noteheads still capture clicks:
+// OSMD's VexFlow patch tags the note/notehead groups with pointer-events="bounding-box",
+// so they intercept clicks over their whole box (fill ignored) and steal them from the
+// real note drawn underneath. We skip these notes during extraction, so they have no
+// fingering entry and a click on them silently does nothing. Clear the attribute on the
+// group and its tagged descendants so the click falls through to the visible note below.
+function disableInvisibleNoteClicks() {
+  for (const measure of osmdInstance.Sheet.SourceMeasures) {
+    for (const container of measure.verticalSourceStaffEntryContainers || []) {
+      for (const staffEntry of container.staffEntries || []) {
+        for (const voiceEntry of staffEntry?.voiceEntries || []) {
+          for (const note of voiceEntry.notes || []) {
+            if (note.PrintObject !== false) continue
+            const group = osmdInstance.rules.GNote(note)?.getSVGGElement?.()
+            if (!group) continue
+            group.setAttribute('pointer-events', 'none')
+            group.querySelectorAll('[pointer-events]').forEach((el) => el.setAttribute('pointer-events', 'none'))
+          }
+        }
+      }
+    }
+  }
 }
 
 async function renderMusicXML(xmlContent) {
