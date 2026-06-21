@@ -1,5 +1,5 @@
 import { Piano } from '@tonejs/piano'
-import { tsToSeconds, buildMeasureStartTimes, buildCursorTimeline } from './playbackTiming.js'
+import { tsToSeconds, buildMeasureStartTimes, buildCursorTimeline, cursorStepsBeforeMeasure } from './playbackTiming.js'
 import { scrollSystemIntoView } from './utils.js'
 
 let piano = null
@@ -9,6 +9,7 @@ let activeNotes = new Set()
 let isPlaying = false
 let onPlaybackEnd = null
 let activeOsmd = null
+let activeAllNotes = null
 
 const GRACE_NOTE_DURATION_S = 0.08
 // Must match GRACE_NOTE_OFFSET in noteExtraction.js adjustGraceNoteTimestamps
@@ -18,6 +19,7 @@ export function initPlayback(externalMidiState = null) {
   midiState = externalMidiState
   return {
     togglePlayback,
+    seekToMeasure,
     stop,
     setOnPlaybackEnd: (fn) => { onPlaybackEnd = fn },
     get isPlaying() { return isPlaying },
@@ -200,10 +202,12 @@ function hideCursor() {
   }
 }
 
-function stop() {
+// Cancel all pending events and silence the instrument, without touching the
+// playing flag or cursor — shared by stop() (which then tears down) and
+// seekToMeasure() (which immediately reschedules from the clicked measure).
+function clearSchedule() {
   for (const id of scheduledTimeouts) clearTimeout(id)
   scheduledTimeouts = []
-  isPlaying = false
   // Release every note still sounding — their scheduled noteOff timeouts were
   // just cancelled, so without this they would ring indefinitely.
   for (const midiNumber of [...activeNotes]) noteOff(midiNumber)
@@ -211,22 +215,43 @@ function stop() {
   if (midiState?.midiOutput) {
     midiState.midiOutput.send([0xB0, 123, 0]) // All Notes Off
   }
+}
+
+function stop() {
+  clearSchedule()
+  isPlaying = false
   hideCursor()
 }
 
 async function togglePlayback(allNotes, osmdInstance) {
   if (isPlaying) { stop(); return }
-
   await ensurePianoLoaded()
+  startPlayback(allNotes, osmdInstance, 0)
+}
 
+// Jump live playback to a clicked measure: cancel the pending schedule and
+// reschedule from there. No-op when nothing is playing (a measure click then
+// falls through to its non-playback handler). The piano is already loaded, so
+// this runs synchronously from the click handler.
+function seekToMeasure(measureIndex) {
+  if (!isPlaying || !activeAllNotes || !activeOsmd) return
+  clearSchedule()
+  startPlayback(activeAllNotes, activeOsmd, measureIndex)
+}
+
+function startPlayback(allNotes, osmdInstance, startMeasureIndex = 0) {
   activeOsmd = osmdInstance
+  activeAllNotes = allNotes
   const bpm = getBPM(osmdInstance)
   const sourceMeasures = osmdInstance.Sheet.SourceMeasures
-  const measureStartTimes = buildMeasureStartTimes(allNotes, sourceMeasures)
+
+  const cursorSkipSteps = cursorStepsBeforeMeasure(allNotes, startMeasureIndex, sourceMeasures, bpm)
+  const playNotes = allNotes.slice(startMeasureIndex)
+  const measureStartTimes = buildMeasureStartTimes(playNotes, sourceMeasures)
   let maxEndMs = 0
 
-  for (let i = 0; i < allNotes.length; i++) {
-    const measureData = allNotes[i]
+  for (let i = 0; i < playNotes.length; i++) {
+    const measureData = playNotes[i]
     const measureStartTs = measureStartTimes[i]
     const measureOffset = measureStartTs - measureData.measureIndex
     const notes = expandOrnamentTimings(measureData.notes)
@@ -258,8 +283,8 @@ async function togglePlayback(allNotes, osmdInstance) {
   }
 
   if (osmdInstance.cursor) {
-    const cursorSteps = buildCursorTimeline(allNotes, measureStartTimes, bpm)
-    scheduledTimeouts.push(...scheduleCursorAdvances(osmdInstance.cursor, cursorSteps))
+    const cursorSteps = buildCursorTimeline(playNotes, measureStartTimes, bpm)
+    scheduledTimeouts.push(...scheduleCursorAdvances(osmdInstance.cursor, cursorSteps, { skipSteps: cursorSkipSteps }))
   }
 
   isPlaying = true

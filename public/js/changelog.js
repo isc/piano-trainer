@@ -16,6 +16,17 @@
 
 export const CHANGELOG = [
   {
+    date: '2026-06-21',
+    items: {
+      fr: [
+        "En mode écoute, cliquer sur une mesure y déplace directement la lecture — plus besoin de tout réécouter depuis le début.",
+      ],
+      en: [
+        'While listening, clicking a measure jumps playback straight there — no more listening from the top.',
+      ],
+    },
+  },
+  {
     date: '2026-06-20',
     items: {
       fr: [
