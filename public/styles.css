@@ -237,6 +237,10 @@ button.pt-topbar__pill:disabled { opacity: 0.4; cursor: default; }
 }
 .pt-icon-button:hover { background: var(--pt-surface-2); border-color: var(--pt-border-strong); color: var(--pt-text); }
 .pt-icon-button[aria-pressed="true"] { background: var(--pt-accent-soft); color: var(--pt-accent); border-color: color-mix(in srgb, var(--pt-accent) 25%, transparent); }
+/* On the score topbar the gear sits among pill buttons — match their height and
+   round shape instead of the taller, square library style (which matches the
+   search box there). */
+.pt-topbar__actions .pt-icon-button { width: 30px; height: 30px; border-radius: var(--pt-radius-pill); font-size: 1rem; }
 
 /* =============================================================================
    Modebar (segmented control + reinforcement badge + listen)
