@@ -24,7 +24,7 @@
     </script>
   </head>
   <body>
-    <main class="container pt-library-page" @keydown.escape.window="showChangelogModal = false; showFeedbackModal = false">
+    <main class="container pt-library-page" @keydown.escape.window="menuOpen = false; showChangelogModal = false; showFeedbackModal = false">
       <div class="pt-library-chrome">
         <div class="pt-page-header">
           <h1 x-text="$t('library.heading')">Bibliothèque</h1>
@@ -37,28 +37,42 @@
                 :aria-label="$t('library.searchAria')"
               />
             </div>
-            <a href="score.html" role="button" class="secondary" x-text="$t('library.loadScore')">📄 Charger une partition</a>
-            <button
-              type="button"
-              role="button"
-              class="secondary pt-changelog-btn"
-              @click="openChangelog()"
-              :aria-label="hasUnseenChangelog ? $t('library.changelogAriaNew') : $t('library.changelogAria')"
-            >
-              <span x-text="$t('library.changelog')">✨ Nouveautés</span>
-              <span class="pt-changelog-dot" x-show="hasUnseenChangelog" aria-hidden="true"></span>
-            </button>
-            <button
-              type="button"
-              class="secondary"
-              x-show="feedbackEnabled"
-              @click="openFeedback()"
-            >
-              <span x-text="$t('library.feedback')">💬 Avis</span>
-            </button>
-            <div class="pt-langswitch" role="group" aria-label="Language">
-              <button type="button" data-set-lang="fr">FR</button>
-              <button type="button" data-set-lang="en">EN</button>
+            <div class="pt-popover-anchor" @click.outside="closeMenu()">
+              <button
+                type="button"
+                class="pt-icon-button pt-changelog-btn"
+                :aria-pressed="menuOpen"
+                :aria-label="$t('menu.open')"
+                @click="toggleMenu()"
+              >
+                ⚙️
+                <span class="pt-changelog-dot" x-show="hasUnseenChangelog" aria-hidden="true"></span>
+              </button>
+              <div class="pt-popover" x-show="menuOpen" x-cloak>
+                <div class="pt-popover__section">
+                  <a href="score.html" class="pt-menu-item" @click="closeMenu()" x-text="$t('library.loadScore')">📄 Charger une partition</a>
+                  <button type="button" class="pt-menu-item" @click="openChangelog()">
+                    <span x-text="$t('library.changelog')">✨ Nouveautés</span>
+                    <span class="pt-menu-dot" x-show="hasUnseenChangelog" aria-hidden="true"></span>
+                  </button>
+                  <button type="button" class="pt-menu-item" x-show="feedbackEnabled" @click="openFeedback()" x-text="$t('library.feedback')">💬 Avis</button>
+                </div>
+                <hr />
+                <div class="pt-popover__section">
+                  <h4 x-text="$t('menu.data')">Données</h4>
+                  <label class="pt-menu-item" for="backup-import" x-text="$t('library.importBackup')">📥 Importer sauvegarde</label>
+                  <input class="pt-sr-only" type="file" accept=".json" @change="importBackup($event)" id="backup-import" />
+                  <button type="button" class="pt-menu-item" @click="exportBackup()" x-text="$t('library.exportBackup')">📤 Exporter sauvegarde</button>
+                </div>
+                <hr />
+                <div class="pt-popover__section">
+                  <h4 x-text="$t('menu.language')">Langue</h4>
+                  <div class="pt-langswitch" role="group" aria-label="Language">
+                    <button type="button" data-set-lang="fr">FR</button>
+                    <button type="button" data-set-lang="en">EN</button>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -142,15 +156,6 @@
               </div>
             </template>
           </div>
-
-          <details class="pt-data-mgmt">
-            <summary x-text="$t('library.dataMgmt')">⚙️ Gestion des données</summary>
-            <div class="pt-data-mgmt__body">
-              <label for="backup-import" x-text="$t('library.importBackup')">📥 Importer sauvegarde</label>
-              <input type="file" accept=".json" @change="importBackup($event)" id="backup-import" />
-              <button @click="exportBackup" class="pt-action-button" x-text="$t('library.exportBackup')">📤 Exporter sauvegarde</button>
-            </div>
-          </details>
         </aside>
 
         <!-- Library list -->

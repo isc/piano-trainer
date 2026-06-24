@@ -4,6 +4,11 @@ export default {
     openLibrary: 'Open the library',
     close: 'Close',
   },
+  menu: {
+    open: 'Menu',
+    data: 'Data',
+    language: 'Language',
+  },
   status: {
     dechiffrage: 'Sight-reading',
     perfectionnement: 'Refining',
@@ -55,7 +60,6 @@ export default {
     measuresCountOne: '{n} bar',
     reinforcedCount: '{n} reinforced',
     reinforcedCountOne: '{n} reinforced',
-    dataMgmt: '⚙️ Data management',
     importBackup: '📥 Import backup',
     exportBackup: '📤 Export backup',
     colTitle: 'Title',

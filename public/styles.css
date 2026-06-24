@@ -223,18 +223,19 @@ button.pt-topbar__pill:disabled { opacity: 0.4; cursor: default; }
 
 /* Icon buttons (settings, history) */
 .pt-icon-button {
-  width: 36px; height: 36px;
+  width: 38px; height: 38px;
   display: inline-flex; align-items: center; justify-content: center;
-  background: transparent;
-  border: 1px solid transparent;
+  background: var(--pt-bg-elevated);
+  border: 1px solid var(--pt-border);
   border-radius: var(--pt-radius-md);
   color: var(--pt-text-muted);
   cursor: pointer;
-  font-size: 1rem;
+  font-size: 1.05rem;
+  line-height: 1;
   padding: 0;
 }
-.pt-icon-button:hover { background: var(--pt-surface-2); color: var(--pt-text); }
-.pt-icon-button[aria-pressed="true"] { background: var(--pt-accent-soft); color: var(--pt-accent); }
+.pt-icon-button:hover { background: var(--pt-surface-2); border-color: var(--pt-border-strong); color: var(--pt-text); }
+.pt-icon-button[aria-pressed="true"] { background: var(--pt-accent-soft); color: var(--pt-accent); border-color: color-mix(in srgb, var(--pt-accent) 25%, transparent); }
 
 /* =============================================================================
    Modebar (segmented control + reinforcement badge + listen)
@@ -521,6 +522,36 @@ button.pt-topbar__pill:disabled { opacity: 0.4; cursor: default; }
 }
 .pt-popover button:hover { background: var(--pt-surface-2); }
 .pt-popover small { color: var(--pt-text-muted); font-size: 0.78rem; }
+
+/* Full-width menu rows inside the ⚙️ popover (links, buttons, the import
+   <label>). More specific than the generic .pt-popover button/label above so
+   they read as a flat menu list rather than bordered buttons. */
+.pt-popover .pt-menu-item {
+  display: flex;
+  align-items: center;
+  gap: var(--pt-space-2);
+  width: 100%;
+  padding: 8px 10px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--pt-radius-sm);
+  color: var(--pt-text);
+  font-size: 0.9rem;
+  font-weight: 500;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+}
+.pt-popover .pt-menu-item:hover { background: var(--pt-surface-2); }
+.pt-menu-dot { margin-left: auto; width: 8px; height: 8px; border-radius: 50%; background: var(--pt-accent); }
+
+/* Keep the FR/EN pill compact instead of stretching to the popover's full
+   width (the section is a column flex, which would otherwise stretch it). */
+.pt-popover .pt-langswitch { align-self: flex-start; }
+
+/* Hide x-show/x-cloak elements until Alpine boots, so the popover doesn't flash
+   open on load. */
+[x-cloak] { display: none !important; }
 
 /* =============================================================================
    Pills (status, generic)
@@ -888,16 +919,6 @@ table tbody td:nth-child(2) a:hover { color: var(--pt-accent); }
 .pt-journal__entry a:hover { color: var(--pt-accent); text-decoration: none; }
 .pt-journal__entry small { color: var(--pt-text-muted); display: block; font-size: 0.75rem; margin-top: 2px; }
 .pt-journal__entry--empty { color: var(--pt-text-subtle); font-style: italic; font-size: 0.82rem; }
-
-.pt-data-mgmt { background: var(--pt-bg-elevated); border: 1px solid var(--pt-border); border-radius: var(--pt-radius-md); }
-/* Keep only Pico's right-hand chevron: hide the native marker; no custom
-   left triangle (it duplicated the chevron). */
-.pt-data-mgmt summary { padding: var(--pt-space-3); cursor: pointer; font-size: 0.85rem; color: var(--pt-text-muted); list-style: none; }
-.pt-data-mgmt summary::-webkit-details-marker { display: none; }
-.pt-data-mgmt__body { padding: 0 var(--pt-space-3) var(--pt-space-3); display: flex; flex-direction: column; gap: var(--pt-space-2); }
-.pt-data-mgmt__body label { font-size: 0.85rem; color: var(--pt-text-muted); }
-.pt-data-mgmt__body input[type="file"] { font-size: 0.8rem; }
-.pt-data-mgmt__body button { width: 100%; margin: 0; }
 
 @media (max-width: 800px) {
   /* At narrow widths the chrome wraps to 3+ rows and the app-shell layout

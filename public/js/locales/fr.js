@@ -4,6 +4,11 @@ export default {
     openLibrary: 'Ouvrir la bibliothèque',
     close: 'Fermer',
   },
+  menu: {
+    open: 'Menu',
+    data: 'Données',
+    language: 'Langue',
+  },
   status: {
     dechiffrage: 'Déchiffrage',
     perfectionnement: 'Perfectionnement',
@@ -55,7 +60,6 @@ export default {
     measuresCountOne: '{n} mesure',
     reinforcedCount: '{n} renforcées',
     reinforcedCountOne: '{n} renforcée',
-    dataMgmt: '⚙️ Gestion des données',
     importBackup: '📥 Importer sauvegarde',
     exportBackup: '📤 Exporter sauvegarde',
     colTitle: 'Titre',

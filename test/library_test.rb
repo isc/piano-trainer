@@ -72,6 +72,7 @@ class LibraryTest < CapybaraTestBase
   end
 
   def test_charger_une_partition_link
+    open_menu
     click_on 'Charger une partition'
 
     assert_current_path '/score.html'
@@ -119,13 +120,13 @@ class LibraryTest < CapybaraTestBase
   def test_import_export_roundtrip
     with_virtual_time('2026-01-10 12:00') do
       visit '/library.html'
-      find('summary', text: '⚙️ Gestion des données').click
+      open_menu
 
       # Import initial data from fixture
       fixture_path = File.expand_path('fixtures/initial-backup.json', __dir__)
 
       accept_alert do
-        attach_file 'backup-import', fixture_path
+        attach_file 'backup-import', fixture_path, make_visible: true
       end
 
       # Verify imported data appears
@@ -159,7 +160,7 @@ class LibraryTest < CapybaraTestBase
   end
 
   def test_import_invalid_backup
-    find('summary', text: '⚙️ Gestion des données').click
+    open_menu
 
     # Create an invalid backup JSON (missing sessions field)
     invalid_backup = {
@@ -172,12 +173,20 @@ class LibraryTest < CapybaraTestBase
 
     # Attach the file and accept error alert
     alert_message = accept_alert do
-      attach_file 'backup-import', backup_file.path
+      attach_file 'backup-import', backup_file.path, make_visible: true
     end
 
     assert_includes alert_message, '❌ Erreur lors de l\'import'
     assert_includes alert_message, 'Invalid backup data format'
 
     backup_file.unlink
+  end
+
+  private
+
+  # The changelog, feedback, data import/export and language controls now live
+  # behind the ⚙️ header menu; open it before interacting with those items.
+  def open_menu
+    find('button[aria-label="Menu"]').click
   end
 end
