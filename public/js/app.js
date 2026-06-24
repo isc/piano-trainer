@@ -9,6 +9,7 @@ import { loadMxlAsXml } from './mxlLoader.js'
 import { injectFingerings } from './fingeringInjector.js'
 import { initPlayback, getBPM } from './playback.js'
 import { initStrictPlaythrough } from './strictPlaythrough.js'
+import { headerMenu } from './feedback.js'
 import { t, locale } from './i18n.js'
 
 // Built once: the active locale is fixed for the page lifetime (switching
@@ -34,6 +35,7 @@ export function midiApp() {
   const strictPlaythrough = initStrictPlaythrough()
 
   return {
+    ...headerMenu(),
     bluetoothConnected: false,
     midiDeviceName: null,
     osmdInstance: null,
@@ -74,7 +76,6 @@ export function midiApp() {
     measuresToReinforce: [],
     reinforcementMode: false,
     showMidiHelpModal: false,
-    settingsMenuOpen: false,
 
     // Single result modal for end-of-playthrough (free/training), end-of-
     // strict run, and end-of-reinforcement. Body switches on resultMode.
@@ -486,6 +487,8 @@ export function midiApp() {
     // The fingering modal manages its own keyboard handling (digits /
     // backspace / enter / escape), so it is intentionally not handled here.
     handleEscape() {
+      if (this.menuOpen) return this.closeMenu()
+      if (this.showFeedbackModal) return (this.showFeedbackModal = false)
       if (this.showResultModal) return this.closeResultModal()
       if (this.showHistoryModal) return (this.showHistoryModal = false)
       if (this.showMidiHelpModal) return (this.showMidiHelpModal = false)
@@ -553,12 +556,10 @@ export function midiApp() {
       return entries.slice(0, 5)
     },
 
-    toggleSettingsMenu() {
-      this.settingsMenuOpen = !this.settingsMenuOpen
-    },
-
-    closeSettingsMenu() {
-      this.settingsMenuOpen = false
+    // Attaches the current score to the shared feedback submission (see
+    // headerMenu), so a report from the score page says what was open.
+    feedbackContext() {
+      return { score: this.scoreTitle || null }
     },
 
     formatDate,

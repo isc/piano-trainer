@@ -19,10 +19,12 @@ export const CHANGELOG = [
     date: '2026-06-24',
     items: {
       fr: [
-        "Un bouton « Avis » dans la bibliothèque permet d'envoyer directement un bug, une idée ou une demande de partition. Aucun compte requis ; laissez votre e-mail si vous souhaitez une réponse.",
+        "Un menu ⚙️ regroupe désormais le changement de langue, les nouveautés, la gestion des données et l'envoi d'un avis, pour une interface plus épurée.",
+        "Vous pouvez envoyer directement un bug, une idée ou une demande de partition via « Avis » (dans le menu ⚙️). Aucun compte requis ; laissez votre e-mail si vous souhaitez une réponse.",
       ],
       en: [
-        'A "Feedback" button in the library lets you send a bug, an idea or a score request directly. No account needed; leave your email if you\'d like a reply.',
+        'A ⚙️ menu now groups the language switch, what’s new, data management and feedback, for a tidier interface.',
+        'You can send a bug, an idea or a score request directly via "Feedback" (in the ⚙️ menu). No account needed; leave your email if you\'d like a reply.',
       ],
     },
   },
