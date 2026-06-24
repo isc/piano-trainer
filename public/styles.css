@@ -1023,6 +1023,18 @@ dialog > article > footer {
 }
 dialog > article > footer button { margin: 0; }
 
+/* Feedback modal helper text + error banner (form itself is plain Pico). */
+.pt-feedback-intro { margin: 0 0 var(--pt-space-4); color: var(--pt-text-muted); }
+.pt-feedback-privacy { display: block; margin-top: var(--pt-space-3); color: var(--pt-text-subtle); }
+.pt-feedback-error {
+  margin: var(--pt-space-3) 0 0;
+  padding: var(--pt-space-2) var(--pt-space-3);
+  border-radius: var(--pt-radius-sm);
+  background: var(--pt-error-bg);
+  color: var(--pt-error);
+  font-size: 0.9rem;
+}
+
 .pt-modal-stat {
   display: flex;
   align-items: baseline;

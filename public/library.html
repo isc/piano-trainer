@@ -24,7 +24,7 @@
     </script>
   </head>
   <body>
-    <main class="container pt-library-page" @keydown.escape.window="showChangelogModal = false">
+    <main class="container pt-library-page" @keydown.escape.window="showChangelogModal = false; showFeedbackModal = false">
       <div class="pt-library-chrome">
         <div class="pt-page-header">
           <h1 x-text="$t('library.heading')">Bibliothèque</h1>
@@ -47,6 +47,14 @@
             >
               <span x-text="$t('library.changelog')">✨ Nouveautés</span>
               <span class="pt-changelog-dot" x-show="hasUnseenChangelog" aria-hidden="true"></span>
+            </button>
+            <button
+              type="button"
+              class="secondary"
+              x-show="feedbackEnabled"
+              @click="openFeedback()"
+            >
+              <span x-text="$t('library.feedback')">💬 Avis</span>
             </button>
             <div class="pt-langswitch" role="group" aria-label="Language">
               <button type="button" data-set-lang="fr">FR</button>
@@ -214,6 +222,79 @@
                 </template>
               </ul>
             </section>
+          </template>
+        </article>
+      </dialog>
+
+      <!-- Feedback modal -->
+      <dialog :open="showFeedbackModal">
+        <article>
+          <header>
+            <p><strong x-text="$t('feedback.title')">💬 Votre avis</strong></p>
+            <button :aria-label="$t('common.close')" rel="prev" @click="showFeedbackModal = false"></button>
+          </header>
+
+          <!-- Success state -->
+          <template x-if="feedbackStatus === 'sent'">
+            <div>
+              <p x-text="$t('feedback.thanks')">Merci, c'est bien reçu !</p>
+              <footer>
+                <button type="button" @click="showFeedbackModal = false" x-text="$t('common.close')">Fermer</button>
+              </footer>
+            </div>
+          </template>
+
+          <!-- Form state -->
+          <template x-if="feedbackStatus !== 'sent'">
+            <form @submit.prevent="sendFeedback()">
+              <p class="pt-feedback-intro" x-text="$t('feedback.intro')"></p>
+
+              <label>
+                <span x-text="$t('feedback.categoryLabel')">Type</span>
+                <select x-model="feedback.category" :disabled="feedbackStatus === 'sending'">
+                  <option value="" x-text="$t('feedback.categoryNone')">—</option>
+                  <option value="bug" x-text="$t('feedback.categoryBug')">Bug</option>
+                  <option value="idea" x-text="$t('feedback.categoryIdea')">Idée</option>
+                  <option value="score" x-text="$t('feedback.categoryScore')">Partition</option>
+                  <option value="other" x-text="$t('feedback.categoryOther')">Autre</option>
+                </select>
+              </label>
+
+              <label>
+                <span x-text="$t('feedback.messageLabel')">Message</span>
+                <textarea
+                  x-model="feedback.message"
+                  rows="6"
+                  maxlength="5000"
+                  required
+                  :disabled="feedbackStatus === 'sending'"
+                  :placeholder="$t('feedback.messagePlaceholder')"
+                ></textarea>
+              </label>
+
+              <label>
+                <span x-text="$t('feedback.emailLabel')">E-mail (facultatif)</span>
+                <input
+                  type="email"
+                  x-model="feedback.email"
+                  maxlength="320"
+                  :disabled="feedbackStatus === 'sending'"
+                  :placeholder="$t('feedback.emailPlaceholder')"
+                />
+                <small x-text="$t('feedback.emailHint')"></small>
+              </label>
+
+              <small class="pt-feedback-privacy" x-text="$t('feedback.privacy')"></small>
+
+              <p x-show="feedbackStatus === 'error'" role="alert" class="pt-feedback-error">
+                <span x-text="$t('feedback.error')">L'envoi a échoué.</span>
+                <span x-text="feedbackError"></span>
+              </p>
+
+              <footer>
+                <button type="submit" :aria-busy="feedbackStatus === 'sending'" :disabled="!feedback.message.trim() || feedbackStatus === 'sending'" x-text="$t('feedback.send')">Envoyer</button>
+              </footer>
+            </form>
           </template>
         </article>
       </dialog>
