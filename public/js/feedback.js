@@ -39,62 +39,6 @@ export function buildBaseContext() {
   }
 }
 
-// Shared header-menu chrome: the ⚙️ popover open/close state plus the feedback
-// modal state and submit logic. Both the library (libraryApp) and score
-// (midiApp) Alpine components spread this in, so the menu + feedback behave
-// identically on both pages without duplicating the logic. Page-specific menu
-// entries (changelog, data import/export) stay in their own component; only the
-// genuinely shared pieces live here.
-//
-// A page may define `feedbackContext()` to enrich the submission with
-// page-specific context (e.g. practice stats on the library, current score on
-// the score page); it's merged over buildBaseContext().
-export function headerMenu() {
-  return {
-    menuOpen: false,
-    toggleMenu() {
-      this.menuOpen = !this.menuOpen
-    },
-    closeMenu() {
-      this.menuOpen = false
-    },
-
-    feedbackEnabled,
-    showFeedbackModal: false,
-    feedback: { message: '', email: '', category: '' },
-    feedbackStatus: 'idle', // 'idle' | 'sending' | 'sent' | 'error'
-    feedbackError: '',
-
-    openFeedback() {
-      this.feedback = { message: '', email: '', category: '' }
-      this.feedbackStatus = 'idle'
-      this.feedbackError = ''
-      this.menuOpen = false
-      this.showFeedbackModal = true
-    },
-
-    async sendFeedback() {
-      const message = this.feedback.message.trim()
-      if (!message || this.feedbackStatus === 'sending') return
-      this.feedbackStatus = 'sending'
-      this.feedbackError = ''
-      try {
-        await submitFeedback({
-          message,
-          email: this.feedback.email,
-          category: this.feedback.category,
-          context: { ...buildBaseContext(), ...(this.feedbackContext?.() ?? {}) },
-        })
-        this.feedbackStatus = 'sent'
-      } catch (err) {
-        console.error('Feedback error:', err)
-        this.feedbackStatus = 'error'
-        this.feedbackError = err.message || String(err)
-      }
-    },
-  }
-}
-
 // POST one feedback row. Throws on a non-2xx response so the caller can show an
 // error state; the Supabase trigger handles the email asynchronously.
 export async function submitFeedback({ message, email, category, context }) {

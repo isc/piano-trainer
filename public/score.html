@@ -26,7 +26,11 @@
       // every expression throws "<name> is not defined".
       import { midiApp } from './js/app.js'
       import { initAlpineI18n } from './js/i18n.js'
+      import { mountHeaderMenu } from './js/headerMenu.js'
       window.midiApp = midiApp
+      // Inject the shared ⚙️ menu + modals before Alpine boots and before the
+      // FR/EN switch is wired by initAlpineI18n.
+      mountHeaderMenu()
       // Translate static chrome, wire the FR/EN switch, and expose $t to templates.
       initAlpineI18n()
       const alpine = document.createElement('script')
@@ -84,28 +88,7 @@
           x-text="$t('score.history')"
         >📜 Historique</button>
 
-        <div class="pt-popover-anchor" @click.outside="closeMenu()">
-          <button
-            type="button"
-            class="pt-icon-button"
-            :aria-pressed="menuOpen"
-            :aria-label="$t('menu.open')"
-            @click="toggleMenu()"
-          >⚙️</button>
-          <div class="pt-popover" x-show="menuOpen" x-cloak>
-            <div class="pt-popover__section">
-              <button type="button" class="pt-menu-item" x-show="feedbackEnabled" @click="openFeedback()" x-text="$t('library.feedback')">💬 Avis</button>
-            </div>
-            <hr />
-            <div class="pt-popover__section">
-              <h4 x-text="$t('menu.language')">Langue</h4>
-              <div class="pt-langswitch" role="group" aria-label="Language">
-                <button type="button" data-set-lang="fr">FR</button>
-                <button type="button" data-set-lang="en">EN</button>
-              </div>
-            </div>
-          </div>
-        </div>
+        <div data-menu-slot></div>
       </div>
     </header>
 
@@ -490,78 +473,5 @@
       </article>
     </dialog>
 
-    <!-- Feedback modal — mirrors the one in library.html; behaviour is shared
-         via headerMenu() in feedback.js. Keep the two markups in sync. -->
-    <dialog :open="showFeedbackModal">
-      <article>
-        <header>
-          <p><strong x-text="$t('feedback.title')">💬 Votre avis</strong></p>
-          <button :aria-label="$t('common.close')" rel="prev" @click="showFeedbackModal = false"></button>
-        </header>
-
-        <!-- Success state -->
-        <template x-if="feedbackStatus === 'sent'">
-          <div>
-            <p x-text="$t('feedback.thanks')">Merci, c'est bien reçu !</p>
-            <footer>
-              <button type="button" @click="showFeedbackModal = false" x-text="$t('common.close')">Fermer</button>
-            </footer>
-          </div>
-        </template>
-
-        <!-- Form state -->
-        <template x-if="feedbackStatus !== 'sent'">
-          <form @submit.prevent="sendFeedback()">
-            <p class="pt-feedback-intro" x-text="$t('feedback.intro')"></p>
-
-            <label>
-              <span x-text="$t('feedback.categoryLabel')">Type</span>
-              <select x-model="feedback.category" :disabled="feedbackStatus === 'sending'">
-                <option value="" x-text="$t('feedback.categoryNone')">—</option>
-                <option value="bug" x-text="$t('feedback.categoryBug')">Bug</option>
-                <option value="idea" x-text="$t('feedback.categoryIdea')">Idée</option>
-                <option value="score" x-text="$t('feedback.categoryScore')">Partition</option>
-                <option value="other" x-text="$t('feedback.categoryOther')">Autre</option>
-              </select>
-            </label>
-
-            <label>
-              <span x-text="$t('feedback.messageLabel')">Message</span>
-              <textarea
-                x-model="feedback.message"
-                rows="6"
-                maxlength="5000"
-                required
-                :disabled="feedbackStatus === 'sending'"
-                :placeholder="$t('feedback.messagePlaceholder')"
-              ></textarea>
-            </label>
-
-            <label>
-              <span x-text="$t('feedback.emailLabel')">E-mail (facultatif)</span>
-              <input
-                type="email"
-                x-model="feedback.email"
-                maxlength="320"
-                :disabled="feedbackStatus === 'sending'"
-                :placeholder="$t('feedback.emailPlaceholder')"
-              />
-              <small x-text="$t('feedback.emailHint')"></small>
-            </label>
-
-            <small class="pt-feedback-privacy" x-text="$t('feedback.privacy')"></small>
-
-            <p x-show="feedbackStatus === 'error'" role="alert" class="pt-feedback-error">
-              <span x-text="$t('feedback.error')">L'envoi a échoué.</span>
-              <span x-text="feedbackError"></span>
-            </p>
-
-            <footer>
-              <button type="submit" :aria-busy="feedbackStatus === 'sending'" :disabled="!feedback.message.trim() || feedbackStatus === 'sending'" x-text="$t('feedback.send')">Envoyer</button>
-            </footer>
-          </form>
-        </template>
-      </article>
-    </dialog>
   </body>
 </html>

@@ -9,7 +9,7 @@ import { loadMxlAsXml } from './mxlLoader.js'
 import { injectFingerings } from './fingeringInjector.js'
 import { initPlayback, getBPM } from './playback.js'
 import { initStrictPlaythrough } from './strictPlaythrough.js'
-import { headerMenu } from './feedback.js'
+import { headerMenu } from './headerMenu.js'
 import { t, locale } from './i18n.js'
 
 // Built once: the active locale is fixed for the page lifetime (switching
@@ -35,7 +35,7 @@ export function midiApp() {
   const strictPlaythrough = initStrictPlaythrough()
 
   return {
-    ...headerMenu(),
+    ...headerMenu(storage),
     bluetoothConnected: false,
     midiDeviceName: null,
     osmdInstance: null,
@@ -488,6 +488,7 @@ export function midiApp() {
     // backspace / enter / escape), so it is intentionally not handled here.
     handleEscape() {
       if (this.menuOpen) return this.closeMenu()
+      if (this.showChangelogModal) return (this.showChangelogModal = false)
       if (this.showFeedbackModal) return (this.showFeedbackModal = false)
       if (this.showResultModal) return this.closeResultModal()
       if (this.showHistoryModal) return (this.showHistoryModal = false)

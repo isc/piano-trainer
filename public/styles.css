@@ -232,6 +232,7 @@ button.pt-topbar__pill:disabled { opacity: 0.4; cursor: default; }
   cursor: pointer;
   font-size: 1.05rem;
   line-height: 1;
+  margin: 0; /* reset Pico's default button margin-bottom (else it offsets the icon) */
   padding: 0;
 }
 .pt-icon-button:hover { background: var(--pt-surface-2); border-color: var(--pt-border-strong); color: var(--pt-text); }
@@ -477,7 +478,10 @@ button.pt-topbar__pill:disabled { opacity: 0.4; cursor: default; }
    Popover (settings menu)
    ========================================================================== */
 
-.pt-popover-anchor { position: relative; }
+/* inline-flex so the anchor shrink-wraps the trigger button instead of forming
+   a taller line box (which would leave the icon top-aligned, not centred, next
+   to its neighbours). */
+.pt-popover-anchor { position: relative; display: inline-flex; align-items: center; }
 .pt-popover {
   position: absolute;
   top: calc(100% + 6px);
