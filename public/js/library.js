@@ -3,16 +3,8 @@ import { initPracticeTracker } from './practiceTracker.js'
 import { initStorage } from './storage.js'
 import { formatDuration, formatDate, formatRelativeDate, statusLabel, scorePageUrl } from './utils.js'
 import { PERIODS, periodLabel, getPeriodForComposer } from './musicalPeriods.js'
-import { CHANGELOG } from './changelog.js'
-import { headerMenu } from './feedback.js'
-import { t, locale, getLang } from './i18n.js'
-
-const CHANGELOG_SEEN_KEY = 'pt-changelog-seen'
-const CHANGELOG_DATE_FORMATTER = new Intl.DateTimeFormat(locale(), {
-  day: 'numeric',
-  month: 'long',
-  year: 'numeric',
-})
+import { headerMenu } from './headerMenu.js'
+import { t, locale } from './i18n.js'
 
 const MIN_MATCH = 5
 const STATUS_ORDER = ['dechiffrage', 'perfectionnement', 'repertoire']
@@ -31,7 +23,7 @@ export function libraryApp() {
   let sessionCountByFile = {}
 
   return {
-    ...headerMenu(),
+    ...headerMenu(storage),
     scores: [],
     searchQuery: '',
     statusFilter: '',
@@ -44,9 +36,6 @@ export function libraryApp() {
     dailyLogsByDate: [],
     lastPlayedByScore: {},
     aggregatesByScore: {},
-    changelog: CHANGELOG,
-    showChangelogModal: false,
-    hasUnseenChangelog: false,
 
     async init() {
       // Mark this visitor as a returning user so the landing page (/) can
@@ -56,12 +45,6 @@ export function libraryApp() {
       } catch {
         // localStorage unavailable (private mode): no marker, no redirect — fine.
       }
-
-      // Flag the "Nouveautés" button when the latest entry post-dates the last
-      // time the user opened the changelog (or has never opened it).
-      const latest = CHANGELOG[0]?.date
-      const seen = localStorage.getItem(CHANGELOG_SEEN_KEY)
-      this.hasUnseenChangelog = !!latest && seen !== latest
 
       for (const key of ['statusFilter', 'composerFilter', 'periodFilter', 'focusFilter', 'searchQuery']) {
         this.$watch(key, () => this.syncUrl())
@@ -369,26 +352,6 @@ export function libraryApp() {
     statusLabel,
     scorePageUrl,
 
-    openChangelog() {
-      this.menuOpen = false
-      this.showChangelogModal = true
-      // Opening the changelog clears the "unseen" flag until the next entry.
-      const latest = CHANGELOG[0]?.date
-      if (latest) localStorage.setItem(CHANGELOG_SEEN_KEY, latest)
-      this.hasUnseenChangelog = false
-    },
-
-    formatChangelogDate(iso) {
-      const [y, m, d] = iso.split('-').map(Number)
-      return CHANGELOG_DATE_FORMATTER.format(new Date(y, m - 1, d))
-    },
-
-    // Changelog entries carry their items per language ({ fr: [...], en: [...] }),
-    // falling back to English when a translation is missing.
-    changelogItems(entry) {
-      return entry.items?.[getLang()] ?? entry.items?.en ?? []
-    },
-
     // Enriches the shared feedback submission (see headerMenu) with aggregate,
     // non-identifying usage stats — how much the reporter actually practises,
     // without revealing which scores.
@@ -403,61 +366,13 @@ export function libraryApp() {
       }
     },
 
+    // Run by the shared importBackup() (headerMenu) after a successful import.
+    afterDataImport() {
+      return this.reloadDailyLogs()
+    },
+
     getTotalPracticeTimeForDate(dateEntry) {
       return dateEntry.log.reduce((sum, entry) => sum + entry.totalPracticeTimeMs, 0)
-    },
-
-    async importBackup(event) {
-      const file = event.target.files[0]
-      if (!file) return
-
-      try {
-        const text = await file.text()
-        const backupData = JSON.parse(text)
-
-        const result = await storage.importBackup(backupData)
-
-        if (result.success) {
-          alert(
-            t('library.importOk', {
-              sessions: result.importedSessions,
-              aggregates: result.importedAggregates,
-              fingerings: result.importedFingerings,
-            })
-          )
-
-          await this.reloadDailyLogs()
-        }
-      } catch (error) {
-        console.error('Import error:', error)
-        alert(t('library.importError', { error: error.message }))
-      }
-
-      event.target.value = ''
-    },
-
-    async exportBackup() {
-      try {
-        const backupData = await storage.exportBackup()
-
-        const blob = new Blob([JSON.stringify(backupData, null, 2)], {
-          type: 'application/json',
-        })
-
-        const url = URL.createObjectURL(blob)
-        const a = document.createElement('a')
-        a.href = url
-        a.download = `piano-trainer-backup-${new Date().toISOString().split('T')[0]}.json`
-        document.body.appendChild(a)
-        a.click()
-        document.body.removeChild(a)
-        URL.revokeObjectURL(url)
-
-        alert(t('library.exportOk'))
-      } catch (error) {
-        console.error('Export error:', error)
-        alert(t('library.exportError', { error: error.message }))
-      }
     },
 
     async reloadDailyLogs() {

@@ -10,7 +10,7 @@
 // Each entry's `items` is bilingual: `{ fr: [...], en: [...] }`. Both languages
 // are required for new entries — write the French items, then a natural,
 // idiomatic English translation of each, in the same order and same count.
-// `library.js` (`changelogItems`) picks the array for the active language.
+// `headerMenu.js` (`changelogItems`) picks the array for the active language.
 //
 // See CLAUDE.md ("Changelog in-app") for the update rule.
 
