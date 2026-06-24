@@ -16,6 +16,17 @@
 
 export const CHANGELOG = [
   {
+    date: '2026-06-24',
+    items: {
+      fr: [
+        "Un bouton « Avis » dans la bibliothèque permet d'envoyer directement un bug, une idée ou une demande de partition. Aucun compte requis ; laissez votre e-mail si vous souhaitez une réponse.",
+      ],
+      en: [
+        'A "Feedback" button in the library lets you send a bug, an idea or a score request directly. No account needed; leave your email if you\'d like a reply.',
+      ],
+    },
+  },
+  {
     date: '2026-06-21',
     items: {
       fr: [

@@ -4,6 +4,7 @@ import { initStorage } from './storage.js'
 import { formatDuration, formatDate, formatRelativeDate, statusLabel, scorePageUrl } from './utils.js'
 import { PERIODS, periodLabel, getPeriodForComposer } from './musicalPeriods.js'
 import { CHANGELOG } from './changelog.js'
+import { feedbackEnabled, buildBaseContext, submitFeedback } from './feedback.js'
 import { t, locale, getLang } from './i18n.js'
 
 const CHANGELOG_SEEN_KEY = 'pt-changelog-seen'
@@ -45,6 +46,11 @@ export function libraryApp() {
     changelog: CHANGELOG,
     showChangelogModal: false,
     hasUnseenChangelog: false,
+    feedbackEnabled,
+    showFeedbackModal: false,
+    feedback: { message: '', email: '', category: '' },
+    feedbackStatus: 'idle', // 'idle' | 'sending' | 'sent' | 'error'
+    feedbackError: '',
 
     async init() {
       // Mark this visitor as a returning user so the landing page (/) can
@@ -384,6 +390,44 @@ export function libraryApp() {
     // falling back to English when a translation is missing.
     changelogItems(entry) {
       return entry.items?.[getLang()] ?? entry.items?.en ?? []
+    },
+
+    openFeedback() {
+      this.feedback = { message: '', email: '', category: '' }
+      this.feedbackStatus = 'idle'
+      this.feedbackError = ''
+      this.showFeedbackModal = true
+    },
+
+    // Aggregate, non-identifying usage stats attached to feedback — they show
+    // how much a reporter actually practises, without revealing which scores.
+    feedbackStats() {
+      const aggs = Object.values(this.aggregatesByScore)
+      return {
+        scores_total: this.scores.length,
+        scores_practiced: aggs.length,
+        total_practice_time_ms: aggs.reduce((sum, a) => sum + (a.totalPracticeTimeMs || 0), 0),
+      }
+    },
+
+    async sendFeedback() {
+      const message = this.feedback.message.trim()
+      if (!message || this.feedbackStatus === 'sending') return
+      this.feedbackStatus = 'sending'
+      this.feedbackError = ''
+      try {
+        await submitFeedback({
+          message,
+          email: this.feedback.email,
+          category: this.feedback.category,
+          context: { ...buildBaseContext(), stats: this.feedbackStats() },
+        })
+        this.feedbackStatus = 'sent'
+      } catch (err) {
+        console.error('Feedback error:', err)
+        this.feedbackStatus = 'error'
+        this.feedbackError = err.message || String(err)
+      }
     },
 
     getTotalPracticeTimeForDate(dateEntry) {
