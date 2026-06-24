@@ -13,7 +13,12 @@ export const supabase = supabaseConfigured
         persistSession: true,
         autoRefreshToken: true,
         detectSessionInUrl: true,
-        flowType: 'pkce',
+        // Implicit flow (session tokens in the URL hash), NOT pkce: Supabase's
+        // email magic link is a /auth/v1/verify link that redirects back with
+        // `#access_token=…`. PKCE would need a code-verifier stored in the same
+        // browser that requested the link, which breaks magic links opened on
+        // another device (or triggered server-side).
+        flowType: 'implicit',
       },
     })
   : null
