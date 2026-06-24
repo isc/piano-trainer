@@ -115,7 +115,21 @@ export function initPracticeTracker(storageInstance = null) {
     getAllPlaythroughs,
     getAllScores,
     computeScoreStatus,
+    rebuildAggregates,
     getCurrentSession: () => currentSession,
+  }
+
+  // Recompute every aggregate from scratch by replaying all stored sessions in
+  // chronological order. Used after cloud sync pulls sessions from another
+  // device. `metaFor(scoreId)` supplies { title, composer } from the catalog.
+  async function rebuildAggregates(metaFor = () => null) {
+    const sessions = await storage.getSessions()
+    sessions.sort((a, b) => (a.startedAt || '').localeCompare(b.startedAt || ''))
+    await storage.clearAggregates()
+    for (const session of sessions) {
+      if (!session.measures || session.measures.length === 0) continue
+      await updateAggregates(session, metaFor(session.scoreId))
+    }
   }
 
   async function getAllPlaythroughs(scoreId) {
@@ -249,14 +263,20 @@ export function initPracticeTracker(storageInstance = null) {
     return sessionToSave
   }
 
-  async function updateAggregates(session) {
+  // `meta` ({ title, composer }) overrides the live-session metadata — used when
+  // rebuilding aggregates from synced sessions, whose title/composer come from
+  // the score catalog rather than the current playing session.
+  async function updateAggregates(session, meta = null) {
+    const title = meta?.title ?? currentScoreTitle
+    const composer = meta?.composer ?? currentComposer
+
     let aggregate = await storage.getAggregate(session.scoreId)
 
     if (!aggregate) {
       aggregate = {
         scoreId: session.scoreId,
-        scoreTitle: currentScoreTitle,
-        composer: currentComposer,
+        scoreTitle: title,
+        composer,
         status: 'dechiffrage',
         firstPlayedAt: session.startedAt,
         lastPlayedAt: session.endedAt,
@@ -268,12 +288,12 @@ export function initPracticeTracker(storageInstance = null) {
       }
     }
 
-    // Always sync title/composer from current session metadata
-    if (currentScoreTitle) {
-      aggregate.scoreTitle = currentScoreTitle
+    // Always sync title/composer when known
+    if (title) {
+      aggregate.scoreTitle = title
     }
-    if (currentComposer) {
-      aggregate.composer = currentComposer
+    if (composer) {
+      aggregate.composer = composer
     }
 
     const lastMeasureEndTime = getLastMeasureEndTime(session)
