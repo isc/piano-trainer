@@ -4,10 +4,13 @@
 // data builds on the account section here (next step); for now it owns the
 // export/import that used to live in the ⚙️ menu, plus passwordless sign-in.
 import { initStorage } from './storage.js'
-import { t } from './i18n.js'
+import { initPracticeTracker } from './practiceTracker.js'
+import { runSync, syncEnabled, setSyncEnabled, lastSyncAt } from './sync.js'
+import { t, locale } from './i18n.js'
 
 export function dataApp() {
   const storage = initStorage()
+  const practiceTracker = initPracticeTracker(storage)
   // Loaded lazily in init() so export/import work without waiting on (or even
   // reaching) the @supabase/supabase-js CDN module.
   let supabase = null
@@ -20,6 +23,11 @@ export function dataApp() {
     email: '',
     authStatus: 'idle', // 'idle' | 'sending' | 'sent' | 'error'
     authError: '',
+    autoSync: syncEnabled(),
+    lastSync: lastSyncAt(),
+    syncStatus: 'idle', // 'idle' | 'syncing' | 'done' | 'error'
+    syncError: '',
+    syncSummary: '',
 
     async init() {
       await storage.init()
@@ -39,8 +47,41 @@ export function dataApp() {
         supabase.auth.onAuthStateChange((_event, session) => {
           this.user = session?.user ?? null
         })
+        // Opening this page is a natural moment to sync, if it's enabled.
+        if (this.user && this.autoSync) this.syncNow()
       }
       this.authReady = true
+    },
+
+    // x-model already flipped this.autoSync; persist it and sync if enabling.
+    onAutoSyncChanged() {
+      setSyncEnabled(this.autoSync)
+      if (this.autoSync && this.user) this.syncNow()
+    },
+
+    async syncNow() {
+      if (!supabase || !this.user || this.syncStatus === 'syncing') return
+      this.syncStatus = 'syncing'
+      this.syncError = ''
+      this.syncSummary = ''
+      try {
+        const r = await runSync({ supabase, storage, practiceTracker })
+        this.lastSync = lastSyncAt()
+        this.syncSummary = t('data.syncSummary', {
+          up: r.pushed + r.fingeringsPushed,
+          down: r.pulled + r.fingeringsPulled,
+        })
+        this.syncStatus = 'done'
+      } catch (err) {
+        console.error('Sync error:', err)
+        this.syncStatus = 'error'
+        this.syncError = err.message || String(err)
+      }
+    },
+
+    lastSyncLabel() {
+      if (!this.lastSync) return t('data.syncNever')
+      return new Date(this.lastSync).toLocaleString(locale())
     },
 
     async sendMagicLink() {

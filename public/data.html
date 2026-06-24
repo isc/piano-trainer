@@ -75,8 +75,26 @@
           <template x-if="user">
             <div>
               <p><span x-text="$t('data.signedInAs')">Connecté :</span> <strong x-text="user.email"></strong></p>
-              <p class="pt-text-muted" x-text="$t('data.syncComing')">La synchronisation arrive bientôt.</p>
-              <button type="button" class="secondary" @click="signOut()" x-text="$t('data.signOut')">Se déconnecter</button>
+
+              <label class="pt-sync-toggle">
+                <input type="checkbox" role="switch" x-model="autoSync" @change="onAutoSyncChanged()" />
+                <span x-text="$t('data.autoSync')">Synchronisation automatique</span>
+              </label>
+
+              <div class="pt-data-actions">
+                <button type="button" @click="syncNow()" :aria-busy="syncStatus === 'syncing'" :disabled="syncStatus === 'syncing'" x-text="$t('data.syncNow')">Synchroniser maintenant</button>
+                <button type="button" class="secondary" @click="signOut()" x-text="$t('data.signOut')">Se déconnecter</button>
+              </div>
+
+              <p class="pt-text-muted">
+                <span x-text="$t('data.lastSync')">Dernière synchro :</span>
+                <span x-text="lastSyncLabel()"></span>
+              </p>
+              <p x-show="syncStatus === 'done' && syncSummary" class="pt-sync-ok" x-text="syncSummary"></p>
+              <p x-show="syncStatus === 'error'" role="alert" class="pt-feedback-error">
+                <span x-text="$t('data.syncError')">Échec de la synchro :</span>
+                <span x-text="syncError"></span>
+              </p>
             </div>
           </template>
         </div>

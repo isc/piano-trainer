@@ -116,6 +116,12 @@ export function initStorage() {
       return dbGetAll(FINGERINGS_STORE)
     },
 
+    // Overwrite a whole fingerings record ({ scoreUrl, fingerings, updatedAt }).
+    // Used by cloud sync to apply a newer remote version (last-write-wins).
+    async putFingeringRecord(record) {
+      await dbPut(FINGERINGS_STORE, record)
+    },
+
     // Sessions methods
     async saveSession(session) {
       await dbPut(SESSIONS_STORE, session)
@@ -224,6 +230,15 @@ export function initStorage() {
       for (const storeName of stores) {
         transaction.objectStore(storeName).clear()
       }
+      await promisifyTransaction(transaction)
+    },
+
+    // Wipe only the aggregates store. Aggregates are derived from sessions, so
+    // cloud sync rebuilds them from scratch after pulling new sessions.
+    async clearAggregates() {
+      await ensureDb()
+      const transaction = db.transaction([AGGREGATES_STORE], 'readwrite')
+      transaction.objectStore(AGGREGATES_STORE).clear()
       await promisifyTransaction(transaction)
     },
   }
