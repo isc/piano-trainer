@@ -117,75 +117,11 @@ class LibraryTest < CapybaraTestBase
     assert_selector 'tbody tr', count: 3
   end
 
-  def test_import_export_roundtrip
-    with_virtual_time('2026-01-10 12:00') do
-      visit '/library.html'
-      open_menu
-
-      # Import initial data from fixture
-      fixture_path = File.expand_path('fixtures/initial-backup.json', __dir__)
-
-      accept_alert do
-        attach_file 'backup-import', fixture_path, make_visible: true
-      end
-
-      # Verify imported data appears
-      within('#daily-log') do
-        assert_text 'Test Roundtrip Score'
-      end
-
-      # Export the data
-      accept_alert do
-        click_button '📤 Exporter sauvegarde'
-      end
-
-      # Wait for download to complete
-      exported_file = wait_for_download('piano-trainer-backup-*.json')
-      assert exported_file, 'Export file should be downloaded'
-
-      # Verify imported session is included in export
-      imported_data = JSON.parse(File.read(fixture_path))
-      exported_data = JSON.parse(File.read(exported_file))
-
-      assert exported_data['exportDate'], 'Export should have exportDate'
-      assert_includes exported_data['sessions'], imported_data['sessions'].first
-
-      # Verify fingerings are included in export
-      assert exported_data['fingerings'], 'Export should include fingerings'
-      assert_includes exported_data['fingerings'], imported_data['fingerings'].first
-
-      # Clean up
-      File.delete(exported_file)
-    end
-  end
-
-  def test_import_invalid_backup
-    open_menu
-
-    # Create an invalid backup JSON (missing sessions field)
-    invalid_backup = {
-      exportDate: '2026-01-13T12:00:00.000Z'
-    }.to_json
-
-    backup_file = Tempfile.new(['backup', '.json'])
-    backup_file.write(invalid_backup)
-    backup_file.close
-
-    # Attach the file and accept error alert
-    alert_message = accept_alert do
-      attach_file 'backup-import', backup_file.path, make_visible: true
-    end
-
-    assert_includes alert_message, '❌ Erreur lors de l\'import'
-    assert_includes alert_message, 'Invalid backup data format'
-
-    backup_file.unlink
-  end
-
   private
 
-  # The changelog, feedback, data import/export and language controls now live
+  # The changelog, feedback, data-page link and language controls now live
   # behind the ⚙️ header menu; open it before interacting with those items.
+  # (Backup import/export moved to the data page — see data_test.rb.)
   def open_menu
     find('button[aria-label="Menu"]').click
   end

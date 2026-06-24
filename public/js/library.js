@@ -23,7 +23,7 @@ export function libraryApp() {
   let sessionCountByFile = {}
 
   return {
-    ...headerMenu(storage),
+    ...headerMenu(),
     scores: [],
     searchQuery: '',
     statusFilter: '',
@@ -364,11 +364,6 @@ export function libraryApp() {
           total_practice_time_ms: aggs.reduce((sum, a) => sum + (a.totalPracticeTimeMs || 0), 0),
         },
       }
-    },
-
-    // Run by the shared importBackup() (headerMenu) after a successful import.
-    afterDataImport() {
-      return this.reloadDailyLogs()
     },
 
     getTotalPracticeTimeForDate(dateEntry) {

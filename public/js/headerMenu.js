@@ -1,26 +1,22 @@
 // Shared header chrome — the ⚙️ menu and its modals, identical on every page.
 //
 // Both the library (libraryApp) and the score page (midiApp) get the exact same
-// menu (load a score, what's new, feedback, data import/export, language) and the
-// same changelog + feedback modals. To keep a single source of truth without a
-// build step or HTML-include mechanism, the markup lives here as strings and is
-// injected by mountHeaderMenu() before Alpine boots; the Alpine state + methods
-// come from the headerMenu(storage) mixin both components spread in.
+// menu (load a score, what's new, feedback, a link to the data page, language)
+// and the same changelog + feedback modals. To keep a single source of truth
+// without a build step or HTML-include mechanism, the markup lives here as
+// strings and is injected by mountHeaderMenu() before Alpine boots; the Alpine
+// state + methods come from the headerMenu() mixin both components spread in.
 //
 // NOTE: markup-as-strings is a deliberate departure from this project's
 // markup-in-HTML convention, forced by the no-build-step constraint. If a
 // bundler is ever added, this should become a proper partial/component.
 //
-// Page-specific seams (kept out of here):
-//   - feedbackContext():  extra, non-identifying context merged into a report
-//                         (practice stats on the library, current score on the
-//                         score page).
-//   - afterDataImport():  optional hook run after a successful backup import
-//                         (the library refreshes its journal; the score page
-//                         has nothing to refresh).
+// Page-specific seam (kept out of here): feedbackContext() — extra,
+// non-identifying context merged into a report (practice stats on the library,
+// current score on the score page).
 import { CHANGELOG } from './changelog.js'
 import { feedbackEnabled, buildBaseContext, submitFeedback } from './feedback.js'
-import { t, getLang, locale } from './i18n.js'
+import { getLang, locale } from './i18n.js'
 
 const CHANGELOG_SEEN_KEY = 'pt-changelog-seen'
 const CHANGELOG_DATE_FORMATTER = new Intl.DateTimeFormat(locale(), {
@@ -29,7 +25,7 @@ const CHANGELOG_DATE_FORMATTER = new Intl.DateTimeFormat(locale(), {
   year: 'numeric',
 })
 
-export function headerMenu(storage) {
+export function headerMenu() {
   const latest = CHANGELOG[0]?.date
   let seen
   try {
@@ -111,49 +107,6 @@ export function headerMenu(storage) {
         this.feedbackError = err.message || String(err)
       }
     },
-
-    // --- Data backup ---
-    async importBackup(event) {
-      const file = event.target.files[0]
-      if (!file) return
-      try {
-        const backupData = JSON.parse(await file.text())
-        const result = await storage.importBackup(backupData)
-        if (result.success) {
-          alert(
-            t('library.importOk', {
-              sessions: result.importedSessions,
-              aggregates: result.importedAggregates,
-              fingerings: result.importedFingerings,
-            })
-          )
-          await this.afterDataImport?.()
-        }
-      } catch (error) {
-        console.error('Import error:', error)
-        alert(t('library.importError', { error: error.message }))
-      }
-      event.target.value = ''
-    },
-
-    async exportBackup() {
-      try {
-        const backupData = await storage.exportBackup()
-        const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: 'application/json' })
-        const url = URL.createObjectURL(blob)
-        const a = document.createElement('a')
-        a.href = url
-        a.download = `piano-trainer-backup-${new Date().toISOString().split('T')[0]}.json`
-        document.body.appendChild(a)
-        a.click()
-        document.body.removeChild(a)
-        URL.revokeObjectURL(url)
-        alert(t('library.exportOk'))
-      } catch (error) {
-        console.error('Export error:', error)
-        alert(t('library.exportError', { error: error.message }))
-      }
-    },
   }
 }
 
@@ -173,13 +126,7 @@ const TRIGGER_HTML = `
         <span class="pt-menu-dot" x-show="hasUnseenChangelog" aria-hidden="true"></span>
       </button>
       <button type="button" class="pt-menu-item" x-show="feedbackEnabled" @click="openFeedback()" x-text="$t('library.feedback')">💬 Avis</button>
-    </div>
-    <hr />
-    <div class="pt-popover__section">
-      <h4 x-text="$t('menu.data')">Données</h4>
-      <label class="pt-menu-item" for="backup-import" x-text="$t('library.importBackup')">📥 Importer sauvegarde</label>
-      <input class="pt-sr-only" type="file" accept=".json" @change="importBackup($event)" id="backup-import" />
-      <button type="button" class="pt-menu-item" @click="exportBackup()" x-text="$t('library.exportBackup')">📤 Exporter sauvegarde</button>
+      <a href="data.html" class="pt-menu-item" @click="closeMenu()" x-text="$t('menu.data')">🗂 Données</a>
     </div>
     <hr />
     <div class="pt-popover__section">

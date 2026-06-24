@@ -6,16 +6,10 @@
 // Resend — see `supabase/feedback.sql` for the table, RLS and trigger DDL you
 // apply by hand on a fresh, piano-trainer-only Supabase project.
 //
-// The two constants below are SAFE to commit and expose client-side: the
-// publishable key only grants what Row-Level Security allows (here: INSERT into
-// `feedback`, nothing else — no reads, no other tables). The real secret (the
-// Resend API key) lives in Supabase Vault, never in this repo.
-//
-// Until you paste the new project's values here, `feedbackEnabled` is false and
-// the library hides the feedback button — the rest of the app is unaffected.
-const SUPABASE_URL = 'https://mtihhulokbhhvkomlmmk.supabase.co'
-const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_vIltAWqwpRCJ5_b6Wle3bA_dNgnMRz4'
-
+// The Supabase URL + publishable key live in supabaseConfig.js (safe to expose;
+// RLS guards writes). If they're ever blanked, `feedbackEnabled` is false and
+// the feedback button hides — the rest of the app is unaffected.
+import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from './supabaseConfig.js'
 import { CHANGELOG } from './changelog.js'
 import { getLang } from './i18n.js'
 
