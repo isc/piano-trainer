@@ -6,7 +6,7 @@ export default {
   },
   menu: {
     open: 'Menu',
-    data: 'Données',
+    data: '🗂 Données',
     language: 'Langue',
   },
   status: {
@@ -91,6 +91,24 @@ export default {
     send: 'Envoyer',
     thanks: 'Merci, c’est bien reçu ! 🙏',
     error: 'L’envoi a échoué.',
+  },
+  data: {
+    pageTitle: 'Piano Trainer · Données',
+    heading: 'Données',
+    back: '← Bibliothèque',
+    localHeading: 'Sauvegarde locale',
+    localIntro: 'Exportez vos données d’entraînement dans un fichier, ou réimportez une sauvegarde.',
+    accountHeading: 'Compte',
+    accountIntro: 'Connectez-vous par e-mail pour synchroniser vos données d’entraînement entre appareils.',
+    emailLabel: 'E-mail',
+    emailPlaceholder: 'vous@exemple.com',
+    sendLink: 'Recevoir un lien de connexion',
+    linkSent: 'Lien envoyé ! Vérifiez votre boîte mail (et les spams).',
+    signedInAs: 'Connecté :',
+    signOut: 'Se déconnecter',
+    cloudUnavailable: 'La synchronisation cloud n’est pas configurée.',
+    syncComing: 'La synchronisation des données arrive bientôt.',
+    authError: 'Échec de l’envoi du lien :',
   },
   score: {
     pageTitle: 'Piano Trainer',

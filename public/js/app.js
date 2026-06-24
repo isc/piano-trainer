@@ -35,7 +35,7 @@ export function midiApp() {
   const strictPlaythrough = initStrictPlaythrough()
 
   return {
-    ...headerMenu(storage),
+    ...headerMenu(),
     bluetoothConnected: false,
     midiDeviceName: null,
     osmdInstance: null,

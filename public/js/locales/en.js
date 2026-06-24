@@ -6,7 +6,7 @@ export default {
   },
   menu: {
     open: 'Menu',
-    data: 'Data',
+    data: '🗂 Data',
     language: 'Language',
   },
   status: {
@@ -91,6 +91,24 @@ export default {
     send: 'Send',
     thanks: 'Thanks, got it! 🙏',
     error: 'Sending failed.',
+  },
+  data: {
+    pageTitle: 'Piano Trainer · Data',
+    heading: 'Data',
+    back: '← Library',
+    localHeading: 'Local backup',
+    localIntro: 'Export your training data to a file, or import a backup.',
+    accountHeading: 'Account',
+    accountIntro: 'Sign in by email to sync your training data across devices.',
+    emailLabel: 'Email',
+    emailPlaceholder: 'you@example.com',
+    sendLink: 'Send sign-in link',
+    linkSent: 'Link sent! Check your inbox (and spam).',
+    signedInAs: 'Signed in:',
+    signOut: 'Sign out',
+    cloudUnavailable: 'Cloud sync is not configured.',
+    syncComing: 'Data sync is coming soon.',
+    authError: 'Could not send the link:',
   },
   score: {
     pageTitle: 'Piano Trainer',
