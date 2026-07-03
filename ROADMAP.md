@@ -104,6 +104,15 @@ dans le `CHANGELOG`.
   donner un retour sur la posture (inspiration ROLI Airwave). Comme le mode
   micro : gros potentiel, grosse inconnue de faisabilité, à prototyper.
 
+- **Séance guidée** — répondre à la question « je fais quoi, là, maintenant ? »
+  quand on s'assoit au piano : une « séance du jour » composée automatiquement
+  à partir des données de pratique. Par exemple : échauffement (Hanon), mesures
+  à renforcer des morceaux en perfectionnement, lecture de confirmation d'un
+  morceau du répertoire pas joué récemment, déchiffrage d'un morceau de la
+  wishlist. C'est la couche qui fédère renforcement, entretien du répertoire,
+  objectifs et wishlist (inspiration : les guided practice sessions de
+  Pianote).
+
 - **Accès prof** — permettre à un professeur de suivre la pratique d'un élève :
   consulter sa progression, ses mesures faibles, ses jeux récents, voire lui
   assigner des morceaux ou passages à travailler.
