@@ -63,14 +63,13 @@ dans le `CHANGELOG`.
   (nombre de sessions et/ou temps de pratique) et voir en cours de semaine où
   on en est de leur atteinte. Voire un calendrier complet qui visualise
   l'atteinte des objectifs dans le temps (semaines réussies / manquées, façon
-  heatmap). Rejoint le critère de régularité du statut répertoire plus
-  exigeant : les mêmes données servent les deux.
+  heatmap).
 
 - **Statut répertoire plus exigeant** — le passage en statut répertoire pourrait
   demander plus que les seuils actuels (passes propres par mesure, jours de
   pratique, lectures complètes) : exiger aussi peu de fausses notes (taux
-  d'erreur global bas) et de la régularité dans la pratique (jours étalés dans
-  le temps, pas concentrés sur un week-end).
+  d'erreur global bas) et de la régularité du tempo pendant le jeu (tempo
+  stable sur toute la lecture, sans ralentir dans les passages difficiles).
 
 - **Accès prof** — permettre à un professeur de suivre la pratique d'un élève :
   consulter sa progression, ses mesures faibles, ses jeux récents, voire lui
