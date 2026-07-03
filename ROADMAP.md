@@ -77,6 +77,13 @@ dans le `CHANGELOG`.
   pour le confirmer ; sans lecture de confirmation à temps (ou si elle se passe
   mal), le morceau redescend en perfectionnement.
 
+- **Mode micro (non MIDI)** — détecter les notes jouées via le microphone pour
+  les pianos acoustiques et claviers sans MIDI. Ouvrirait l'application à un
+  public beaucoup plus large. Grande inconnue : la qualité atteignable de la
+  détection de pitch, surtout en polyphonie (accords, deux mains) et en
+  conditions réelles (micro de laptop, acoustique de la pièce). À prototyper
+  pour évaluer la faisabilité avant d'en faire un vrai chantier.
+
 - **Accès prof** — permettre à un professeur de suivre la pratique d'un élève :
   consulter sa progression, ses mesures faibles, ses jeux récents, voire lui
   assigner des morceaux ou passages à travailler.
