@@ -46,6 +46,12 @@ dans le `CHANGELOG`.
   entraînement actuel pour sélectionner une plage de mesures (et non une seule),
   afin de travailler un passage en boucle.
 
+- **Statut répertoire plus exigeant** — le passage en statut répertoire pourrait
+  demander plus que les seuils actuels (passes propres par mesure, jours de
+  pratique, lectures complètes) : exiger aussi peu de fausses notes (taux
+  d'erreur global bas) et de la régularité dans la pratique (jours étalés dans
+  le temps, pas concentrés sur un week-end).
+
 - **Accès prof** — permettre à un professeur de suivre la pratique d'un élève :
   consulter sa progression, ses mesures faibles, ses jeux récents, voire lui
   assigner des morceaux ou passages à travailler.
