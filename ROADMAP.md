@@ -91,6 +91,19 @@ dans le `CHANGELOG`.
   pont : collecte MIDI côté natif (CoreMIDI, USB ou Bluetooth) et propagation
   des événements vers le code web existant, inchangé.
 
+- **Clavier à l'écran** — afficher une bande clavier sous la partition, avec
+  les notes attendues allumées et les notes jouées en vert/rouge (l'équivalent
+  logiciel des touches lumineuses type ROLI Piano). Aide les débutants qui
+  n'ont pas encore le réflexe portée → touche, en complément du feedback sur
+  la portée.
+
+- **Validation des doigtés par caméra** — le MIDI dit quelle note est jouée,
+  jamais avec quel doigt. Les doigtés sont pourtant déjà annotés par morceau
+  dans l'app : une webcam + hand tracking (MediaPipe tourne dans le
+  navigateur) pourrait vérifier que le doigt utilisé est celui annoté, voire
+  donner un retour sur la posture (inspiration ROLI Airwave). Comme le mode
+  micro : gros potentiel, grosse inconnue de faisabilité, à prototyper.
+
 - **Accès prof** — permettre à un professeur de suivre la pratique d'un élève :
   consulter sa progression, ses mesures faibles, ses jeux récents, voire lui
   assigner des morceaux ou passages à travailler.
