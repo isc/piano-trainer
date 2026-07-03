@@ -17,14 +17,20 @@ dans le `CHANGELOG`.
   ne se déclenchent qu'après une lecture complète du morceau. Sur les longs
   morceaux, on travaille la première partie et on veut renforcer des mesures
   avant d'avoir tout déchiffré. Proposer le renforcement sur les mesures déjà
-  jouées, sans exiger une session complète.
+  jouées, sans exiger une session complète. Et baser la détection sur
+  l'historique agrégé plutôt que sur la seule dernière session : repérer les
+  mesures qui **stagnent** (taux d'erreur qui ne baisse plus au fil des
+  sessions malgré le renforcement), pas seulement celles ratées la dernière
+  fois.
 
 - **Tempo trainer (suite du mode strict)** — l'évolution envisagée dès les
   premières PRs du mode strict (#161, #165) : construire un entraîneur de tempo
   par-dessus le moteur existant, avec **sélection d'une plage de mesures**,
   **boucle** sur cette plage et **auto-progression** du BPM (accélération
   graduelle quand la passe est propre). À coupler avec l'intégration du mode
-  strict dans le suivi de pratique (stats séparées des lectures libres).
+  strict dans le suivi de pratique (stats séparées des lectures libres). Les
+  mesures à renforcer pourraient déclencher automatiquement une boucle à tempo
+  réduit sur le passage concerné.
 
 - **Validation des silences / durées** — aujourd'hui rien ne signale qu'on
   maintient une note trop longtemps (ou qu'on ne respecte pas un silence), ni
@@ -46,11 +52,80 @@ dans le `CHANGELOG`.
   entraînement actuel pour sélectionner une plage de mesures (et non une seule),
   afin de travailler un passage en boucle.
 
+- **Wishlist / statut « à venir »** — les statuts actuels (déchiffrage,
+  perfectionnement, répertoire) sont tous calculés à partir de la pratique. Il
+  manque un statut *manuel* pour les morceaux qu'on prévoit d'apprendre — par
+  exemple les prochains morceaux discutés avec la prof. Flag posé à la main
+  depuis la bibliothèque, avec sa page de statut dédiée ; le morceau bascule en
+  déchiffrage dès qu'on commence à le jouer.
+
+- **Objectifs de pratique hebdomadaires** — se fixer des objectifs par semaine
+  (nombre de sessions et/ou temps de pratique) et voir en cours de semaine où
+  on en est de leur atteinte. Voire un calendrier complet qui visualise
+  l'atteinte des objectifs dans le temps (semaines réussies / manquées, façon
+  heatmap).
+
 - **Statut répertoire plus exigeant** — le passage en statut répertoire pourrait
   demander plus que les seuils actuels (passes propres par mesure, jours de
   pratique, lectures complètes) : exiger aussi peu de fausses notes (taux
-  d'erreur global bas) et de la régularité dans la pratique (jours étalés dans
-  le temps, pas concentrés sur un week-end).
+  d'erreur global bas) et de la régularité du tempo pendant le jeu (tempo
+  stable sur toute la lecture, sans ralentir dans les passages difficiles).
+
+- **Entretien du répertoire** — le statut répertoire est aujourd'hui acquis
+  pour toujours, alors qu'un morceau non rejoué se perd. Quand un morceau du
+  répertoire n'a pas été joué depuis un certain temps, pousser à le rejouer
+  pour le confirmer ; sans lecture de confirmation à temps (ou si elle se passe
+  mal), le morceau redescend en perfectionnement.
+
+- **Mode micro (non MIDI)** — détecter les notes jouées via le microphone pour
+  les pianos acoustiques et claviers sans MIDI. Ouvrirait l'application à un
+  public beaucoup plus large. Grande inconnue : la qualité atteignable de la
+  détection de pitch, surtout en polyphonie (accords, deux mains) et en
+  conditions réelles (micro de laptop, acoustique de la pièce). À prototyper
+  pour évaluer la faisabilité avant d'en faire un vrai chantier.
+
+- **App iOS (wrapper natif)** — même objectif d'élargir le public, mais plus
+  simple et balisé que le mode micro : Safari/iOS ne supporte pas le Web MIDI,
+  donc l'app est inutilisable sur iPad/iPhone alors que l'iPad posé sur le
+  pupitre est le device idéal. Un wrapper natif minimal (WKWebView) ferait le
+  pont : collecte MIDI côté natif (CoreMIDI, USB ou Bluetooth) et propagation
+  des événements vers le code web existant, inchangé.
+
+- **Clavier à l'écran** — afficher une bande clavier sous la partition, avec
+  les notes attendues allumées et les notes jouées en vert/rouge (l'équivalent
+  logiciel des touches lumineuses type ROLI Piano). Aide les débutants qui
+  n'ont pas encore le réflexe portée → touche, en complément du feedback sur
+  la portée.
+
+- **Validation des doigtés par caméra** — le MIDI dit quelle note est jouée,
+  jamais avec quel doigt. Les doigtés sont pourtant déjà annotés par morceau
+  dans l'app : une webcam + hand tracking (MediaPipe tourne dans le
+  navigateur) pourrait vérifier que le doigt utilisé est celui annoté, voire
+  donner un retour sur la posture (inspiration ROLI Airwave). Comme le mode
+  micro : gros potentiel, grosse inconnue de faisabilité, à prototyper.
+
+- **Séance guidée** — répondre à la question « je fais quoi, là, maintenant ? »
+  quand on s'assoit au piano : une « séance du jour » composée automatiquement
+  à partir des données de pratique. Par exemple : échauffement (Hanon), mesures
+  à renforcer des morceaux en perfectionnement, lecture de confirmation d'un
+  morceau du répertoire pas joué récemment, déchiffrage d'un morceau de la
+  wishlist. C'est la couche qui fédère renforcement, entretien du répertoire,
+  objectifs et wishlist (inspiration : les guided practice sessions de
+  Pianote).
+
+- **Entraîneur de déchiffrage à vue** — travailler le déchiffrage comme une
+  compétence à part, façon SASR de Piano Marvel : de courts extraits gradués
+  par difficulté, un temps de préparation, un seul essai, difficulté qui
+  s'adapte au taux de réussite, et un score chiffré qui suit la progression de
+  lecture à vue dans le temps. Les extraits pourraient être tirés de passages
+  de la bibliothèque (domaine public). Prérequis : une gradation de difficulté
+  des partitions/extraits.
+
+- **Écoute comparative des enregistrements** — on enregistre et rejoue déjà
+  les performances MIDI, mais rien n'est archivé dans la durée. Conserver des
+  enregistrements liés à l'historique de pratique et permettre de réécouter
+  côte à côte une version d'il y a trois mois et une d'aujourd'hui du même
+  morceau, pour *entendre* sa progression (inspiration Modacity / Tonara).
 
 - **Accès prof** — permettre à un professeur de suivre la pratique d'un élève :
   consulter sa progression, ses mesures faibles, ses jeux récents, voire lui
