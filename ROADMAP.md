@@ -113,6 +113,20 @@ dans le `CHANGELOG`.
   objectifs et wishlist (inspiration : les guided practice sessions de
   Pianote).
 
+- **Entraîneur de déchiffrage à vue** — travailler le déchiffrage comme une
+  compétence à part, façon SASR de Piano Marvel : de courts extraits gradués
+  par difficulté, un temps de préparation, un seul essai, difficulté qui
+  s'adapte au taux de réussite, et un score chiffré qui suit la progression de
+  lecture à vue dans le temps. Les extraits pourraient être tirés de passages
+  de la bibliothèque (domaine public). Prérequis : une gradation de difficulté
+  des partitions/extraits.
+
+- **Écoute comparative des enregistrements** — on enregistre et rejoue déjà
+  les performances MIDI, mais rien n'est archivé dans la durée. Conserver des
+  enregistrements liés à l'historique de pratique et permettre de réécouter
+  côte à côte une version d'il y a trois mois et une d'aujourd'hui du même
+  morceau, pour *entendre* sa progression (inspiration Modacity / Tonara).
+
 - **Accès prof** — permettre à un professeur de suivre la pratique d'un élève :
   consulter sa progression, ses mesures faibles, ses jeux récents, voire lui
   assigner des morceaux ou passages à travailler.
