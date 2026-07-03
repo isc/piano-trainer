@@ -52,6 +52,13 @@ dans le `CHANGELOG`.
   entraînement actuel pour sélectionner une plage de mesures (et non une seule),
   afin de travailler un passage en boucle.
 
+- **Wishlist / statut « à venir »** — les statuts actuels (déchiffrage,
+  perfectionnement, répertoire) sont tous calculés à partir de la pratique. Il
+  manque un statut *manuel* pour les morceaux qu'on prévoit d'apprendre — par
+  exemple les prochains morceaux discutés avec la prof. Flag posé à la main
+  depuis la bibliothèque, avec sa page de statut dédiée ; le morceau bascule en
+  déchiffrage dès qu'on commence à le jouer.
+
 - **Statut répertoire plus exigeant** — le passage en statut répertoire pourrait
   demander plus que les seuils actuels (passes propres par mesure, jours de
   pratique, lectures complètes) : exiger aussi peu de fausses notes (taux
