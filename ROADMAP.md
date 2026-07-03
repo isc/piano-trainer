@@ -71,6 +71,12 @@ dans le `CHANGELOG`.
   d'erreur global bas) et de la régularité du tempo pendant le jeu (tempo
   stable sur toute la lecture, sans ralentir dans les passages difficiles).
 
+- **Entretien du répertoire** — le statut répertoire est aujourd'hui acquis
+  pour toujours, alors qu'un morceau non rejoué se perd. Quand un morceau du
+  répertoire n'a pas été joué depuis un certain temps, pousser à le rejouer
+  pour le confirmer ; sans lecture de confirmation à temps (ou si elle se passe
+  mal), le morceau redescend en perfectionnement.
+
 - **Accès prof** — permettre à un professeur de suivre la pratique d'un élève :
   consulter sa progression, ses mesures faibles, ses jeux récents, voire lui
   assigner des morceaux ou passages à travailler.
