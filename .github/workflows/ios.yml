@@ -1,0 +1,31 @@
+name: iOS
+
+on:
+  pull_request:
+    paths:
+      - 'ios/**'
+      - '.github/workflows/ios.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'ios/**'
+      - '.github/workflows/ios.yml'
+
+jobs:
+  build:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - run: brew install xcodegen
+      - run: xcodegen generate
+        working-directory: ios
+      # Compile check only: unsigned simulator build, no artifact produced.
+      - run: >
+          xcodebuild
+          -project PianoTrainer.xcodeproj
+          -target PianoTrainer
+          -sdk iphonesimulator
+          -configuration Debug
+          build
+          CODE_SIGNING_ALLOWED=NO
+        working-directory: ios
