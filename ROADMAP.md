@@ -84,13 +84,6 @@ dans le `CHANGELOG`.
   conditions réelles (micro de laptop, acoustique de la pièce). À prototyper
   pour évaluer la faisabilité avant d'en faire un vrai chantier.
 
-- **App iOS (wrapper natif)** — même objectif d'élargir le public, mais plus
-  simple et balisé que le mode micro : Safari/iOS ne supporte pas le Web MIDI,
-  donc l'app est inutilisable sur iPad/iPhone alors que l'iPad posé sur le
-  pupitre est le device idéal. Un wrapper natif minimal (WKWebView) ferait le
-  pont : collecte MIDI côté natif (CoreMIDI, USB ou Bluetooth) et propagation
-  des événements vers le code web existant, inchangé.
-
 - **Clavier à l'écran** — afficher une bande clavier sous la partition, avec
   les notes attendues allumées et les notes jouées en vert/rouge (l'équivalent
   logiciel des touches lumineuses type ROLI Piano). Aide les débutants qui

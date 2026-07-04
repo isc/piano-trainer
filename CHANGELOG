@@ -1,0 +1,7 @@
+2026-07-04
+
+- App iOS (wrapper natif) : nouvelle app iPad/iPhone minimale dans `ios/` — une
+  WKWebView charge l'app web déployée, inchangée ; la collecte MIDI se fait
+  côté natif (CoreMIDI, USB ou Bluetooth) et un shim injecté émule l'API Web
+  MIDI absente de Safari/iOS. Appairage Bluetooth MIDI intégré via la feuille
+  système.
