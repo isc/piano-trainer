@@ -44,7 +44,12 @@ final class ViewController: UIViewController {
       webView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
     ])
 
-    view.addSubview(makeBluetoothButton())
+    let bluetoothButton = makeBluetoothButton()
+    view.addSubview(bluetoothButton)
+    NSLayoutConstraint.activate([
+      bluetoothButton.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor, constant: -12),
+      bluetoothButton.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -12),
+    ])
 
     midiBridge.delegate = self
     midiBridge.start()
@@ -64,10 +69,6 @@ final class ViewController: UIViewController {
     button.alpha = 0.6
     button.accessibilityLabel = "Bluetooth MIDI"
     button.translatesAutoresizingMaskIntoConstraints = false
-    NSLayoutConstraint.activate([
-      button.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor, constant: -12),
-      button.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -12),
-    ])
     return button
   }
 
