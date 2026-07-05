@@ -54,15 +54,25 @@ final class MIDIBridge {
     var infos: [MIDIPortInfo] = []
     for index in 0..<MIDIGetNumberOfSources() {
       let endpoint = MIDIGetSource(index)
-      guard endpoint != 0 else { continue }
+      guard endpoint != 0, !isNetworkSession(endpoint) else { continue }
       infos.append(MIDIPortInfo(id: uniqueID(of: endpoint), name: displayName(of: endpoint), type: "input"))
     }
     for index in 0..<MIDIGetNumberOfDestinations() {
       let endpoint = MIDIGetDestination(index)
-      guard endpoint != 0 else { continue }
+      guard endpoint != 0, !isNetworkSession(endpoint) else { continue }
       infos.append(MIDIPortInfo(id: uniqueID(of: endpoint), name: displayName(of: endpoint), type: "output"))
     }
     return infos
+  }
+
+  // iOS auto-creates a virtual "Session 1" endpoint (MIDINetworkSession) as
+  // soon as Bluetooth MIDI Central is opened. It carries no real notes and
+  // would otherwise beat the actual keyboard for the app's
+  // auto-connect-to-first-input logic, so it's filtered out by comparing
+  // against the exact endpoints MIDINetworkSession itself exposes.
+  private func isNetworkSession(_ endpoint: MIDIEndpointRef) -> Bool {
+    let session = MIDINetworkSession.default()
+    return endpoint == session.sourceEndpoint() || endpoint == session.destinationEndpoint()
   }
 
   func send(_ bytes: [UInt8], toDestination id: Int32) {

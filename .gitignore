@@ -17,3 +17,4 @@ CLAUDE.local.md
 ios/PianoTrainer.xcodeproj/
 ios/PianoTrainer/Info.plist
 ios/build/
+ios/build-device/
