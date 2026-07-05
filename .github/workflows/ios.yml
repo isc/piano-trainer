@@ -56,8 +56,9 @@ jobs:
       - name: Screenshot and reject a black/blank screen
         run: |
           xcrun simctl io "$SIM_UDID" screenshot screenshot.png
-          pip3 install --quiet pillow
-          python3 - <<'EOF'
+          python3 -m venv .imgcheck
+          .imgcheck/bin/pip install --quiet pillow
+          .imgcheck/bin/python - <<'EOF'
           from PIL import Image
           im = Image.open('screenshot.png').convert('L')
           pixels = list(im.getdata())
