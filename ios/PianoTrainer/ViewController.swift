@@ -16,6 +16,7 @@ final class ViewController: UIViewController {
 
   override func viewDidLoad() {
     super.viewDidLoad()
+    view.backgroundColor = .systemBackground
 
     let contentController = WKUserContentController()
     if let shimURL = Bundle.main.url(forResource: "webmidi-shim", withExtension: "js"),
