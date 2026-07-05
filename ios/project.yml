@@ -25,7 +25,7 @@ targets:
           UISceneConfigurations:
             UIWindowSceneSessionRoleApplication:
               - UISceneConfigurationName: Default
-                UISceneDelegateClassName: $(PRODUCT_MODULE_NAME).SceneDelegate
+                UISceneDelegateClassName: PianoTrainer.SceneDelegate
         UISupportedInterfaceOrientations:
           - UIInterfaceOrientationPortrait
           - UIInterfaceOrientationPortraitUpsideDown
