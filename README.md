@@ -292,6 +292,14 @@ DISABLE_HEADLESS=1 bundle exec rake test
 - Test logs capture browser output
 - Error messages display in the UI for user feedback
 
+## iOS App (Native Wrapper)
+
+Safari/iOS does not support the Web MIDI API, so the `ios/` directory contains
+a minimal native wrapper for iPad/iPhone: a WKWebView loads the deployed web
+app unchanged, MIDI is collected natively with CoreMIDI (USB or Bluetooth),
+and an injected shim emulates `navigator.requestMIDIAccess`. See
+[ios/README.md](ios/README.md) for build instructions.
+
 ## Browser Compatibility
 
 ### Required Features
