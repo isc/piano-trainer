@@ -1332,7 +1332,12 @@ img[id^="cursorImg"] { scroll-margin-top: var(--pt-sticky-offset, 100px); }
 /* =============================================================================
    Landing page (/) — pitch + onboarding shown to first-time visitors.
    ========================================================================== */
-.pt-landing { max-width: 960px; }
+/* Pico zeroes the container's inline padding from the 576px breakpoint up,
+   assuming the box is narrower than the viewport and centered (margin auto
+   supplies the gutters). Below 960px that assumption breaks — the container
+   is still full-width — so restore the padding explicitly, same as
+   .pt-library-page does. */
+.pt-landing { max-width: 960px; padding-inline: var(--pt-space-4); }
 
 .pt-landing__nav {
   display: flex;
