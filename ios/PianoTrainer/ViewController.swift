@@ -16,6 +16,10 @@ final class ViewController: UIViewController {
 
   override func viewDidLoad() {
     super.viewDidLoad()
+    // The web app has no dark theme (it forces Pico to light), so keep the
+    // whole native shell — background, status bar, system sheets — in light
+    // mode too, rather than letting it follow the device's Dark Mode setting.
+    overrideUserInterfaceStyle = .light
     view.backgroundColor = .systemBackground
 
     let contentController = WKUserContentController()
@@ -32,16 +36,27 @@ final class ViewController: UIViewController {
     configuration.mediaTypesRequiringUserActionForPlayback = []
 
     webView = WKWebView(frame: .zero, configuration: configuration)
+    #if DEBUG
+    if #available(iOS 16.4, *) {
+      webView.isInspectable = true
+    }
+    #endif
     webView.navigationDelegate = self
     webView.uiDelegate = self
     webView.allowsBackForwardNavigationGestures = true
     webView.translatesAutoresizingMaskIntoConstraints = false
     view.addSubview(webView)
     NSLayoutConstraint.activate([
-      webView.topAnchor.constraint(equalTo: view.topAnchor),
-      webView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
-      webView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
-      webView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+      // The web app has no safe-area-aware CSS (no viewport-fit=cover), so
+      // scrolled content would otherwise show through system chrome —
+      // notably the transparent status bar, but also the notch/Dynamic
+      // Island and home indicator on iPhone. Stay within the safe area on
+      // all four edges rather than assuming this device's geometry (no
+      // notch, physical home button).
+      webView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
+      webView.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor),
+      webView.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor),
+      webView.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor),
     ])
 
     let bluetoothButton = makeBluetoothButton()
