@@ -68,6 +68,17 @@ export function libraryApp() {
       })
       midi.connectMIDI({ silent: true, autoSelectFirst: true })
 
+      // Reaching this page via history.back() (e.g. the MIDI "highest key"
+      // shortcut) can restore it from the browser's back/forward cache: a
+      // frozen snapshot from before the user practiced, with init() never
+      // re-running. Refresh just the practice-derived data so the journal
+      // and status pills reflect what was just played.
+      window.addEventListener('pageshow', (event) => {
+        if (!event.persisted) return
+        this.refreshPracticeData()
+        this.reloadDailyLogs()
+      })
+
       const [scoresResponse, fingerprintsResponse] = await Promise.all([
         fetch('data/scores.json'),
         fetch('data/fingerprints.json'),
@@ -79,25 +90,7 @@ export function libraryApp() {
       const fpData = await fingerprintsResponse.json()
       fingerprints = fpData.fingerprints
 
-      // Build maps from sessions: most recent play time + count per score file
-      const sessions = await storage.getSessions()
-      for (const session of sessions) {
-        const existing = this.lastPlayedByScore[session.scoreId]
-        if (!existing || session.startedAt > existing) {
-          this.lastPlayedByScore[session.scoreId] = session.startedAt
-        }
-        if (session.scoreId.startsWith(this.baseUrl)) {
-          const file = session.scoreId.slice(this.baseUrl.length)
-          sessionCountByFile[file] = (sessionCountByFile[file] ?? 0) + 1
-        }
-      }
-
-      // Aggregates power the status filter, status pills, and practice-focus banner.
-      const aggregates = await storage.getAllAggregates()
-      for (const agg of aggregates) {
-        if (!agg || (agg.practiceDays || []).length === 0) continue
-        this.aggregatesByScore[agg.scoreId] = agg
-      }
+      await this.refreshPracticeData()
 
       this.scores = data.scores
 
@@ -117,6 +110,34 @@ export function libraryApp() {
       this.searchQuery = params.get('q') || ''
 
       await this.reloadDailyLogs()
+    },
+
+    // Recomputes lastPlayedByScore/aggregatesByScore/sessionCountByFile from
+    // storage. Safe to call more than once (each map is rebuilt from
+    // scratch), unlike the rest of init() which registers listeners.
+    async refreshPracticeData() {
+      this.lastPlayedByScore = {}
+      this.aggregatesByScore = {}
+      sessionCountByFile = {}
+
+      const [sessions, aggregates] = await Promise.all([storage.getSessions(), storage.getAllAggregates()])
+
+      for (const session of sessions) {
+        const existing = this.lastPlayedByScore[session.scoreId]
+        if (!existing || session.startedAt > existing) {
+          this.lastPlayedByScore[session.scoreId] = session.startedAt
+        }
+        if (session.scoreId.startsWith(this.baseUrl)) {
+          const file = session.scoreId.slice(this.baseUrl.length)
+          sessionCountByFile[file] = (sessionCountByFile[file] ?? 0) + 1
+        }
+      }
+
+      // Aggregates power the status filter, status pills, and practice-focus banner.
+      for (const agg of aggregates) {
+        if (!agg || (agg.practiceDays || []).length === 0) continue
+        this.aggregatesByScore[agg.scoreId] = agg
+      }
     },
 
     handleSearchNote(midiNote) {
