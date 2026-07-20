@@ -96,6 +96,9 @@ export function initPracticeTracker(storageInstance = null) {
   // Store metadata separately from session (not persisted in session object)
   let currentScoreTitle = null
   let currentComposer = null
+  // Set once ensureAggregateTitle() has written title/composer for the
+  // current session, so later measures skip the IndexedDB round-trip.
+  let aggregateTitleEnsured = false
 
   return {
     init: () => storage.init(),
@@ -147,6 +150,7 @@ export function initPracticeTracker(storageInstance = null) {
     // Store metadata separately (used for updating aggregates, not stored in session)
     currentScoreTitle = scoreTitle || null
     currentComposer = composer || null
+    aggregateTitleEnsured = false
 
     const now = new Date().toISOString()
     currentSession = {
@@ -232,6 +236,16 @@ export function initPracticeTracker(storageInstance = null) {
     // Save session incrementally (don't await - fire and forget)
     storage.saveSession({ ...currentSession })
 
+    // Full aggregate stats (totalSessions, measures, practice time) are only
+    // ever accumulated once, in endSession(). But endSession() only reliably
+    // runs on unload via beforeunload, whose async work can be abandoned
+    // before the IndexedDB write commits if the user navigates away without
+    // finishing the piece - leaving no aggregate row at all, and the library's
+    // practice journal (which reads scoreTitle/composer from aggregates)
+    // showing "Untitled". Ensure the title/composer land early and cheaply,
+    // without touching the stats that endSession() is responsible for.
+    ensureAggregateTitle(currentSession.scoreId, currentScoreTitle, currentComposer)
+
     return completedAttempt
   }
 
@@ -263,6 +277,40 @@ export function initPracticeTracker(storageInstance = null) {
     return sessionToSave
   }
 
+  // Shared skeleton for a brand-new aggregate row (used both here and in
+  // updateAggregates(), which layers session-derived fields on top).
+  function createDefaultAggregate(scoreId) {
+    return {
+      scoreId,
+      status: 'dechiffrage',
+      totalSessions: 0,
+      totalPracticeTimeMs: 0,
+      timesCompleted: 0,
+      practiceDays: [],
+      measures: {},
+    }
+  }
+
+  // Cheap, idempotent title/composer upsert — see the call site in
+  // endMeasureAttempt() for why this can't just be an early call to
+  // updateAggregates(), which accumulates stats and must run exactly once.
+  // Skips the IndexedDB round-trip once a session has already ensured it.
+  async function ensureAggregateTitle(scoreId, title, composer) {
+    if (aggregateTitleEnsured || (!title && !composer)) return
+
+    const aggregate = (await storage.getAggregate(scoreId)) || createDefaultAggregate(scoreId)
+
+    if (aggregate.scoreTitle && aggregate.composer) {
+      aggregateTitleEnsured = true
+      return
+    }
+
+    if (title) aggregate.scoreTitle = title
+    if (composer) aggregate.composer = composer
+    await storage.saveAggregate(aggregate)
+    aggregateTitleEnsured = true
+  }
+
   // `meta` ({ title, composer }) overrides the live-session metadata — used when
   // rebuilding aggregates from synced sessions, whose title/composer come from
   // the score catalog rather than the current playing session.
@@ -274,17 +322,11 @@ export function initPracticeTracker(storageInstance = null) {
 
     if (!aggregate) {
       aggregate = {
-        scoreId: session.scoreId,
+        ...createDefaultAggregate(session.scoreId),
         scoreTitle: title,
         composer,
-        status: 'dechiffrage',
         firstPlayedAt: session.startedAt,
         lastPlayedAt: session.endedAt,
-        totalSessions: 0,
-        totalPracticeTimeMs: 0,
-        timesCompleted: 0,
-        practiceDays: [],
-        measures: {},
       }
     }
 
